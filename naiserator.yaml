@@ -1,0 +1,52 @@
+apiVersion: "nais.io/v1alpha1"
+kind: Application
+metadata:
+  name: pale-2
+  namespace: default
+  labels:
+    team: "teamsykefravr"
+spec:
+  name: "pale-2"
+  image: "repo.adeo.no:5443/syfo/pale-2:@@VERSION@@"
+  replicas:
+    min: 1
+    max: 4
+    cpuThresholdPercentage: 90
+  port: 8080
+  liveness:
+    path: /is_alive
+    initialDelay: 5
+    periodSeconds: 5
+    failureThreshold: 30
+  readiness:
+    path: /is_ready
+    initialDelay: 30
+    timeout: 5
+    periodSeconds: 10
+  prometheus:
+    enabled: true
+    path: /prometheus
+  resources:
+    limits:
+      cpu: 512m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  vault:
+    enabled: true
+  env:
+  - name: APPLICATION_THREADS
+    value: '{{APPLICATION_THREADS}}'
+  - name: MQ_INPUT_QUEUE_NAME
+    value: {{MQ_INPUT_QUEUE_NAME}}
+  - name: MQ_HOST_NAME
+    value: {{MQ_HOST_NAME}}
+  - name: MQ_PORT
+    value: '{{MQ_PORT}}'
+  - name: MQ_GATEWAY_NAME
+    value: {{MQ_GATEWAY_NAME}}
+  - name: MQ_CHANNEL_NAME
+    value: {{MQ_CHANNEL_NAME}}
+  - name: MQ_APPREC_QUEUE_NAME
+    value: {{MQ_APPREC_QUEUE_NAME}}

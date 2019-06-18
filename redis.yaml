@@ -1,0 +1,25 @@
+apiVersion: storage.spotahome.com/v1alpha2
+kind: RedisFailover
+metadata:
+  labels:
+    app: pale-2
+    environment: default
+    team: teamsykefravr
+  name: redis-pale-2
+  namespace: default
+spec:
+  redis:
+    exporter: true
+    replicas: 3
+    resources:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 100m
+  sentinel:
+    replicas: 3
+    resources:
+      limits:
+        memory: 100Mi
+      requests:
+        cpu: 100m
