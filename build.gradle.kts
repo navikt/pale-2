@@ -7,12 +7,11 @@ val ktorVersion = "1.2.2"
 val prometheusVersion = "0.6.0"
 val spekVersion = "2.0.2"
 val kluentVersion = "1.39"
-val smCommonVersion = "1.0.18"
+val smCommonVersion = "1.0.20"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
 val jacksonVersion = "2.9.7"
 val jedisVersion = "2.9.0"
-val sykmeldingVersion = "1.1-SNAPSHOT"
 val kithHodemeldingVersion = "1.1"
 val fellesformatVersion = "1.0"
 val jaxwsApiVersion = "2.3.1"
@@ -77,7 +76,6 @@ dependencies {
     }
 
     implementation("no.nav.syfo.sm:syfosm-common-mq:$smCommonVersion")
-    implementation("no.nav.helse.xml:sm2013:$sykmeldingVersion")
     implementation("no.nav.syfo.tjenester:fellesformat:$fellesformatVersion")
     implementation("no.nav.syfo.tjenester:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.syfo.tjenester:kith-apprec:$kithApprecVersion")
