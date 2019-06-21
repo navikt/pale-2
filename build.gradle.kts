@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0-SNAPSHOT"
 
-val ktorVersion = "1.1.5"
+val ktorVersion = "1.2.2"
 val prometheusVersion = "0.6.0"
 val spekVersion = "2.0.2"
 val kluentVersion = "1.39"
@@ -25,9 +25,9 @@ val legeerklaering = "1.0-SNAPSHOT"
 val kithApprecVersion = "1.1"
 
 plugins {
-    kotlin("jvm") version "1.3.31"
+    kotlin("jvm") version "1.3.40"
     id("com.github.johnrengelman.shadow") version "4.0.4"
-    id("org.jmailen.kotlinter") version "1.25.1"
+    id("org.jmailen.kotlinter") version "1.26.0"
 }
 
 buildscript {

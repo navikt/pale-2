@@ -34,7 +34,6 @@ import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
 import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
-import redis.clients.jedis.JedisSentinelPool
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.io.StringReader
 import java.io.StringWriter
@@ -57,9 +56,6 @@ val objectMapper: ObjectMapper = ObjectMapper()
     .registerModule(JavaTimeModule())
     .registerKotlinModule()
     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-
-val redisMasterName = "mymaster"
-val redisHost = "rfs-redis-syfosmmottak" // TODO: Do this properly with naiserator
 
 data class ApplicationState(
     var running: Boolean = true,
@@ -112,7 +108,7 @@ suspend fun createListener(
     env: Environment,
     connection: Connection
 ) {
-    JedisSentinelPool(redisMasterName, setOf("$redisHost:26379")).resource.use { jedis ->
+    Jedis(env.redishost, 6379).use { jedis ->
         val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
         val inputconsumer = session.consumerForQueue(env.inputQueueName)
         val receiptProducer = session.producerForQueue(env.apprecQueueName)

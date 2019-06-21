@@ -1,25 +1,22 @@
-apiVersion: storage.spotahome.com/v1alpha2
-kind: RedisFailover
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
 metadata:
   labels:
-    app: pale-2
-    environment: default
     team: teamsykefravr
-  name: redis-pale-2
+  name: pale-2-redis
   namespace: default
 spec:
-  redis:
-    exporter: true
-    replicas: 3
-    resources:
-      limits:
-        memory: 100Mi
-      requests:
-        cpu: 100m
-  sentinel:
-    replicas: 3
-    resources:
-      limits:
-        memory: 100Mi
-      requests:
-        cpu: 100m
+  image: redis:5-alpine
+  port: 6379
+  replicas:
+    min: 1
+    max: 4
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  service:
+    port: 6379
