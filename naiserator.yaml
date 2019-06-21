@@ -51,3 +51,5 @@ spec:
     value: {{MQ_CHANNEL_NAME}}
   - name: MQ_APPREC_QUEUE_NAME
     value: {{MQ_APPREC_QUEUE_NAME}}
+  - name: MQ_INPUT_BOQ_QUEUE_NAME
+    value: {{MQ_INPUT_BOQ_QUEUE_NAME}}

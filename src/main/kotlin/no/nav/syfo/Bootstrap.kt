@@ -112,7 +112,8 @@ suspend fun createListener(
         val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
         val inputconsumer = session.consumerForQueue(env.inputQueueName)
         val receiptProducer = session.producerForQueue(env.apprecQueueName)
-        blockingApplicationLogic(applicationState, inputconsumer, jedis, session, env, receiptProducer)
+        val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+        blockingApplicationLogic(applicationState, inputconsumer, jedis, session, env, receiptProducer, backoutProducer)
     }
 }
 
@@ -123,7 +124,8 @@ suspend fun blockingApplicationLogic(
     jedis: Jedis,
     session: Session,
     env: Environment,
-    receiptProducer: MessageProducer
+    receiptProducer: MessageProducer,
+    backoutProducer: MessageProducer
 ) = coroutineScope {
     loop@ while (applicationState.running) {
         val message = inputconsumer.receiveNoWait()
@@ -170,19 +172,33 @@ suspend fun blockingApplicationLogic(
                 val redisEdiloggid = jedis.get(ediLoggId)
 
                 if (redisSha256String != null) {
-                    log.warn("Message with {} marked as duplicate $logKeys",
-                        StructuredArguments.keyValue("originalEdiLoggId", redisSha256String), *logValues)
-                    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                        createApprecError("Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                "Skal ikke sendes på nytt.")))
+                    log.warn(
+                        "Message with {} marked as duplicate $logKeys",
+                        StructuredArguments.keyValue("originalEdiLoggId", redisSha256String), *logValues
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            createApprecError(
+                                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                                        "Skal ikke sendes på nytt."
+                            )
+                        )
+                    )
                     log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
                     continue
                 } else if (redisEdiloggid != null) {
-                    log.warn("Message with {} marked as duplicate $logKeys",
-                        StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), *logValues)
-                    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                        createApprecError("Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                "Skal ikke sendes på nytt.")))
+                    log.warn(
+                        "Message with {} marked as duplicate $logKeys",
+                        StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), *logValues
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            createApprecError(
+                                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                                        "Skal ikke sendes på nytt."
+                            )
+                        )
+                    )
                     log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
                     continue
                 } else {
@@ -192,12 +208,13 @@ suspend fun blockingApplicationLogic(
             } catch (connectionException: JedisConnectionException) {
                 log.warn("Unable to contact redis, will allow possible duplicates.", connectionException)
             }
-        } catch (e: Exception) {
-        log.error("Exception caught while handling message $logKeys", *logValues, e)
-        }
+            } catch (e: Exception) {
+                log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
+                backoutProducer.send(message)
+            }
 
-        delay(100)
-    }
+            log.info("I made it here")
+        }
 }
 
 fun Application.initRouting(applicationState: ApplicationState) {
