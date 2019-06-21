@@ -293,6 +293,16 @@ suspend fun blockingApplicationLogic(
                 legekontorOrgnr = legekontorOrgNr,
                 tssid = samhandlerPraksis?.tss_ident)
             )
+
+            val results = listOf(validationRuleResults).flatten()
+
+            log.info("Rules hit {}, $logKeys", results.map { it.name }, *logValues)
+
+            when (results.firstOrNull()) {
+                null -> log.info("Message has rules hit to $logKeys", *logValues)
+                else -> log.info("Message has NO rules hit to$logKeys", *logValues)
+            }
+
             } catch (e: Exception) {
                 log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
                 backoutProducer.send(message)
