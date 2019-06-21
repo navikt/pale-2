@@ -53,3 +53,5 @@ spec:
     value: {{MQ_APPREC_QUEUE_NAME}}
   - name: MQ_INPUT_BOQ_QUEUE_NAME
     value: {{MQ_INPUT_BOQ_QUEUE_NAME}}
+  - name: AKTOR_REGISTER_V1_URL
+    value: {{AKTOR_REGISTER_V1_URL}}

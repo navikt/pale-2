@@ -22,6 +22,7 @@ val javaxActivationVersion = "1.1.1"
 val jaxwsToolsVersion = "2.3.1"
 val legeerklaering = "1.0-SNAPSHOT"
 val kithApprecVersion = "1.1"
+val commonsTextVersion = "1.4"
 
 plugins {
     kotlin("jvm") version "1.3.40"
@@ -51,14 +52,15 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("stdlib"))
 
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
-    implementation("io.ktor:ktor-client-auth-basic:$ktorVersion")
+    implementation("io.ktor:ktor-client-apache:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth-basic-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
@@ -76,12 +78,16 @@ dependencies {
     }
 
     implementation("no.nav.syfo.sm:syfosm-common-mq:$smCommonVersion")
+    implementation("no.nav.syfo.sm:syfosm-common-rest-sts:$smCommonVersion")
+    implementation("no.nav.syfo.sm:syfosm-common-networking:$smCommonVersion")
     implementation("no.nav.syfo.tjenester:fellesformat:$fellesformatVersion")
     implementation("no.nav.syfo.tjenester:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.syfo.tjenester:kith-apprec:$kithApprecVersion")
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
 
     implementation("redis.clients:jedis:$jedisVersion")
+
+    implementation("org.apache.commons:commons-text:$commonsTextVersion")
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion") {
         exclude(group = "org.eclipse.jetty")

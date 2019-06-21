@@ -12,6 +12,7 @@ import io.ktor.server.netty.Netty
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -25,11 +26,22 @@ import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.syfo.api.registerNaisApi
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
+import no.nav.syfo.client.AktoerIdClient
+import no.nav.syfo.client.SarClient
+import no.nav.syfo.client.StsOidcClient
+import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.metrics.APPREC_COUNTER
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
+import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
+import no.nav.syfo.metrics.REQUEST_TIME
+import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
+import no.nav.syfo.rules.Rule
+import no.nav.syfo.rules.RuleData
+import no.nav.syfo.rules.ValidationRuleChain
+import no.nav.syfo.rules.executeFlow
 import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
 import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
 import org.slf4j.LoggerFactory
@@ -85,7 +97,7 @@ fun main() = runBlocking(coroutineContext) {
     val listeners = (0.until(env.applicationThreads)).map {
         launch {
             try {
-                createListener(applicationState, env, connection)
+                createListener(applicationState, env, connection, credentials)
             } finally {
                 applicationState.running = false
             }
@@ -106,14 +118,31 @@ fun main() = runBlocking(coroutineContext) {
 suspend fun createListener(
     applicationState: ApplicationState,
     env: Environment,
-    connection: Connection
+    connection: Connection,
+    credentials: VaultCredentials
 ) {
     Jedis(env.redishost, 6379).use { jedis ->
         val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
         val inputconsumer = session.consumerForQueue(env.inputQueueName)
         val receiptProducer = session.producerForQueue(env.apprecQueueName)
         val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-        blockingApplicationLogic(applicationState, inputconsumer, jedis, session, env, receiptProducer, backoutProducer)
+
+        val oidcClient = StsOidcClient(credentials.serviceuserUsername, credentials.serviceuserPassword)
+        val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
+        val sarClient = SarClient(env.kuhrSarApiUrl, credentials)
+
+        blockingApplicationLogic(
+            applicationState,
+            inputconsumer,
+            jedis,
+            session,
+            env,
+            receiptProducer,
+            backoutProducer,
+            sarClient,
+            aktoerIdClient,
+            credentials
+            )
     }
 }
 
@@ -125,7 +154,10 @@ suspend fun blockingApplicationLogic(
     session: Session,
     env: Environment,
     receiptProducer: MessageProducer,
-    backoutProducer: MessageProducer
+    backoutProducer: MessageProducer,
+    kuhrSarClient: SarClient,
+    aktoerIdClient: AktoerIdClient,
+    credentials: VaultCredentials
 ) = coroutineScope {
     loop@ while (applicationState.running) {
         val message = inputconsumer.receiveNoWait()
@@ -156,8 +188,12 @@ suspend fun blockingApplicationLogic(
             val legekontorOrgNr = extractOrganisationNumberFromSender(fellesformat)?.id
             val legeerklaring = extractLegeerklaering(fellesformat)
             val sha256String = sha256hashstring(legeerklaring)
+            val personNumberPatient = extractPersonIdent(legeerklaring)!!
+            val legekontorOrgName = extractSenderOrganisationName(fellesformat)
+            val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
 
             INCOMING_MESSAGE_COUNTER.inc()
+            val requestLatency = REQUEST_TIME.startTimer()
 
             logValues = arrayOf(
                 StructuredArguments.keyValue("mottakId", ediLoggId),
@@ -166,6 +202,18 @@ suspend fun blockingApplicationLogic(
             )
 
             log.info("Received message, $logKeys", *logValues)
+
+            val aktoerIdsDeferred = async {
+                aktoerIdClient.getAktoerIds(
+                    listOf(personNumberDoctor,
+                        personNumberPatient),
+                    msgId, credentials.serviceuserUsername)
+            }
+
+            val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
+            val samhandlerPraksis = findBestSamhandlerPraksis(
+                samhandlerInfo,
+                legekontorOrgName)?.samhandlerPraksis
 
             try {
                 val redisSha256String = jedis.get(sha256String)
@@ -208,12 +256,47 @@ suspend fun blockingApplicationLogic(
             } catch (connectionException: JedisConnectionException) {
                 log.warn("Unable to contact redis, will allow possible duplicates.", connectionException)
             }
+
+            val aktoerIds = aktoerIdsDeferred.await()
+            val patientIdents = aktoerIds[personNumberPatient]
+            val doctorIdents = aktoerIds[personNumberDoctor]
+
+            if (patientIdents == null || patientIdents.feilmelding != null) {
+                log.info("Patient not found i aktorRegister $logKeys, {}", *logValues,
+                    StructuredArguments.keyValue("errorMessage", patientIdents?.feilmelding ?: "No response for FNR")
+                )
+                sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                    no.nav.syfo.apprec.createApprecError("Pasienten er ikkje registrert i folkeregisteret")
+                ))
+                log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                INVALID_MESSAGE_NO_NOTICE.inc()
+                continue@loop
+            }
+            if (doctorIdents == null || doctorIdents.feilmelding != null) {
+                log.info("Doctor not found i aktorRegister $logKeys, {}", *logValues,
+                    StructuredArguments.keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR")
+                )
+                sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                    no.nav.syfo.apprec.createApprecError("Behandler er ikkje registrert i folkeregisteret")
+                ))
+                log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                INVALID_MESSAGE_NO_NOTICE.inc()
+                continue@loop
+            }
+
+            val validationRuleResults: List<Rule<Any>> = listOf<List<Rule<RuleData<RuleMetadata>>>>(
+                ValidationRuleChain.values().toList()
+            ).flatten().executeFlow(legeerklaring, RuleMetadata(
+                receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
+                signatureDate = msgHead.msgInfo.genDate,
+                patientPersonNumber = personNumberPatient,
+                legekontorOrgnr = legekontorOrgNr,
+                tssid = samhandlerPraksis?.tss_ident)
+            )
             } catch (e: Exception) {
                 log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
                 backoutProducer.send(message)
             }
-
-            log.info("I made it here")
         }
 }
 
@@ -263,3 +346,9 @@ fun Marshaller.toString(input: Any): String = StringWriter().use {
     marshal(input, it)
     it.toString()
 }
+
+fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
+    legeerklaering.pasientopplysninger.pasient.fodselsnummer
+
+fun extractSenderOrganisationName(fellesformat: XMLEIFellesformat): String =
+    fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.organisationName ?: ""

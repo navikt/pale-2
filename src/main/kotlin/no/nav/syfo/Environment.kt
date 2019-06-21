@@ -13,7 +13,9 @@ data class Environment(
     val inputQueueName: String = getEnvVar("MQ_INPUT_QUEUE_NAME"),
     val apprecQueueName: String = getEnvVar("MQ_APPREC_QUEUE_NAME"),
     val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.default.svc.nais.local"),
-    val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME")
+    val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
+    val aktoerregisterV1Url: String = getEnvVar("AKTOR_REGISTER_V1_URL"),
+    val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api")
 ) : MqConfig
 
 data class VaultCredentials(
