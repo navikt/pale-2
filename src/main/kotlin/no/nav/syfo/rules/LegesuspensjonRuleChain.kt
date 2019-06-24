@@ -1,5 +1,7 @@
 package no.nav.syfo.rules
 
+import no.nav.syfo.model.Status
+
 enum class LegesuspensjonRuleChain(
     override val ruleId: Int?,
     override val status: Status,

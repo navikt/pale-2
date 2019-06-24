@@ -20,6 +20,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import net.logstash.logback.argument.StructuredArgument
 import net.logstash.logback.argument.StructuredArguments
 import no.kith.xmlstds.apprec._2004_11_21.XMLAppRec
 import no.kith.xmlstds.msghead._2006_05_24.XMLHealthcareProfessional
@@ -34,8 +35,10 @@ import no.kith.xmlstds.apprec._2004_11_21.XMLCV as AppRecCV
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.legeerklaering.PlanUtredBehandle
 import no.nav.helse.legeerklaering.VurderingFunksjonsevne
+import no.nav.syfo.api.DokmotClient
 import no.nav.syfo.api.LegeSuspensjonClient
 import no.nav.syfo.api.PdfgenClient
+import no.nav.syfo.api.SakClient
 import no.nav.syfo.api.registerNaisApi
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
@@ -45,19 +48,30 @@ import no.nav.syfo.client.StsOidcClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.metrics.APPREC_COUNTER
+import no.nav.syfo.metrics.CASE_CREATED_COUNTER
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
+import no.nav.syfo.model.Aktoer
+import no.nav.syfo.model.AktoerWrapper
 import no.nav.syfo.model.Arbeidsgiver
+import no.nav.syfo.model.ArkivSak
 import no.nav.syfo.model.Diagnose
+import no.nav.syfo.model.DokumentInfo
+import no.nav.syfo.model.DokumentVariant
 import no.nav.syfo.model.Fagmelding
+import no.nav.syfo.model.ForsendelseInformasjon
 import no.nav.syfo.model.ForslagTilTiltak
 import no.nav.syfo.model.FunksjonsOgArbeidsevne
 import no.nav.syfo.model.Henvisning
 import no.nav.syfo.model.Kontakt
+import no.nav.syfo.model.MottaInngaaendeForsendelse
+import no.nav.syfo.model.OpprettSakResponse
+import no.nav.syfo.model.Organisasjon
 import no.nav.syfo.model.Pasient
 import no.nav.syfo.model.PdfPayload
+import no.nav.syfo.model.Person
 import no.nav.syfo.model.Plan
 import no.nav.syfo.model.Prognose
 import no.nav.syfo.model.RuleInfo
@@ -77,7 +91,7 @@ import no.nav.syfo.rules.RuleData
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.ws.createPort
-import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
+import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3 as PersonV3
 import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
 import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
 import org.slf4j.LoggerFactory
@@ -104,8 +118,9 @@ import no.nav.tjeneste.virksomhet.person.v3.informasjon.NorskIdent
 import no.nav.tjeneste.virksomhet.person.v3.informasjon.PersonIdent
 import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentPersonRequest
 import no.nhn.schemas.reg.hprv2.IHPR2Service
-import no.nhn.schemas.reg.hprv2.Person
+import no.nhn.schemas.reg.hprv2.Person as HPRPerson
 import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.GregorianCalendar
@@ -135,7 +150,8 @@ val log = LoggerFactory.getLogger("nav.syfopale-application")!!
 @KtorExperimentalAPI
 fun main() = runBlocking(coroutineContext) {
     val env = Environment()
-    val credentials = objectMapper.readValue<VaultCredentials>(Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile())
+    val credentials =
+        objectMapper.readValue<VaultCredentials>(Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile())
 
     val applicationState = ApplicationState()
 
@@ -148,23 +164,23 @@ fun main() = runBlocking(coroutineContext) {
     connectionFactory(env).createConnection(credentials.mqUsername, credentials.mqPassword).use { connection ->
         connection.start()
 
-    val listeners = (0.until(env.applicationThreads)).map {
-        launch {
-            try {
-                createListener(applicationState, env, connection, credentials)
-            } finally {
-                applicationState.running = false
+        val listeners = (0.until(env.applicationThreads)).map {
+            launch {
+                try {
+                    createListener(applicationState, env, connection, credentials)
+                } finally {
+                    applicationState.running = false
+                }
             }
-        }
-    }.toList()
+        }.toList()
 
-    applicationState.initialized = true
+        applicationState.initialized = true
 
-    Runtime.getRuntime().addShutdownHook(Thread {
-        applicationServer.stop(10, 10, TimeUnit.SECONDS)
-    })
+        Runtime.getRuntime().addShutdownHook(Thread {
+            applicationServer.stop(10, 10, TimeUnit.SECONDS)
+        })
 
-    listeners.forEach { it.join() }
+        listeners.forEach { it.join() }
     }
 }
 
@@ -185,9 +201,17 @@ suspend fun createListener(
         val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
         val sarClient = SarClient(env.kuhrSarApiUrl, credentials)
         val pdfgenClient = PdfgenClient(env.pdfgen)
+        val sakClient = SakClient(env.opprettSakUrl, oidcClient)
+        val dokmotClient = DokmotClient(env.dokmotMottaInngaaendeUrl, oidcClient)
 
         val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
-            port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+            port {
+                withSTS(
+                    credentials.serviceuserUsername,
+                    credentials.serviceuserPassword,
+                    env.securityTokenServiceURL
+                )
+            }
         }
 
         val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
@@ -206,7 +230,13 @@ suspend fun createListener(
                 features.add(WSAddressingFeature())
             }
 
-            port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+            port {
+                withSTS(
+                    credentials.serviceuserUsername,
+                    credentials.serviceuserPassword,
+                    env.securityTokenServiceURL
+                )
+            }
         }
 
         val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
@@ -225,8 +255,10 @@ suspend fun createListener(
             personV3,
             helsepersonellV1,
             legeSuspensjonClient,
-            pdfgenClient
-            )
+            pdfgenClient,
+            sakClient,
+            dokmotClient
+        )
     }
 }
 
@@ -245,7 +277,9 @@ suspend fun blockingApplicationLogic(
     personV3: PersonV3,
     helsepersonellv1: IHPR2Service,
     legeSuspensjonClient: LegeSuspensjonClient,
-    pdfgenClient: PdfgenClient
+    pdfgenClient: PdfgenClient,
+    sakClient: SakClient,
+    dokmotClient: DokmotClient
 ) = coroutineScope {
     loop@ while (applicationState.running) {
         val message = inputconsumer.receiveNoWait()
@@ -293,15 +327,19 @@ suspend fun blockingApplicationLogic(
 
             val aktoerIdsDeferred = async {
                 aktoerIdClient.getAktoerIds(
-                    listOf(personNumberDoctor,
-                        personNumberPatient),
-                    msgId, credentials.serviceuserUsername)
+                    listOf(
+                        personNumberDoctor,
+                        personNumberPatient
+                    ),
+                    msgId, credentials.serviceuserUsername
+                )
             }
 
             val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
             val samhandlerPraksis = findBestSamhandlerPraksis(
                 samhandlerInfo,
-                legekontorOrgName)?.samhandlerPraksis
+                legekontorOrgName
+            )?.samhandlerPraksis
 
             try {
                 val redisSha256String = jedis.get(sha256String)
@@ -350,23 +388,29 @@ suspend fun blockingApplicationLogic(
             val doctorIdents = aktoerIds[personNumberDoctor]
 
             if (patientIdents == null || patientIdents.feilmelding != null) {
-                log.info("Patient not found i aktorRegister $logKeys, {}", *logValues,
+                log.info(
+                    "Patient not found i aktorRegister $logKeys, {}", *logValues,
                     StructuredArguments.keyValue("errorMessage", patientIdents?.feilmelding ?: "No response for FNR")
                 )
-                sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                    no.nav.syfo.apprec.createApprecError("Pasienten er ikkje registrert i folkeregisteret")
-                ))
+                sendReceipt(
+                    session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                        no.nav.syfo.apprec.createApprecError("Pasienten er ikkje registrert i folkeregisteret")
+                    )
+                )
                 log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
                 INVALID_MESSAGE_NO_NOTICE.inc()
                 continue@loop
             }
             if (doctorIdents == null || doctorIdents.feilmelding != null) {
-                log.info("Doctor not found i aktorRegister $logKeys, {}", *logValues,
+                log.info(
+                    "Doctor not found i aktorRegister $logKeys, {}", *logValues,
                     StructuredArguments.keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR")
                 )
-                sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                    no.nav.syfo.apprec.createApprecError("Behandler er ikkje registrert i folkeregisteret")
-                ))
+                sendReceipt(
+                    session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                        no.nav.syfo.apprec.createApprecError("Behandler er ikkje registrert i folkeregisteret")
+                    )
+                )
                 log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
                 INVALID_MESSAGE_NO_NOTICE.inc()
                 continue@loop
@@ -374,19 +418,22 @@ suspend fun blockingApplicationLogic(
 
             val validationRuleResults: List<Rule<Any>> = listOf<List<Rule<RuleData<RuleMetadata>>>>(
                 ValidationRuleChain.values().toList()
-            ).flatten().executeFlow(legeerklaring, RuleMetadata(
-                receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
-                signatureDate = msgHead.msgInfo.genDate,
-                patientPersonNumber = personNumberPatient,
-                legekontorOrgnr = legekontorOrgNr,
-                tssid = samhandlerPraksis?.tss_ident)
+            ).flatten().executeFlow(
+                legeerklaring, RuleMetadata(
+                    receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
+                    signatureDate = msgHead.msgInfo.genDate,
+                    patientPersonNumber = personNumberPatient,
+                    legekontorOrgnr = legekontorOrgNr,
+                    tssid = samhandlerPraksis?.tss_ident
+                )
             )
 
             val patient = fetchPerson(personV3, personNumberPatient)
             val tpsRuleResults = PostTPSRuleChain.values().executeFlow(legeerklaring, patient.await())
 
             val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
-            val doctorSuspend = legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
+            val doctorSuspend =
+                legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
             val doctorRuleResults = LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
 
             val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
@@ -407,7 +454,8 @@ suspend fun blockingApplicationLogic(
             val typeLegeerklaering = legeerklaering.legeerklaringGjelder[0].typeLegeerklaring.toInt()
             val funksjonsevne = legeerklaering.vurderingFunksjonsevne
             val prognose = legeerklaering.prognose
-            val healthcareProfessional = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
+            val healthcareProfessional =
+                fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
 
             val validationResult = validationResult(results)
             RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
@@ -421,17 +469,42 @@ suspend fun blockingApplicationLogic(
                 prognose,
                 healthcareProfessional,
                 fellesformat,
-                validationResult)
+                validationResult
+            )
+
+            val sakid = findSakid(sakClient, patientIdents.identer!!.first().ident, msgId, logKeys, logValues)
+
+            val pdf = pdfgenClient.createPDF(pdfPayload)
+            log.info("PDF generated $logKeys", *logValues)
+
+            val journalpostPayload = createJournalpostPayload(
+                legeerklaering,
+                patientIdents.identer.first().ident,
+                legekontorOrgNr,
+                legekontorOrgName,
+                msgId,
+                sakid,
+                pdf,
+                msgHead,
+                receiverBlock,
+                validationResult
+            )
+
+            val journalpost = dokmotClient.createJournalpost(journalpostPayload)
+            log.info(
+                "Message successfully persisted in Joark {} $logKeys",
+                StructuredArguments.keyValue("journalpostId", journalpost.journalpostId), *logValues
+            )
 
             when (results.firstOrNull()) {
                 null -> log.info("Message has NO rules hit $logKeys", *logValues)
                 else -> log.info("Message has rules hit $logKeys", *logValues)
             }
-            } catch (e: Exception) {
-                log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
-                backoutProducer.send(message)
-            }
+        } catch (e: Exception) {
+            log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
+            backoutProducer.send(message)
         }
+    }
 }
 
 fun Application.initRouting(applicationState: ApplicationState) {
@@ -493,13 +566,14 @@ fun CoroutineScope.fetchPerson(personV3: PersonV3, ident: String): Deferred<TPSP
         retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L, 60000L),
         legalExceptions = *arrayOf(IOException::class, WstxException::class)
     ) {
-        personV3.hentPerson(HentPersonRequest()
-            .withAktoer(PersonIdent().withIdent(NorskIdent().withIdent(ident)))
+        personV3.hentPerson(
+            HentPersonRequest()
+                .withAktoer(PersonIdent().withIdent(NorskIdent().withIdent(ident)))
         ).person
     }
 }
 
-fun CoroutineScope.fetchDoctor(hprService: IHPR2Service, doctorIdent: String): Deferred<Person> = async {
+fun CoroutineScope.fetchDoctor(hprService: IHPR2Service, doctorIdent: String): Deferred<HPRPerson> = async {
     retry(
         callName = "hpr_hent_person_med_personnummer",
         retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
@@ -520,90 +594,92 @@ fun createPdfPayload(
     fellesformat: XMLEIFellesformat,
     validationResult: ValidationResult
 ): PdfPayload = PdfPayload(
-     fagmelding = Fagmelding(
-             arbeidsvurderingVedSykefravaer = typeLegeerklaering == LegeerklaeringType.Arbeidsevnevurdering.type,
-             arbeidsavklaringsPenger = typeLegeerklaering == LegeerklaeringType.Arbeidsavklaringspenger.type,
-             yrkesrettetAttfoering = typeLegeerklaering == LegeerklaeringType.YrkesrettetAttfoering.type,
-             ufoerepensjon = typeLegeerklaering == LegeerklaeringType.Ufoerepensjon.type,
-             pasient = legeerklaeringToPasient(legeerklaring),
-             sykdomsOpplysninger = mapLegeerklaeringToSykdomDiagnose(legeerklaring.diagnoseArbeidsuforhet),
-             plan = Plan(
-                 utredning = plan?.henvistUtredning?.let {
-                     Henvisning(
-                         tekst = it.spesifikasjon,
-                         dato = it.henvistDato.toGregorianCalendar().toZonedDateTime(),
-                         antattVentetIUker = it.antattVentetid.toInt()
-                     )
-                 },
-                 behandling = plan?.henvistBehandling?.let {
-                     Henvisning(
-                         tekst = it.spesifikasjon,
-                         dato = it.henvistDato.toGregorianCalendar().toZonedDateTime(),
-                         antattVentetIUker = it.antattVentetid.toInt()
-                     )
-                 },
-                 utredningsplan = plan?.utredningsPlan,
-                 behandlingsplan = plan?.behandlingsPlan,
-                 vurderingAvTidligerePlan = plan?.nyVurdering,
-                 naarSpoerreOmNyeLegeopplysninger = plan?.nyeLegeopplysninger,
-                 videreBehandlingIkkeAktuellGrunn = plan?.ikkeVidereBehandling
-             ),
-             forslagTilTiltak = ForslagTilTiltak(
-                 behov = forslagTiltak.aktueltTiltak.isEmpty(),
-                 kjoepAvHelsetjenester = TypeTiltak.KjoepHelsetjenester in forslagTiltak.aktueltTiltak,
-                 reisetilskudd = TypeTiltak.Reisetilskudd in forslagTiltak.aktueltTiltak,
-                 aktivSykMelding = TypeTiltak.AktivSykemelding in forslagTiltak.aktueltTiltak,
-                 hjelpemidlerArbeidsplassen = TypeTiltak.HjelpemidlerArbeidsplass in forslagTiltak.aktueltTiltak,
-                 arbeidsavklaringsPenger = TypeTiltak.Arbeidsavklaringspenger in forslagTiltak.aktueltTiltak,
-                 friskemeldingTilArbeidsformidling = TypeTiltak.FriskemeldingTilArbeidsformidling in forslagTiltak.aktueltTiltak,
-                 andreTiltak = forslagTiltak.aktueltTiltak.find { it.typeTiltak == TypeTiltak.AndreTiltak }?.hvilkeAndreTiltak,
-                 naermereOpplysninger = forslagTiltak.opplysninger,
-                 tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak
-             ),
-             funksjonsOgArbeidsevne = FunksjonsOgArbeidsevne(
-                 vurderingFunksjonsevne = funksjonsevne.funksjonsevne,
-                 iIntektsgivendeArbeid = ArbeidssituasjonType.InntektsgivendeArbeid in funksjonsevne.arbeidssituasjon,
-                 hjemmearbeidende = ArbeidssituasjonType.Hjemmearbeidende in funksjonsevne.arbeidssituasjon,
-                 student = ArbeidssituasjonType.Student in funksjonsevne.arbeidssituasjon,
-                 annetArbeid = funksjonsevne.arbeidssituasjon?.find { it.arbeidssituasjon?.let {
-                     it.toInt() == ArbeidssituasjonType.Annet?.type
-                 } ?: false }?.annenArbeidssituasjon ?: "",
-                 kravTilArbeid = funksjonsevne?.kravArbeid,
-                 kanGjenopptaTidligereArbeid = funksjonsevne.vurderingArbeidsevne?.gjenopptaArbeid?.toInt() == 1,
-                 kanGjenopptaTidligereArbeidNaa = funksjonsevne.vurderingArbeidsevne?.narGjenopptaArbeid?.toInt() == 1,
-                 kanGjenopptaTidligereArbeidEtterBehandling = funksjonsevne.vurderingArbeidsevne?.narGjenopptaArbeid?.toInt() == 2,
-                 kanTaAnnetArbeid = funksjonsevne.vurderingArbeidsevne?.taAnnetArbeid?.toInt() == 1,
-                 kanTaAnnetArbeidNaa = funksjonsevne.vurderingArbeidsevne?.narTaAnnetArbeid?.toInt() == 1,
-                 kanTaAnnetArbeidEtterBehandling = funksjonsevne.vurderingArbeidsevne?.narTaAnnetArbeid?.toInt() == 2,
-                 kanIkkeINaaverendeArbeid = funksjonsevne.vurderingArbeidsevne?.ikkeGjore,
-                 kanIkkeIAnnetArbeid = funksjonsevne.vurderingArbeidsevne?.hensynAnnetYrke
-             ),
-             prognose = Prognose(
-                 vilForbedreArbeidsevne = prognose.bedreArbeidsevne?.toInt() == 1,
-                 anslaatVarighetSykdom = prognose.antattVarighet,
-                 anslaatVarighetFunksjonsNedsetting = prognose.varighetFunksjonsnedsettelse,
-                 anslaatVarighetNedsattArbeidsevne = prognose.varighetNedsattArbeidsevne
-             ),
-             aarsaksSammenheng = legeerklaring.arsakssammenhengLegeerklaring,
-             andreOpplysninger = legeerklaring.andreOpplysninger?.opplysning,
-             kontakt = Kontakt(
-                 skalKontakteBehandlendeLege = KontaktType.BehandlendeLege in legeerklaring.kontakt,
-                 skalKontakteArbeidsgiver = KontaktType.Arbeidsgiver in legeerklaring.kontakt,
-                 skalKontakteBasisgruppe = KontaktType.Basisgruppe in legeerklaring.kontakt,
-                 kontakteAnnenInstans = legeerklaring.kontakt.find { it.kontakt?.toInt() == KontaktType.AnnenInstans.type }?.annenInstans,
-                 oenskesKopiAvVedtak = legeerklaring.andreOpplysninger?.onskesKopi?.let { it.toInt() == 1 } ?: false
-             ),
-             pasientenBurdeIkkeVite = legeerklaring.forbeholdLegeerklaring.borTilbakeholdes,
-             signatur = Signatur(
-                 dato = ZonedDateTime.now(),
-                 navn = healthcareProfessional?.formatName() ?: "",
-                 adresse = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.streetAdr,
-                 postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode?.toInt(),
-                 poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,
-                 signatur = "",
-                 tlfNummer = healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v ?: ""
-             )
-         ),
+    fagmelding = Fagmelding(
+        arbeidsvurderingVedSykefravaer = typeLegeerklaering == LegeerklaeringType.Arbeidsevnevurdering.type,
+        arbeidsavklaringsPenger = typeLegeerklaering == LegeerklaeringType.Arbeidsavklaringspenger.type,
+        yrkesrettetAttfoering = typeLegeerklaering == LegeerklaeringType.YrkesrettetAttfoering.type,
+        ufoerepensjon = typeLegeerklaering == LegeerklaeringType.Ufoerepensjon.type,
+        pasient = legeerklaeringToPasient(legeerklaring),
+        sykdomsOpplysninger = mapLegeerklaeringToSykdomDiagnose(legeerklaring.diagnoseArbeidsuforhet),
+        plan = Plan(
+            utredning = plan?.henvistUtredning?.let {
+                Henvisning(
+                    tekst = it.spesifikasjon,
+                    dato = it.henvistDato.toGregorianCalendar().toZonedDateTime(),
+                    antattVentetIUker = it.antattVentetid.toInt()
+                )
+            },
+            behandling = plan?.henvistBehandling?.let {
+                Henvisning(
+                    tekst = it.spesifikasjon,
+                    dato = it.henvistDato.toGregorianCalendar().toZonedDateTime(),
+                    antattVentetIUker = it.antattVentetid.toInt()
+                )
+            },
+            utredningsplan = plan?.utredningsPlan,
+            behandlingsplan = plan?.behandlingsPlan,
+            vurderingAvTidligerePlan = plan?.nyVurdering,
+            naarSpoerreOmNyeLegeopplysninger = plan?.nyeLegeopplysninger,
+            videreBehandlingIkkeAktuellGrunn = plan?.ikkeVidereBehandling
+        ),
+        forslagTilTiltak = ForslagTilTiltak(
+            behov = forslagTiltak.aktueltTiltak.isEmpty(),
+            kjoepAvHelsetjenester = TypeTiltak.KjoepHelsetjenester in forslagTiltak.aktueltTiltak,
+            reisetilskudd = TypeTiltak.Reisetilskudd in forslagTiltak.aktueltTiltak,
+            aktivSykMelding = TypeTiltak.AktivSykemelding in forslagTiltak.aktueltTiltak,
+            hjelpemidlerArbeidsplassen = TypeTiltak.HjelpemidlerArbeidsplass in forslagTiltak.aktueltTiltak,
+            arbeidsavklaringsPenger = TypeTiltak.Arbeidsavklaringspenger in forslagTiltak.aktueltTiltak,
+            friskemeldingTilArbeidsformidling = TypeTiltak.FriskemeldingTilArbeidsformidling in forslagTiltak.aktueltTiltak,
+            andreTiltak = forslagTiltak.aktueltTiltak.find { it.typeTiltak == TypeTiltak.AndreTiltak }?.hvilkeAndreTiltak,
+            naermereOpplysninger = forslagTiltak.opplysninger,
+            tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak
+        ),
+        funksjonsOgArbeidsevne = FunksjonsOgArbeidsevne(
+            vurderingFunksjonsevne = funksjonsevne.funksjonsevne,
+            iIntektsgivendeArbeid = ArbeidssituasjonType.InntektsgivendeArbeid in funksjonsevne.arbeidssituasjon,
+            hjemmearbeidende = ArbeidssituasjonType.Hjemmearbeidende in funksjonsevne.arbeidssituasjon,
+            student = ArbeidssituasjonType.Student in funksjonsevne.arbeidssituasjon,
+            annetArbeid = funksjonsevne.arbeidssituasjon?.find {
+                it.arbeidssituasjon?.let {
+                    it.toInt() == ArbeidssituasjonType.Annet?.type
+                } ?: false
+            }?.annenArbeidssituasjon ?: "",
+            kravTilArbeid = funksjonsevne?.kravArbeid,
+            kanGjenopptaTidligereArbeid = funksjonsevne.vurderingArbeidsevne?.gjenopptaArbeid?.toInt() == 1,
+            kanGjenopptaTidligereArbeidNaa = funksjonsevne.vurderingArbeidsevne?.narGjenopptaArbeid?.toInt() == 1,
+            kanGjenopptaTidligereArbeidEtterBehandling = funksjonsevne.vurderingArbeidsevne?.narGjenopptaArbeid?.toInt() == 2,
+            kanTaAnnetArbeid = funksjonsevne.vurderingArbeidsevne?.taAnnetArbeid?.toInt() == 1,
+            kanTaAnnetArbeidNaa = funksjonsevne.vurderingArbeidsevne?.narTaAnnetArbeid?.toInt() == 1,
+            kanTaAnnetArbeidEtterBehandling = funksjonsevne.vurderingArbeidsevne?.narTaAnnetArbeid?.toInt() == 2,
+            kanIkkeINaaverendeArbeid = funksjonsevne.vurderingArbeidsevne?.ikkeGjore,
+            kanIkkeIAnnetArbeid = funksjonsevne.vurderingArbeidsevne?.hensynAnnetYrke
+        ),
+        prognose = Prognose(
+            vilForbedreArbeidsevne = prognose.bedreArbeidsevne?.toInt() == 1,
+            anslaatVarighetSykdom = prognose.antattVarighet,
+            anslaatVarighetFunksjonsNedsetting = prognose.varighetFunksjonsnedsettelse,
+            anslaatVarighetNedsattArbeidsevne = prognose.varighetNedsattArbeidsevne
+        ),
+        aarsaksSammenheng = legeerklaring.arsakssammenhengLegeerklaring,
+        andreOpplysninger = legeerklaring.andreOpplysninger?.opplysning,
+        kontakt = Kontakt(
+            skalKontakteBehandlendeLege = KontaktType.BehandlendeLege in legeerklaring.kontakt,
+            skalKontakteArbeidsgiver = KontaktType.Arbeidsgiver in legeerklaring.kontakt,
+            skalKontakteBasisgruppe = KontaktType.Basisgruppe in legeerklaring.kontakt,
+            kontakteAnnenInstans = legeerklaring.kontakt.find { it.kontakt?.toInt() == KontaktType.AnnenInstans.type }?.annenInstans,
+            oenskesKopiAvVedtak = legeerklaring.andreOpplysninger?.onskesKopi?.let { it.toInt() == 1 } ?: false
+        ),
+        pasientenBurdeIkkeVite = legeerklaring.forbeholdLegeerklaring.borTilbakeholdes,
+        signatur = Signatur(
+            dato = ZonedDateTime.now(),
+            navn = healthcareProfessional?.formatName() ?: "",
+            adresse = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.streetAdr,
+            postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode?.toInt(),
+            poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,
+            signatur = "",
+            tlfNummer = healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v ?: ""
+        )
+    ),
     validationResult = validationResult)
 
 fun mapEnkeltDiagnoseToDiagnose(enkeltdiagnose: Enkeltdiagnose?): Diagnose =
@@ -672,9 +748,10 @@ enum class ArbeidssituasjonType(val type: Int) {
 }
 
 operator fun Iterable<Arbeidssituasjon>.contains(arbeidssituasjonType: ArbeidssituasjonType): Boolean =
-    any { it.arbeidssituasjon?.let {
-        it.toInt() == arbeidssituasjonType.type
-    } ?: false
+    any {
+        it.arbeidssituasjon?.let {
+            it.toInt() == arbeidssituasjonType.type
+        } ?: false
     }
 
 enum class KontaktType(val type: Int) {
@@ -702,3 +779,103 @@ fun validationResult(results: List<Rule<Any>>): ValidationResult =
             },
         ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForUser!!, rule.messageForSender!!) }
     )
+
+@KtorExperimentalAPI
+suspend fun CoroutineScope.findSakid(
+    sakClient: SakClient,
+    aktorId: String,
+    msgId: String,
+    logKeys: String,
+    logValues: Array<StructuredArgument>
+): String {
+
+    val findSakResponseDeferred = async {
+        sakClient.findSak(aktorId, msgId)
+    }
+
+    val findSakResponse = findSakResponseDeferred.await()
+
+    return if (findSakResponse != null && findSakResponse.isNotEmpty() && findSakResponse.sortedOpprettSakResponse().lastOrNull()?.id != null) {
+        log.info(
+            "Found a sak, {} $logKeys",
+            findSakResponse.sortedOpprettSakResponse().last().id.toString(),
+            *logValues
+        )
+        findSakResponse.sortedOpprettSakResponse().last().id.toString()
+    } else {
+        val createSakResponseDeferred = async {
+            sakClient.createSak(aktorId, msgId)
+        }
+        val createSakResponse = createSakResponseDeferred.await()
+
+        CASE_CREATED_COUNTER.inc()
+        log.info("Created a sak, {} $logKeys", createSakResponse.id.toString(), *logValues)
+
+        createSakResponse.id.toString()
+    }
+}
+
+fun List<OpprettSakResponse>.sortedOpprettSakResponse(): List<OpprettSakResponse> =
+    sortedBy { it.opprettetTidspunkt }
+
+fun createJournalpostPayload(
+    legeerklaering: Legeerklaring,
+    aktorId: String,
+    legekontorOrgNr: String?,
+    legekontorOrgName: String,
+    msgId: String,
+    caseId: String,
+    pdf: ByteArray,
+    msgHead: XMLMsgHead,
+    receiverBlock: XMLMottakenhetBlokk,
+    validationResult: ValidationResult
+) = MottaInngaaendeForsendelse(
+    forsokEndeligJF = true,
+    forsendelseInformasjon = ForsendelseInformasjon(
+        bruker = AktoerWrapper(Aktoer(person = Person(ident = aktorId))),
+        avsender = AktoerWrapper(
+            Aktoer(
+                organisasjon = Organisasjon(
+                    orgnr = legekontorOrgNr,
+                    navn = legekontorOrgName
+                )
+            )
+        ),
+        tema = "SYM",
+        kanalReferanseId = msgId,
+        forsendelseInnsendt = msgHead.msgInfo.genDate.atZone(ZoneId.systemDefault()),
+        forsendelseMottatt = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime(),
+        mottaksKanal = "HELSENETTET",
+        tittel = createTittleJournalpost(validationResult, msgHead),
+        arkivSak = ArkivSak(
+            arkivSakSystem = "FS22",
+            arkivSakId = caseId
+        )
+    ),
+    tilleggsopplysninger = listOf(),
+    dokumentInfoHoveddokument = DokumentInfo(
+        tittel = createTittleJournalpost(validationResult, msgHead),
+        dokumentkategori = "Legeerklæring",
+        dokumentVariant = listOf(
+            DokumentVariant(
+                arkivFilType = "PDFA",
+                variantFormat = "ARKIV",
+                dokument = pdf
+            ),
+            DokumentVariant(
+                arkivFilType = "XML",
+                variantFormat = "ORIGINAL",
+                dokument = objectMapper.writeValueAsBytes(legeerklaering)
+            )
+        )
+    ),
+    dokumentInfoVedlegg = listOf()
+)
+
+fun createTittleJournalpost(validationResult: ValidationResult, msgHead: XMLMsgHead): String {
+    return if (validationResult.status == Status.INVALID) {
+        "Avvist egeerklaering opprettet:${msgHead.msgInfo.genDate}"
+    } else {
+        "Legeerklaering opprettet:${msgHead.msgInfo.genDate}"
+    }
+}

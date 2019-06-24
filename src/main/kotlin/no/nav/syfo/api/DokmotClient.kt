@@ -4,23 +4,21 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.HttpClient
-import io.ktor.client.call.call
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.response.readBytes
+import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.http.ContentType
-import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.util.KtorExperimentalAPI
-import no.nav.syfo.get
+import no.nav.syfo.client.StsOidcClient
 import no.nav.syfo.helpers.retry
-import no.nav.syfo.model.PdfPayload
+import no.nav.syfo.model.MottaInngaaendeForsendelse
+import no.nav.syfo.model.MottaInngaandeForsendelseResultat
 
 @KtorExperimentalAPI
-class PdfgenClient(
-    private val url: String
-) {
+class DokmotClient constructor(private val url: String, private val stsClient: StsOidcClient) {
     private val httpClient = HttpClient(CIO) {
         install(JsonFeature) {
             serializer = JacksonSerializer {
@@ -31,11 +29,13 @@ class PdfgenClient(
         }
     }
 
-    suspend fun createPDF(payload: PdfPayload): ByteArray = retry("pdfgen") {
-        httpClient.call(url) {
-            contentType(ContentType.Application.Json)
-            method = HttpMethod.Post
-            body = payload
-        }.response.readBytes()
-    }
-}
+            suspend fun createJournalpost(
+                mottaInngaaendeForsendelse: MottaInngaaendeForsendelse
+            ): MottaInngaandeForsendelseResultat = retry("dokmotinngaaende") {
+                httpClient.post<MottaInngaandeForsendelseResultat>(url) {
+                    contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer ${stsClient.oidcToken().access_token}")
+                    body = mottaInngaaendeForsendelse
+                }
+            }
+        }

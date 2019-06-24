@@ -1,6 +1,7 @@
 package no.nav.syfo.rules
 
 import no.nav.syfo.model.RuleMetadata
+import no.nav.syfo.model.Status
 import no.nav.syfo.validation.extractBornDate
 import no.nav.syfo.validation.validatePersonAndDNumber
 import no.nav.syfo.validation.validatePersonAndDNumber11Digits

@@ -15,7 +15,7 @@ import no.kith.xmlstds.msghead._2006_05_24.XMLMsgHead
 import no.kith.xmlstds.msghead._2006_05_24.XMLOrganisation
 import no.nav.syfo.PaleConstant
 import no.nav.syfo.get
-import no.nav.syfo.rules.RuleInfo
+import no.nav.syfo.model.RuleInfo
 import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
 import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
 import java.time.LocalDateTime
