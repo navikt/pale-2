@@ -142,6 +142,13 @@ tasks {
         )
     }
 
+    withType<ShadowJar> {
+        transform(ServiceFileTransformer::class.java) {
+            setPath("META-INF/cxf")
+            include("bus-extensions.txt")
+        }
+    }
+
     withType<Test> {
         useJUnitPlatform {
             includeEngines("spek2")
