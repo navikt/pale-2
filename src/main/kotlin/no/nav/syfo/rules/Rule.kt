@@ -2,6 +2,7 @@ package no.nav.syfo.rules
 
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.syfo.metrics.RULE_HIT_COUNTER
+import no.nav.syfo.model.Status
 
 data class RuleData<T>(val legeerklaring: Legeerklaring, val metadata: T)
 
@@ -24,20 +25,3 @@ inline fun <reified T, reified R : Rule<RuleData<T>>> Array<R>.executeFlow(legee
 
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Description(val description: String)
-
-data class ValidationResult(
-    val status: Status,
-    val ruleHits: List<RuleInfo>
-)
-
-data class RuleInfo(
-    val ruleName: String,
-    val messageForSender: String,
-    val messageForUser: String
-)
-
-enum class Status {
-    OK,
-    MANUAL_PROCESSING,
-    INVALID
-}
