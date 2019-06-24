@@ -1,5 +1,6 @@
 package no.nav.syfo
 
+import com.ctc.wstx.exc.WstxException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -11,6 +12,8 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -23,6 +26,7 @@ import no.kith.xmlstds.msghead._2006_05_24.XMLIdent
 import no.kith.xmlstds.msghead._2006_05_24.XMLMsgHead
 import no.kith.xmlstds.apprec._2004_11_21.XMLCV as AppRecCV
 import no.nav.helse.legeerklaering.Legeerklaring
+import no.nav.syfo.api.LegeSuspensjonClient
 import no.nav.syfo.api.registerNaisApi
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
@@ -30,6 +34,7 @@ import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
+import no.nav.syfo.helpers.retry
 import no.nav.syfo.metrics.APPREC_COUNTER
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
@@ -38,15 +43,21 @@ import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
+import no.nav.syfo.rules.HPRRuleChain
+import no.nav.syfo.rules.LegesuspensjonRuleChain
+import no.nav.syfo.rules.PostTPSRuleChain
 import no.nav.syfo.rules.Rule
 import no.nav.syfo.rules.RuleData
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
+import no.nav.syfo.ws.createPort
+import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
 import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
 import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
+import java.io.IOException
 import java.io.StringReader
 import java.io.StringWriter
 import java.nio.file.Paths
@@ -59,6 +70,20 @@ import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
 import javax.xml.bind.Marshaller
+import org.apache.cxf.binding.soap.SoapMessage
+import org.apache.cxf.message.Message
+import org.apache.cxf.phase.Phase
+import org.apache.cxf.ws.addressing.WSAddressingFeature
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.NorskIdent
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.PersonIdent
+import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentPersonRequest
+import no.nhn.schemas.reg.hprv2.IHPR2Service
+import no.nhn.schemas.reg.hprv2.Person
+import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
+import java.time.format.DateTimeFormatter
+import java.util.GregorianCalendar
+import javax.xml.datatype.DatatypeFactory
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.Person as TPSPerson
 
 fun doReadynessCheck(): Boolean {
     return true
@@ -73,6 +98,8 @@ data class ApplicationState(
     var running: Boolean = true,
     var initialized: Boolean = false
 )
+
+val datatypeFactory: DatatypeFactory = DatatypeFactory.newInstance()
 
 val coroutineContext = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
@@ -131,6 +158,31 @@ suspend fun createListener(
         val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
         val sarClient = SarClient(env.kuhrSarApiUrl, credentials)
 
+        val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
+            port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+        }
+
+        val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
+            proxy {
+                // TODO: Contact someone about this hacky workaround
+                // talk to HDIR about HPR about they claim to send a ISO-8859-1 but its really UTF-8 payload
+                val interceptor = object : AbstractSoapInterceptor(Phase.RECEIVE) {
+                    override fun handleMessage(message: SoapMessage?) {
+                        if (message != null)
+                            message[Message.ENCODING] = "utf-8"
+                    }
+                }
+
+                inInterceptors.add(interceptor)
+                inFaultInterceptors.add(interceptor)
+                features.add(WSAddressingFeature())
+            }
+
+            port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+        }
+
+        val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
+
         blockingApplicationLogic(
             applicationState,
             inputconsumer,
@@ -141,7 +193,10 @@ suspend fun createListener(
             backoutProducer,
             sarClient,
             aktoerIdClient,
-            credentials
+            credentials,
+            personV3,
+            helsepersonellV1,
+            legeSuspensjonClient
             )
     }
 }
@@ -157,7 +212,10 @@ suspend fun blockingApplicationLogic(
     backoutProducer: MessageProducer,
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
-    credentials: VaultCredentials
+    credentials: VaultCredentials,
+    personV3: PersonV3,
+    helsepersonellv1: IHPR2Service,
+    legeSuspensjonClient: LegeSuspensjonClient
 ) = coroutineScope {
     loop@ while (applicationState.running) {
         val message = inputconsumer.receiveNoWait()
@@ -294,7 +352,22 @@ suspend fun blockingApplicationLogic(
                 tssid = samhandlerPraksis?.tss_ident)
             )
 
-            val results = listOf(validationRuleResults).flatten()
+            val patient = fetchPerson(personV3, personNumberPatient)
+            val tpsRuleResults = PostTPSRuleChain.values().executeFlow(legeerklaring, patient.await())
+
+            val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
+            val doctorSuspend = legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
+            val doctorRuleResults = LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
+
+            val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
+            val hprRuleResults = HPRRuleChain.values().executeFlow(legeerklaring, doctor)
+
+            val results = listOf(
+                validationRuleResults,
+                tpsRuleResults,
+                hprRuleResults,
+                doctorRuleResults
+            ).flatten()
 
             log.info("Rules hit {}, $logKeys", results.map { it.name }, *logValues)
 
@@ -361,3 +434,25 @@ fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
 
 fun extractSenderOrganisationName(fellesformat: XMLEIFellesformat): String =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.organisationName ?: ""
+
+fun CoroutineScope.fetchPerson(personV3: PersonV3, ident: String): Deferred<TPSPerson> = async {
+    retry(
+        callName = "tps_hent_person",
+        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L, 60000L),
+        legalExceptions = *arrayOf(IOException::class, WstxException::class)
+    ) {
+        personV3.hentPerson(HentPersonRequest()
+            .withAktoer(PersonIdent().withIdent(NorskIdent().withIdent(ident)))
+        ).person
+    }
+}
+
+fun CoroutineScope.fetchDoctor(hprService: IHPR2Service, doctorIdent: String): Deferred<Person> = async {
+    retry(
+        callName = "hpr_hent_person_med_personnummer",
+        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
+        legalExceptions = *arrayOf(IOException::class, WstxException::class)
+    ) {
+        hprService.hentPersonMedPersonnummer(doctorIdent, datatypeFactory.newXMLGregorianCalendar(GregorianCalendar()))
+    }
+}

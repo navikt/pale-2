@@ -1,3 +1,6 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
+import no.nils.wsdl2java.Wsdl2JavaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "no.nav.syfo"
@@ -23,8 +26,11 @@ val jaxwsToolsVersion = "2.3.1"
 val legeerklaering = "1.0-SNAPSHOT"
 val kithApprecVersion = "1.1"
 val commonsTextVersion = "1.4"
+val navPersonv3Version = "3.2.0"
+val javaxJaxwsApiVersion = "2.2.1"
 
 plugins {
+    id("no.nils.wsdl2java") version "0.10"
     kotlin("jvm") version "1.3.40"
     id("com.github.johnrengelman.shadow") version "4.0.4"
     id("org.jmailen.kotlinter") version "1.26.0"
@@ -52,6 +58,15 @@ repositories {
 }
 
 dependencies {
+    wsdl2java("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
+    wsdl2java("javax.activation:activation:$javaxActivationVersion")
+    wsdl2java("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
+    wsdl2java("javax.xml.bind:jaxb-api:$jaxbApiVersion")
+    wsdl2java("javax.xml.ws:jaxws-api:$javaxJaxwsApiVersion")
+    wsdl2java("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
+        exclude(group = "com.sun.xml.ws", module = "policy")
+    }
+
     implementation(kotlin("stdlib"))
 
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
@@ -80,10 +95,13 @@ dependencies {
     implementation("no.nav.syfo.sm:syfosm-common-mq:$smCommonVersion")
     implementation("no.nav.syfo.sm:syfosm-common-rest-sts:$smCommonVersion")
     implementation("no.nav.syfo.sm:syfosm-common-networking:$smCommonVersion")
+    implementation("no.nav.syfo.sm:syfosm-common-ws:$smCommonVersion")
     implementation("no.nav.syfo.tjenester:fellesformat:$fellesformatVersion")
     implementation("no.nav.syfo.tjenester:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.syfo.tjenester:kith-apprec:$kithApprecVersion")
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
+
+    implementation("no.nav.tjenester:nav-person-v3-tjenestespesifikasjon:$navPersonv3Version")
 
     implementation("redis.clients:jedis:$jedisVersion")
 
@@ -113,7 +131,15 @@ tasks {
     }
 
     withType<KotlinCompile> {
+        dependsOn("wsdl2java")
         kotlinOptions.jvmTarget = "1.8"
+    }
+
+    withType<Wsdl2JavaTask> {
+        wsdlDir = file("$projectDir/src/main/resources/wsdl")
+        wsdlsToGenerate = listOf(
+            mutableListOf("-xjc", "-b", "$projectDir/src/main/resources/xjb/binding.xml", "$projectDir/src/main/resources/wsdl/helsepersonellregisteret.wsdl")
+        )
     }
 
     withType<Test> {

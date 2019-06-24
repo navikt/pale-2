@@ -15,7 +15,11 @@ data class Environment(
     val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.default.svc.nais.local"),
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
     val aktoerregisterV1Url: String = getEnvVar("AKTOR_REGISTER_V1_URL"),
-    val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api")
+    val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api"),
+    val personV3EndpointURL: String = getEnvVar("PERSON_V3_ENDPOINT_URL"),
+    val securityTokenServiceURL: String = getEnvVar("SECURITY_TOKEN_SERVICE_URL"),
+    val helsepersonellv1EndpointURL: String = getEnvVar("HELSEPERSONELL_V1_ENDPOINT_URL"),
+    val legeSuspensjonEndpointURL: String = getEnvVar("LEGE_SUSPENSJON_ENDPOINT_URL", "http://btsys")
 ) : MqConfig
 
 data class VaultCredentials(
