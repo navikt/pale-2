@@ -3,41 +3,6 @@ package no.nav.syfo.model
 import java.time.ZonedDateTime
 
 data class PdfPayload(
-    val fagmelding: Fagmelding,
-    val validationResult: ValidationResult
-)
-
-// TODO REMOVE
-data class Behandlingsvedlegg(
-    val type: String,
-    val status: String,
-    val pasientId: String?,
-    val ediLoggId: String,
-    val msgId: String,
-    val generertDato: ZonedDateTime,
-    val motattNavDato: ZonedDateTime,
-    val registrertAutomatiskBehandlingDato: ZonedDateTime,
-    val sender: BehandlingsvedleggSender
-)
-
-data class BehandlingsvedleggSender(
-    val signaturId: String,
-    val signaturNavn: String,
-    val avsenderId: String?,
-    val avsenderNavn: String,
-    val tlfNummer: String?,
-    val organisasjonsId: String,
-    val organisasjonsNavn: String,
-    val adresse: String?,
-    val poststed: String?,
-    val postnummer: String?,
-    val merknadAvvist: List<Merknad>,
-    val merknadManuellBehandling: List<Merknad>,
-    val merknadOppfoelging: List<Merknad>,
-    val merknadNotis: List<Merknad>
-)
-
-data class Fagmelding(
     val arbeidsvurderingVedSykefravaer: Boolean,
     val arbeidsavklaringsPenger: Boolean,
     val yrkesrettetAttfoering: Boolean,
@@ -52,7 +17,8 @@ data class Fagmelding(
     val andreOpplysninger: String?,
     val kontakt: Kontakt,
     val pasientenBurdeIkkeVite: String?,
-    val signatur: Signatur
+    val signatur: Signatur,
+    val validationResult: ValidationResult
 )
 
 data class Pasient(
@@ -158,9 +124,4 @@ data class Signatur(
     val poststed: String?,
     val signatur: String?,
     val tlfNummer: String?
-)
-
-data class Merknad(
-    val tekst: String,
-    val number: Int
 )

@@ -60,7 +60,6 @@ import no.nav.syfo.model.ArkivSak
 import no.nav.syfo.model.Diagnose
 import no.nav.syfo.model.DokumentInfo
 import no.nav.syfo.model.DokumentVariant
-import no.nav.syfo.model.Fagmelding
 import no.nav.syfo.model.ForsendelseInformasjon
 import no.nav.syfo.model.ForslagTilTiltak
 import no.nav.syfo.model.FunksjonsOgArbeidsevne
@@ -594,7 +593,6 @@ fun createPdfPayload(
     fellesformat: XMLEIFellesformat,
     validationResult: ValidationResult
 ): PdfPayload = PdfPayload(
-    fagmelding = Fagmelding(
         arbeidsvurderingVedSykefravaer = typeLegeerklaering == LegeerklaeringType.Arbeidsevnevurdering.type,
         arbeidsavklaringsPenger = typeLegeerklaering == LegeerklaeringType.Arbeidsavklaringspenger.type,
         yrkesrettetAttfoering = typeLegeerklaering == LegeerklaeringType.YrkesrettetAttfoering.type,
@@ -678,9 +676,9 @@ fun createPdfPayload(
             poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,
             signatur = "",
             tlfNummer = healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v ?: ""
-        )
-    ),
-    validationResult = validationResult)
+        ),
+    validationResult = validationResult
+    )
 
 fun mapEnkeltDiagnoseToDiagnose(enkeltdiagnose: Enkeltdiagnose?): Diagnose =
     Diagnose(tekst = enkeltdiagnose?.diagnose, kode = enkeltdiagnose?.kodeverdi)

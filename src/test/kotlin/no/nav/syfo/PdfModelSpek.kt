@@ -2,7 +2,6 @@ package no.nav.syfo
 
 import no.nav.syfo.model.Arbeidsgiver
 import no.nav.syfo.model.Diagnose
-import no.nav.syfo.model.Fagmelding
 import no.nav.syfo.model.ForslagTilTiltak
 import no.nav.syfo.model.FunksjonsOgArbeidsevne
 import no.nav.syfo.model.Henvisning
@@ -24,7 +23,6 @@ object PdfModelSpek : Spek({
     describe("Generate a few pdf models") {
         it("Creates a static pdfpayload") {
             val pdfPayload = PdfPayload(
-                fagmelding = Fagmelding(
                     arbeidsvurderingVedSykefravaer = true,
                     arbeidsavklaringsPenger = true,
                     yrkesrettetAttfoering = false,
@@ -123,8 +121,7 @@ object PdfModelSpek : Spek({
                         poststed = "Stockholm",
                         signatur = "Lege Legesen",
                         tlfNummer = "98765432"
-                    )
-                ),
+                    ),
                 validationResult = ValidationResult(
                     status = Status.MANUAL_PROCESSING, ruleHits = listOf(
                         RuleInfo(
