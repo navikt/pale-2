@@ -46,10 +46,13 @@ object PdfModelSpek : Spek({
                     ),
                     sykdomsOpplysninger = SykdomsOpplysninger(
                         hoveddiagnose = Diagnose(
-                            tekst = "Tekst",
-                            kode = "test"
+                            tekst = "Fysikalsk behandling/rehabilitering",
+                            kode = "-57"
                         ),
-                        bidiagnose = listOf(),
+                        bidiagnose = listOf(Diagnose(
+                            tekst = "Engstelig for hjertesykdom",
+                            kode = "K24"
+                        )),
                         arbeidsufoerFra = ZonedDateTime.now().minusDays(3),
                         sykdomsHistorie = "Tekst",
                         statusPresens = "Tekst",
@@ -117,22 +120,22 @@ object PdfModelSpek : Spek({
                         dato = ZonedDateTime.now().minusDays(1),
                         navn = "Lege Legesen",
                         adresse = "Legeveien 33",
-                        postnummer = 9999,
+                        postnummer = "9999",
                         poststed = "Stockholm",
                         signatur = "Lege Legesen",
                         tlfNummer = "98765432"
                     ),
                 validationResult = ValidationResult(
-                    status = Status.MANUAL_PROCESSING, ruleHits = listOf(
+                    status = Status.INVALID, ruleHits = listOf(
                         RuleInfo(
-                            ruleName = "BEHANDLER_KI_NOT_USING_VALID_DIAGNOSECODE_TYPE",
-                            messageForUser = "Den som skrev sykmeldingen mangler autorisasjon.",
-                            messageForSender = "Behandler er manuellterapeut/kiropraktor eller fysioterapeut med autorisasjon har angitt annen diagnose enn kapitel L (muskel og skjelettsykdommer)"
+                            ruleName = "PASIENT_YNGRE_ENN_13",
+                            messageForUser = "Pasienten er under 13 år. Sykmelding kan ikke benyttes.",
+                            messageForSender = "Pasienten er under 13 år. Sykmelding kan ikke benyttes."
                         ),
                         RuleInfo(
-                            ruleName = "NUMBER_OF_TREATMENT_DAYS_SET",
-                            messageForUser = "Hvis behandlingsdager er angitt sendes meldingen til manuell behandling.",
-                            messageForSender = "Hvis behandlingsdager er angitt sendes meldingen til manuell behandling."
+                            ruleName = "PASIENT_ELDRE_ENN_70",
+                            messageForUser = "Sykmelding kan ikke benyttes etter at du har fylt 70 år",
+                            messageForSender = "Pasienten er over 70 år. Sykmelding kan ikke benyttes."
                         )
                     )
                 )

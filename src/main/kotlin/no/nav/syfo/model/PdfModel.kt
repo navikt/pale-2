@@ -120,7 +120,7 @@ data class Signatur(
     val dato: ZonedDateTime,
     val navn: String?,
     val adresse: String?,
-    val postnummer: Int?,
+    val postnummer: String?,
     val poststed: String?,
     val signatur: String?,
     val tlfNummer: String?

@@ -672,7 +672,7 @@ fun createPdfPayload(
             dato = ZonedDateTime.now(),
             navn = healthcareProfessional?.formatName() ?: "",
             adresse = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.streetAdr,
-            postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode?.toInt(),
+            postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode,
             poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,
             signatur = "",
             tlfNummer = healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v ?: ""
