@@ -93,8 +93,25 @@ import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLIdent
+import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.services.DiskresjonskodeService
+import no.nav.syfo.services.FindNAVKontorService
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.binding.ArbeidsfordelingV1
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.ArbeidsfordelingKriterier
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Diskresjonskoder
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Geografi
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Oppgavetyper
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Tema
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.meldinger.FinnBehandlendeEnhetListeRequest
+import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.meldinger.FinnBehandlendeEnhetListeResponse
+import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.GeografiskTilknytning
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.NorskIdent
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.PersonIdent
+import no.nav.tjeneste.virksomhet.person.v3.informasjon.Personidenter
+import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningRequest
+import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningResponse
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -117,6 +134,8 @@ import org.apache.cxf.ws.addressing.WSAddressingFeature
 import no.nhn.schemas.reg.hprv2.IHPR2Service
 import no.nhn.schemas.reg.hprv2.Person as HPRPerson
 import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
+import org.slf4j.Logger
+import java.lang.IllegalStateException
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -141,7 +160,9 @@ val datatypeFactory: DatatypeFactory = DatatypeFactory.newInstance()
 
 val coroutineContext = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
-val log = LoggerFactory.getLogger("nav.syfopale-application")!!
+val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
+
+const val NAV_OPPFOLGING_UTLAND_KONTOR_NR = "0393"
 
 @KtorExperimentalAPI
 fun main() = runBlocking(coroutineContext) {
@@ -175,6 +196,8 @@ fun main() = runBlocking(coroutineContext) {
             val sakClient = SakClient(env.opprettSakUrl, oidcClient)
             val dokmotClient = DokmotClient(env.dokmotMottaInngaaendeUrl, oidcClient)
             val diskresjonskodeService = DiskresjonskodeService(env, credentials)
+            val norg2Client = Norg2Client(env.norg2V1EndpointURL)
+            val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
 
             val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
                 proxy {
@@ -201,13 +224,25 @@ fun main() = runBlocking(coroutineContext) {
                 }
             }
 
-            val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
+            val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
+                port {
+                    withSTS(
+                        credentials.serviceuserUsername,
+                        credentials.serviceuserPassword,
+                        env.securityTokenServiceURL
+                    )
+                }
+            }
+
+            val arbeidsfordelingV1 = createPort<ArbeidsfordelingV1>(env.arbeidsfordelingV1EndpointURL) {
+                port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+            }
 
             launchListeners(applicationState, inputconsumer, jedis,
                 session, env, receiptProducer, backoutProducer, sarClient,
                 aktoerIdClient, credentials, helsepersonellV1,
                 legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService,
-                arenaProducer)
+                arenaProducer, personV3, norg2Client, arbeidsfordelingV1)
 
             Runtime.getRuntime().addShutdownHook(Thread {
                 connection.close()
@@ -246,14 +281,18 @@ suspend fun CoroutineScope.launchListeners(
     sakClient: SakClient,
     dokmotClient: DokmotClient,
     diskresjonskodeService: DiskresjonskodeService,
-    arenaProducer: MessageProducer
+    arenaProducer: MessageProducer,
+    personV3: PersonV3,
+    norg2Client: Norg2Client,
+    arbeidsfordelingV1: ArbeidsfordelingV1
 ) {
     val listeners = (0.until(env.applicationThreads)).map {
         createListener(applicationState) {
             blockingApplicationLogic(applicationState, inputconsumer, jedis,
                 session, env, receiptProducer, backoutProducer, kuhrSarClient,
                 aktoerIdClient, credentials, helsepersonellv1,
-                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService, arenaProducer)
+                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService, arenaProducer,
+                personV3, norg2Client, arbeidsfordelingV1)
         }
     }.toList()
 
@@ -279,7 +318,10 @@ suspend fun blockingApplicationLogic(
     sakClient: SakClient,
     dokmotClient: DokmotClient,
     diskresjonskodeService: DiskresjonskodeService,
-    arenaProducer: MessageProducer
+    arenaProducer: MessageProducer,
+    personV3: PersonV3,
+    norg2Client: Norg2Client,
+    arbeidsfordelingV1: ArbeidsfordelingV1
 ) = coroutineScope {
     wrapExceptions {
         loop@ while (applicationState.running) {
@@ -315,6 +357,7 @@ suspend fun blockingApplicationLogic(
                 val personNumberPatient = extractPersonIdent(legeerklaring)!!
                 val legekontorOrgName = extractSenderOrganisationName(fellesformat)
                 val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
+                val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
 
                 INCOMING_MESSAGE_COUNTER.inc()
                 val requestLatency = REQUEST_TIME.startTimer()
@@ -340,7 +383,9 @@ suspend fun blockingApplicationLogic(
                 val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
                 val samhandlerPraksis = findBestSamhandlerPraksis(
                     samhandlerInfo,
-                    legekontorOrgName
+                    legekontorOrgName,
+                    legekontorHerId,
+                    loggingMeta
                 )?.samhandlerPraksis
 
                 try {
@@ -435,7 +480,9 @@ suspend fun blockingApplicationLogic(
                 )
 
                 val patientDiskresjonskodeDeferred = async { diskresjonskodeService.hentDiskresjonskode(personNumberPatient) }
-                val postDiskresjonskodeResults = PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonskodeDeferred.await())
+                val patientDiskresjonskode = patientDiskresjonskodeDeferred.await()
+
+                val postDiskresjonskodeResults = PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonskode)
 
                 val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
                 val doctorSuspend =
@@ -453,6 +500,11 @@ suspend fun blockingApplicationLogic(
                 ).flatten()
 
                 log.info("Rules hit {}, {}", results.map { it.name }, fields(loggingMeta))
+
+                val findNAVKontorService = FindNAVKontorService(personNumberPatient, personV3, norg2Client, arbeidsfordelingV1, patientDiskresjonskode, loggingMeta)
+
+                val behandlendeEnhet = findNAVKontorService.finnBehandlendeEnhet()
+                val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
                 val legeerklaering = extractLegeerklaering(fellesformat)
                 val plan = legeerklaering.planUtredBehandle
@@ -527,6 +579,11 @@ fun Application.initRouting(applicationState: ApplicationState) {
 fun extractOrganisationNumberFromSender(fellesformat: XMLEIFellesformat): XMLIdent? =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.ident.find {
         it.typeId.v == "ENH"
+    }
+
+fun extractOrganisationHerNumberFromSender(fellesformat: XMLEIFellesformat): XMLIdent? =
+    fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.ident.find {
+        it.typeId.v == "HER"
     }
 
 fun extractLegeerklaering(fellesformat: XMLEIFellesformat): Legeerklaring =
@@ -877,14 +934,64 @@ fun createTittleJournalpost(validationResult: ValidationResult, msgHead: XMLMsgH
     }
 }
 
+suspend fun fetchGeografiskTilknytningAsync(
+    personV3: PersonV3,
+    personFNR: String
+): HentGeografiskTilknytningResponse =
+    retry(callName = "tps_hent_geografisktilknytning",
+        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
+        legalExceptions = *arrayOf(IOException::class, WstxException::class, IllegalStateException::class)) {
+        personV3.hentGeografiskTilknytning(
+            HentGeografiskTilknytningRequest().withAktoer(
+                PersonIdent().withIdent(
+                    NorskIdent()
+                        .withIdent(personFNR)
+                        .withType(Personidenter().withValue("FNR")))))
+    }
+
+suspend fun fetchBehandlendeEnhet(
+    arbeidsfordelingV1: ArbeidsfordelingV1,
+    geografiskTilknytning: GeografiskTilknytning?,
+    patientDiskresjonsKode: String?
+): FinnBehandlendeEnhetListeResponse? =
+    retry(callName = "finn_nav_kontor",
+        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
+        legalExceptions = *arrayOf(IOException::class, WstxException::class)) {
+        arbeidsfordelingV1.finnBehandlendeEnhetListe(FinnBehandlendeEnhetListeRequest().apply {
+            val afk = ArbeidsfordelingKriterier()
+            if (geografiskTilknytning?.geografiskTilknytning != null) {
+                afk.geografiskTilknytning = Geografi().apply {
+                    value = geografiskTilknytning.geografiskTilknytning
+                }
+            }
+            afk.tema = Tema().apply {
+                value = "SYM"
+            }
+
+            afk.oppgavetype = Oppgavetyper().apply {
+                value = "BEH_EL_SYM"
+            }
+
+            if (!patientDiskresjonsKode.isNullOrBlank()) {
+                afk.diskresjonskode = Diskresjonskoder().apply {
+                    value = patientDiskresjonsKode
+                }
+            }
+
+            arbeidsfordelingKriterier = afk
+        })
+    }
+
 /*
 fun sendArenaInfo(
     producer: MessageProducer,
     session: Session,
     fellesformat: XMLEIFellesformat,
     validationResult: ValidationResult
+    tssid: String?
+    navkontorNr: Sting
 ) = producer.send(session.createTextMessage().apply {
-    val info = createArenaInfo(fellesformat, validationResult.tssId, sperrekode, validationResult.navkontor).apply {
+    val info = createArenaInfo(fellesformat, tssid, sperrekode, navkontor).apply {
         // TODO eiaData may not be used by Arena
         eiaData = ArenaEiaInfo.EiaData().apply {
             systemSvar.addAll(validationResult.outcomes

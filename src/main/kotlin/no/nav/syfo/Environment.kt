@@ -23,7 +23,10 @@ data class Environment(
     val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak/api/v1/saker"),
     val dokmotMottaInngaaendeUrl: String = getEnvVar("DOKMOT_MOTTA_INNGAAENDE_URL"),
     val diskresjonskodeEndpointUrl: String = getEnvVar("DISKRESJONSKODE_ENDPOINT_URL"),
-    val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME")
+    val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
+    val personV3EndpointURL: String = getEnvVar("PERSON_V3_ENDPOINT_URL"),
+    val norg2V1EndpointURL: String = getEnvVar("NORG2_V1_ENDPOINT_URL"),
+    val arbeidsfordelingV1EndpointURL: String = getEnvVar("ARBEIDSFORDELING_V1_ENDPOINT_URL")
 ) : MqConfig
 
 data class VaultCredentials(

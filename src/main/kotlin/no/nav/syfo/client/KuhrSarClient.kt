@@ -14,8 +14,12 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.util.KtorExperimentalAPI
+import net.logstash.logback.argument.StructuredArguments
+import net.logstash.logback.argument.StructuredArguments.keyValue
+import no.nav.syfo.LoggingMeta
 import no.nav.syfo.VaultCredentials
 import no.nav.syfo.helpers.retry
+import no.nav.syfo.log
 import org.apache.commons.text.similarity.LevenshteinDistance
 import java.util.Date
 import kotlin.math.max
@@ -88,7 +92,7 @@ data class SamhandlerPraksis(
     val post_postnr: String?,
     val tss_ident: String,
     val navn: String?,
-    val ident: String,
+    val ident: String?,
     val samh_praksis_type_kode: String?,
     val samh_id: String,
     val samh_praksis_id: String,
@@ -111,24 +115,52 @@ fun calculatePercentageStringMatch(str1: String?, str2: String): Double {
     return (maxDistance - distance) / maxDistance
 }
 
-fun findBestSamhandlerPraksis(samhandlers: List<Samhandler>, orgName: String): SamhandlerPraksisMatch? {
+fun List<SamhandlerPeriode>.formaterPerioder() = joinToString(",", "periode(", ") ") { periode ->
+    "${periode.gyldig_fra} -> ${periode.gyldig_til}"
+}
 
-    val aktiveSamhandlere = samhandlers.flatMap { it.samh_praksis }
-            .filter {
-                it.samh_praksis_status_kode == "aktiv"
-            }
-            .filter {
-                it.samh_praksis_periode
-                        .filter { it.gyldig_fra <= Date() }
-                        .filter { it.gyldig_til == null || it.gyldig_til >= Date() }
-                        .any()
-            }
-            .filter { !it.navn.isNullOrEmpty() }
-            .toList()
+fun List<Samhandler>.formaterPraksis() = flatMap { it.samh_praksis }
+    .joinToString(",", "praksis(", ") ") { praksis ->
+        "${praksis.navn}: ${praksis.samh_praksis_status_kode} ${praksis.samh_praksis_periode.formaterPerioder()}"
+    }
+
+fun findBestSamhandlerPraksis(
+    samhandlere: List<Samhandler>,
+    orgName: String,
+    herId: String?,
+    loggingMeta: LoggingMeta
+): SamhandlerPraksisMatch? {
+    val aktiveSamhandlere = samhandlere.flatMap { it.samh_praksis }
+        .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
+        .filter {
+            it.samh_praksis_periode
+                .filter { periode -> periode.gyldig_fra <= Date() }
+                .filter { periode -> periode.gyldig_til == null || periode.gyldig_til >= Date() }
+                .any()
+        }
+        .filter { !it.navn.isNullOrEmpty() }
+
+    if (aktiveSamhandlere.isEmpty()) {
+        log.info("Fant ingen aktive samhandlere. {}  Meta: {}, {} ",
+            keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
+            keyValue("antall praksiser", samhandlere.size),
+            StructuredArguments.fields(loggingMeta))
+    }
+
+    if (!herId.isNullOrEmpty() && aktiveSamhandlere.isNotEmpty()) {
+        val samhandlerByHerId = aktiveSamhandlere.find {
+            it.her_id == herId
+        }
+        if (samhandlerByHerId != null) {
+            log.info("Fant samhandler basert på herid. herid: $herId, {}, {}",
+                keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
+                StructuredArguments.fields(loggingMeta))
+            return SamhandlerPraksisMatch(samhandlerByHerId, 100.0)
+        }
+    }
 
     return aktiveSamhandlere
-            .map {
-                SamhandlerPraksisMatch(it, calculatePercentageStringMatch(it.navn, orgName))
-            }.sortedBy { it.percentageMatch }
-            .firstOrNull()
+        .map { samhandlerPraksis ->
+            SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn, orgName) * 100)
+        }.maxBy { it.percentageMatch }
 }

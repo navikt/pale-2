@@ -30,6 +30,8 @@ val javaxJaxwsApiVersion = "2.2.1"
 val javaTimeAdapterVersion = "1.1.3"
 val diskresjonskodeV1Version= "1.2019.07.11-06.47-b55f47790a9d"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
+val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
+val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 
 plugins {
     id("no.nils.wsdl2java") version "0.10"
@@ -105,6 +107,8 @@ dependencies {
     implementation( "no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
 
     implementation("no.nav.tjenestespesifikasjoner:diskresjonskodev1-tjenestespesifikasjon:$diskresjonskodeV1Version")
+    implementation("no.nav.tjenestespesifikasjoner:person-v3-tjenestespesifikasjon:$navPersonv3Version")
+    implementation("no.nav.tjenestespesifikasjoner:arbeidsfordeling-v1-tjenestespesifikasjon:$navArbeidsfordelingv1Version")
 
     implementation("redis.clients:jedis:$jedisVersion")
 
