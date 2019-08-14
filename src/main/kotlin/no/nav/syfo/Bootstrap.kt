@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.logstash.logback.argument.StructuredArgument
 import net.logstash.logback.argument.StructuredArguments
+import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.legeerklaering.AktueltTiltak
 import no.nav.helse.legeerklaering.Arbeidssituasjon
@@ -83,17 +84,17 @@ import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.rules.HPRRuleChain
 import no.nav.syfo.rules.LegesuspensjonRuleChain
-import no.nav.syfo.rules.PostTPSRuleChain
 import no.nav.syfo.rules.Rule
 import no.nav.syfo.rules.RuleData
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.ws.createPort
-import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3 as PersonV3
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLIdent
+import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
+import no.nav.syfo.services.DiskresjonskodeService
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -113,9 +114,6 @@ import org.apache.cxf.binding.soap.SoapMessage
 import org.apache.cxf.message.Message
 import org.apache.cxf.phase.Phase
 import org.apache.cxf.ws.addressing.WSAddressingFeature
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.NorskIdent
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.PersonIdent
-import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentPersonRequest
 import no.nhn.schemas.reg.hprv2.IHPR2Service
 import no.nhn.schemas.reg.hprv2.Person as HPRPerson
 import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
@@ -124,7 +122,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.GregorianCalendar
 import javax.xml.datatype.DatatypeFactory
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.Person as TPSPerson
 
 fun doReadynessCheck(): Boolean {
     return true
@@ -169,6 +166,7 @@ fun main() = runBlocking(coroutineContext) {
             val inputconsumer = session.consumerForQueue(env.inputQueueName)
             val receiptProducer = session.producerForQueue(env.apprecQueueName)
             val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+            val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
             val oidcClient = StsOidcClient(credentials.serviceuserUsername, credentials.serviceuserPassword)
             val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
@@ -176,16 +174,7 @@ fun main() = runBlocking(coroutineContext) {
             val pdfgenClient = PdfgenClient(env.pdfgen)
             val sakClient = SakClient(env.opprettSakUrl, oidcClient)
             val dokmotClient = DokmotClient(env.dokmotMottaInngaaendeUrl, oidcClient)
-
-            val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
-                port {
-                    withSTS(
-                        credentials.serviceuserUsername,
-                        credentials.serviceuserPassword,
-                        env.securityTokenServiceURL
-                    )
-                }
-            }
+            val diskresjonskodeService = DiskresjonskodeService(env, credentials)
 
             val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
                 proxy {
@@ -216,8 +205,9 @@ fun main() = runBlocking(coroutineContext) {
 
             launchListeners(applicationState, inputconsumer, jedis,
                 session, env, receiptProducer, backoutProducer, sarClient,
-                aktoerIdClient, credentials, personV3, helsepersonellV1,
-                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient)
+                aktoerIdClient, credentials, helsepersonellV1,
+                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService,
+                arenaProducer)
 
             Runtime.getRuntime().addShutdownHook(Thread {
                 connection.close()
@@ -250,19 +240,20 @@ suspend fun CoroutineScope.launchListeners(
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
     credentials: VaultCredentials,
-    personV3: PersonV3,
     helsepersonellv1: IHPR2Service,
     legeSuspensjonClient: LegeSuspensjonClient,
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
-    dokmotClient: DokmotClient
+    dokmotClient: DokmotClient,
+    diskresjonskodeService: DiskresjonskodeService,
+    arenaProducer: MessageProducer
 ) {
     val listeners = (0.until(env.applicationThreads)).map {
         createListener(applicationState) {
             blockingApplicationLogic(applicationState, inputconsumer, jedis,
                 session, env, receiptProducer, backoutProducer, kuhrSarClient,
-                aktoerIdClient, credentials, personV3, helsepersonellv1,
-                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient)
+                aktoerIdClient, credentials, helsepersonellv1,
+                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService, arenaProducer)
         }
     }.toList()
 
@@ -282,12 +273,13 @@ suspend fun blockingApplicationLogic(
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
     credentials: VaultCredentials,
-    personV3: PersonV3,
     helsepersonellv1: IHPR2Service,
     legeSuspensjonClient: LegeSuspensjonClient,
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
-    dokmotClient: DokmotClient
+    dokmotClient: DokmotClient,
+    diskresjonskodeService: DiskresjonskodeService,
+    arenaProducer: MessageProducer
 ) = coroutineScope {
     wrapExceptions {
         loop@ while (applicationState.running) {
@@ -327,13 +319,13 @@ suspend fun blockingApplicationLogic(
                 INCOMING_MESSAGE_COUNTER.inc()
                 val requestLatency = REQUEST_TIME.startTimer()
 
-                logValues = arrayOf(
-                    StructuredArguments.keyValue("mottakId", ediLoggId),
-                    StructuredArguments.keyValue("organizationNumber", legekontorOrgNr),
-                    StructuredArguments.keyValue("msgId", msgId)
+                val loggingMeta = LoggingMeta(
+                    mottakId = receiverBlock.ediLoggId,
+                    orgNr = extractOrganisationNumberFromSender(fellesformat)?.id,
+                    msgId = msgHead.msgInfo.msgId
                 )
 
-                log.info("Received message, $logKeys", *logValues)
+                log.info("Received message, {}", fields(loggingMeta))
 
                 val aktoerIdsDeferred = async {
                     aktoerIdClient.getAktoerIds(
@@ -357,8 +349,9 @@ suspend fun blockingApplicationLogic(
 
                     if (redisSha256String != null) {
                         log.warn(
-                            "Message with {} marked as duplicate $logKeys",
-                            StructuredArguments.keyValue("originalEdiLoggId", redisSha256String), *logValues
+                            "Message with {} marked as duplicate {}",
+                            StructuredArguments.keyValue("originalEdiLoggId", redisSha256String),
+                            fields(loggingMeta)
                         )
                         sendReceipt(
                             session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
@@ -368,12 +361,12 @@ suspend fun blockingApplicationLogic(
                                 )
                             )
                         )
-                        log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                        log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
                         continue
                     } else if (redisEdiloggid != null) {
                         log.warn(
-                            "Message with {} marked as duplicate $logKeys",
-                            StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), *logValues
+                            "Message with {} marked as duplicate, {}",
+                            StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), fields(loggingMeta)
                         )
                         sendReceipt(
                             session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
@@ -383,7 +376,7 @@ suspend fun blockingApplicationLogic(
                                 )
                             )
                         )
-                        log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                        log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
                         continue
                     } else {
                         jedis.setex(ediLoggId, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
@@ -399,7 +392,7 @@ suspend fun blockingApplicationLogic(
 
                 if (patientIdents == null || patientIdents.feilmelding != null) {
                     log.info(
-                        "Patient not found i aktorRegister $logKeys, {}", *logValues,
+                        "Patient not found i aktorRegister {}, {}", fields(loggingMeta),
                         StructuredArguments.keyValue(
                             "errorMessage",
                             patientIdents?.feilmelding ?: "No response for FNR"
@@ -407,7 +400,7 @@ suspend fun blockingApplicationLogic(
                     )
                     sendReceipt(
                         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                            no.nav.syfo.apprec.createApprecError("Pasienten er ikkje registrert i folkeregisteret")
+                            createApprecError("Pasienten er ikkje registrert i folkeregisteret")
                         )
                     )
                     log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
@@ -416,15 +409,15 @@ suspend fun blockingApplicationLogic(
                 }
                 if (doctorIdents == null || doctorIdents.feilmelding != null) {
                     log.info(
-                        "Doctor not found i aktorRegister $logKeys, {}", *logValues,
+                        "Doctor not found i aktorRegister {}, {}", fields(loggingMeta),
                         StructuredArguments.keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR")
                     )
                     sendReceipt(
                         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                            no.nav.syfo.apprec.createApprecError("Behandler er ikkje registrert i folkeregisteret")
+                            createApprecError("Behandler er ikkje registrert i folkeregisteret")
                         )
                     )
-                    log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
                     INVALID_MESSAGE_NO_NOTICE.inc()
                     continue@loop
                 }
@@ -441,8 +434,8 @@ suspend fun blockingApplicationLogic(
                     )
                 )
 
-                val patient = fetchPerson(personV3, personNumberPatient)
-                val tpsRuleResults = PostTPSRuleChain.values().executeFlow(legeerklaring, patient.await())
+                val patientDiskresjonskodeDeferred = async { diskresjonskodeService.hentDiskresjonskode(personNumberPatient) }
+                val postDiskresjonskodeResults = PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonskodeDeferred.await())
 
                 val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
                 val doctorSuspend =
@@ -454,12 +447,12 @@ suspend fun blockingApplicationLogic(
 
                 val results = listOf(
                     validationRuleResults,
-                    tpsRuleResults,
+                    postDiskresjonskodeResults,
                     hprRuleResults,
                     doctorRuleResults
                 ).flatten()
 
-                log.info("Rules hit {}, $logKeys", results.map { it.name }, *logValues)
+                log.info("Rules hit {}, {}", results.map { it.name }, fields(loggingMeta))
 
                 val legeerklaering = extractLegeerklaering(fellesformat)
                 val plan = legeerklaering.planUtredBehandle
@@ -505,16 +498,20 @@ suspend fun blockingApplicationLogic(
 
                 val journalpost = dokmotClient.createJournalpost(journalpostPayload)
                 log.info(
-                    "Message successfully persisted in Joark {} $logKeys",
-                    StructuredArguments.keyValue("journalpostId", journalpost.journalpostId), *logValues
+                    "Message successfully persisted in Joark {}, {}",
+                    StructuredArguments.keyValue("journalpostId", journalpost.journalpostId),
+                    fields(loggingMeta)
                 )
 
-                when (results.firstOrNull()) {
-                    null -> log.info("Message has NO rules hit $logKeys", *logValues)
-                    else -> log.info("Message has rules hit $logKeys", *logValues)
+                // Sperrekode 6 is a special case and is not sent to Arena, it should still create a task in Gosys
+                if (validationResult.ruleHits.any { it.ruleName == PostDiskresjonskodeRuleChain.PASIENTEN_HAR_KODE_6.name }) {
+                    log.info("Not sending message to arena, {}", fields(loggingMeta))
+                } else {
+                    log.info("Sending message to arena, {}", fields(loggingMeta))
+                    // sendArenaInfo(arenaProducer, session, fellesformat, validationResult)
                 }
             } catch (e: Exception) {
-                log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
+                log.error("Exception caught while handling message, sending to backout, {}", e)
                 backoutProducer.send(message)
             }
         }
@@ -573,19 +570,6 @@ fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
 
 fun extractSenderOrganisationName(fellesformat: XMLEIFellesformat): String =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.organisationName ?: ""
-
-fun CoroutineScope.fetchPerson(personV3: PersonV3, ident: String): Deferred<TPSPerson> = async {
-    retry(
-        callName = "tps_hent_person",
-        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L, 60000L),
-        legalExceptions = *arrayOf(IOException::class, WstxException::class)
-    ) {
-        personV3.hentPerson(
-            HentPersonRequest()
-                .withAktoer(PersonIdent().withIdent(NorskIdent().withIdent(ident)))
-        ).person
-    }
-}
 
 fun CoroutineScope.fetchDoctor(hprService: IHPR2Service, doctorIdent: String): Deferred<HPRPerson> = async {
     retry(
@@ -892,3 +876,24 @@ fun createTittleJournalpost(validationResult: ValidationResult, msgHead: XMLMsgH
         "Legeerklaering opprettet:${msgHead.msgInfo.genDate}"
     }
 }
+
+/*
+fun sendArenaInfo(
+    producer: MessageProducer,
+    session: Session,
+    fellesformat: XMLEIFellesformat,
+    validationResult: ValidationResult
+) = producer.send(session.createTextMessage().apply {
+    val info = createArenaInfo(fellesformat, validationResult.tssId, sperrekode, validationResult.navkontor).apply {
+        // TODO eiaData may not be used by Arena
+        eiaData = ArenaEiaInfo.EiaData().apply {
+            systemSvar.addAll(validationResult.outcomes
+                .map { it.toSystemSvar() })
+
+            if (systemSvar.isEmpty()) {
+                systemSvar.add(OutcomeType.LEGEERKLAERING_MOTTAT.toOutcome().toSystemSvar())
+            }
+        }
+    }
+    text = arenaMarshaller.toString(info)
+}) */
