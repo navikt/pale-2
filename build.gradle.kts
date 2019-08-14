@@ -4,30 +4,31 @@ import no.nils.wsdl2java.Wsdl2JavaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "no.nav.syfo"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.0"
 
 val ktorVersion = "1.2.2"
 val prometheusVersion = "0.6.0"
 val spekVersion = "2.0.2"
 val kluentVersion = "1.39"
-val smCommonVersion = "1.0.20"
+val smCommonVersion = "2019.08.08-03-52-c78281e2409af36f3ef07df4369fa29b0ea81a46"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
 val jacksonVersion = "2.9.7"
 val jedisVersion = "2.9.0"
-val kithHodemeldingVersion = "1.1"
-val fellesformatVersion = "1.0"
+val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
+val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
 val javaxAnnotationApiVersion = "1.3.2"
 val jaxbRuntimeVersion = "2.4.0-b180830.0438"
 val jaxbApiVersion = "2.4.0-b180830.0359"
 val javaxActivationVersion = "1.1.1"
 val jaxwsToolsVersion = "2.3.1"
-val legeerklaering = "1.0-SNAPSHOT"
-val kithApprecVersion = "1.1"
+val legeerklaering = "2019.07.29-02-53-86b22e73f7843e422ee500b486dac387a582f2d1"
+val kithApprecVersion = "2019.07.30-04-23-2a0d1388209441ec05d2e92a821eed4f796a3ae2"
 val commonsTextVersion = "1.4"
-val navPersonv3Version = "3.2.0"
+val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
 val javaxJaxwsApiVersion = "2.2.1"
+val javaTimeAdapterVersion = "1.1.3"
 
 plugins {
     id("no.nils.wsdl2java") version "0.10"
@@ -51,10 +52,10 @@ buildscript {
 repositories {
     mavenCentral()
     jcenter()
-    maven(url= "https://dl.bintray.com/kotlin/ktor")
     maven(url= "https://dl.bintray.com/spekframework/spek-dev")
-    maven(url= "https://repo.adeo.no/repository/maven-snapshots/")
-    maven(url= "https://repo.adeo.no/repository/maven-releases/")
+    maven(url= "http://packages.confluent.io/maven/")
+    maven(url= "https://kotlin.bintray.com/kotlinx")
+    maven(url = "https://oss.sonatype.org/content/groups/staging/")
 }
 
 dependencies {
@@ -96,16 +97,18 @@ dependencies {
     implementation("no.nav.syfo.sm:syfosm-common-rest-sts:$smCommonVersion")
     implementation("no.nav.syfo.sm:syfosm-common-networking:$smCommonVersion")
     implementation("no.nav.syfo.sm:syfosm-common-ws:$smCommonVersion")
-    implementation("no.nav.syfo.tjenester:fellesformat:$fellesformatVersion")
-    implementation("no.nav.syfo.tjenester:kith-hodemelding:$kithHodemeldingVersion")
-    implementation("no.nav.syfo.tjenester:kith-apprec:$kithApprecVersion")
+    implementation("no.nav.helse.xml:xmlfellesformat:$fellesformatVersion")
+    implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
+    implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
 
-    implementation("no.nav.tjenester:nav-person-v3-tjenestespesifikasjon:$navPersonv3Version")
+    implementation("no.nav.tjenestespesifikasjoner:person-v3-tjenestespesifikasjon:$navPersonv3Version")
 
     implementation("redis.clients:jedis:$jedisVersion")
 
     implementation("org.apache.commons:commons-text:$commonsTextVersion")
+
+    implementation("com.migesok", "jaxb-java-time-adapters", javaTimeAdapterVersion)
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion") {
         exclude(group = "org.eclipse.jetty")

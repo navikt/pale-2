@@ -1,23 +1,23 @@
 package no.nav.syfo.apprec
 
-import no.kith.xmlstds.apprec._2004_11_21.XMLAdditionalId
-import no.kith.xmlstds.apprec._2004_11_21.XMLAppRec
-import no.kith.xmlstds.apprec._2004_11_21.XMLCS
-import no.kith.xmlstds.apprec._2004_11_21.XMLCV as AppRecCV
-import no.kith.xmlstds.apprec._2004_11_21.XMLHCP
-import no.kith.xmlstds.apprec._2004_11_21.XMLHCPerson
-import no.kith.xmlstds.apprec._2004_11_21.XMLInst
-import no.kith.xmlstds.apprec._2004_11_21.XMLOriginalMsgId
-import no.kith.xmlstds.msghead._2006_05_24.XMLCV as MsgHeadCV
-import no.kith.xmlstds.msghead._2006_05_24.XMLHealthcareProfessional
-import no.kith.xmlstds.msghead._2006_05_24.XMLIdent
-import no.kith.xmlstds.msghead._2006_05_24.XMLMsgHead
-import no.kith.xmlstds.msghead._2006_05_24.XMLOrganisation
+import no.nav.helse.apprecV1.XMLAdditionalId
+import no.nav.helse.apprecV1.XMLAppRec
+import no.nav.helse.apprecV1.XMLCS
+import no.nav.helse.apprecV1.XMLCV as AppRecCV
+import no.nav.helse.apprecV1.XMLHCP
+import no.nav.helse.apprecV1.XMLHCPerson
+import no.nav.helse.apprecV1.XMLInst
+import no.nav.helse.apprecV1.XMLOriginalMsgId
+import no.nav.helse.msgHead.XMLCV as MsgHeadCV
+import no.nav.helse.msgHead.XMLHealthcareProfessional
+import no.nav.helse.msgHead.XMLIdent
+import no.nav.helse.msgHead.XMLMsgHead
+import no.nav.helse.msgHead.XMLOrganisation
 import no.nav.syfo.PaleConstant
-import no.nav.syfo.get
 import no.nav.syfo.model.RuleInfo
-import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
-import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
+import no.nav.helse.eiFellesformat.XMLEIFellesformat
+import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
+import no.nav.syfo.get
 import java.time.LocalDateTime
 
 fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): XMLEIFellesformat {

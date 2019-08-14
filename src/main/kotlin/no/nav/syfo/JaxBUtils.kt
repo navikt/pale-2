@@ -2,10 +2,10 @@ package no.nav.syfo
 
 import com.migesok.jaxb.adapter.javatime.LocalDateTimeXmlAdapter
 import com.migesok.jaxb.adapter.javatime.LocalDateXmlAdapter
-import no.kith.xmlstds.apprec._2004_11_21.XMLAppRec
-import no.kith.xmlstds.msghead._2006_05_24.XMLMsgHead
+import no.nav.helse.apprecV1.XMLAppRec
+import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.Legeerklaring
-import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
+import no.nav.helse.msgHead.XMLMsgHead
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller

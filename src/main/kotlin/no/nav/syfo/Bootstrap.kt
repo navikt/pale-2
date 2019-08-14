@@ -14,6 +14,7 @@ import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -22,19 +23,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.logstash.logback.argument.StructuredArgument
 import net.logstash.logback.argument.StructuredArguments
-import no.kith.xmlstds.apprec._2004_11_21.XMLAppRec
-import no.kith.xmlstds.msghead._2006_05_24.XMLHealthcareProfessional
-import no.kith.xmlstds.msghead._2006_05_24.XMLIdent
-import no.kith.xmlstds.msghead._2006_05_24.XMLMsgHead
+import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.legeerklaering.AktueltTiltak
 import no.nav.helse.legeerklaering.Arbeidssituasjon
 import no.nav.helse.legeerklaering.DiagnoseArbeidsuforhet
 import no.nav.helse.legeerklaering.Enkeltdiagnose
 import no.nav.helse.legeerklaering.ForslagTiltak
-import no.kith.xmlstds.apprec._2004_11_21.XMLCV as AppRecCV
+import no.nav.helse.apprecV1.XMLCV as AppRecCV
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.legeerklaering.PlanUtredBehandle
 import no.nav.helse.legeerklaering.VurderingFunksjonsevne
+import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.api.DokmotClient
 import no.nav.syfo.api.LegeSuspensjonClient
 import no.nav.syfo.api.PdfgenClient
@@ -91,8 +90,10 @@ import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3 as PersonV3
-import no.trygdeetaten.xml.eiff._1.XMLEIFellesformat
-import no.trygdeetaten.xml.eiff._1.XMLMottakenhetBlokk
+import no.nav.helse.eiFellesformat.XMLEIFellesformat
+import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
+import no.nav.helse.msgHead.XMLHealthcareProfessional
+import no.nav.helse.msgHead.XMLIdent
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
@@ -103,7 +104,6 @@ import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import javax.jms.Connection
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
@@ -137,7 +137,7 @@ val objectMapper: ObjectMapper = ObjectMapper()
 
 data class ApplicationState(
     var running: Boolean = true,
-    var initialized: Boolean = false
+    var ready: Boolean = false
 )
 
 val datatypeFactory: DatatypeFactory = DatatypeFactory.newInstance()
@@ -149,8 +149,9 @@ val log = LoggerFactory.getLogger("nav.syfopale-application")!!
 @KtorExperimentalAPI
 fun main() = runBlocking(coroutineContext) {
     val env = Environment()
-    val credentials =
-        objectMapper.readValue<VaultCredentials>(Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile())
+    val credentials = objectMapper.readValue<VaultCredentials>(
+            Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile()
+        )
 
     val applicationState = ApplicationState()
 
@@ -163,102 +164,110 @@ fun main() = runBlocking(coroutineContext) {
     connectionFactory(env).createConnection(credentials.mqUsername, credentials.mqPassword).use { connection ->
         connection.start()
 
-        val listeners = (0.until(env.applicationThreads)).map {
-            launch {
-                try {
-                    createListener(applicationState, env, connection, credentials)
-                } finally {
-                    applicationState.running = false
+        Jedis(env.redishost, 6379).use { jedis ->
+            val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
+            val inputconsumer = session.consumerForQueue(env.inputQueueName)
+            val receiptProducer = session.producerForQueue(env.apprecQueueName)
+            val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+
+            val oidcClient = StsOidcClient(credentials.serviceuserUsername, credentials.serviceuserPassword)
+            val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
+            val sarClient = SarClient(env.kuhrSarApiUrl, credentials)
+            val pdfgenClient = PdfgenClient(env.pdfgen)
+            val sakClient = SakClient(env.opprettSakUrl, oidcClient)
+            val dokmotClient = DokmotClient(env.dokmotMottaInngaaendeUrl, oidcClient)
+
+            val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
+                port {
+                    withSTS(
+                        credentials.serviceuserUsername,
+                        credentials.serviceuserPassword,
+                        env.securityTokenServiceURL
+                    )
                 }
             }
-        }.toList()
 
-        applicationState.initialized = true
+            val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
+                proxy {
+                    // TODO: Contact someone about this hacky workaround
+                    // talk to HDIR about HPR about they claim to send a ISO-8859-1 but its really UTF-8 payload
+                    val interceptor = object : AbstractSoapInterceptor(Phase.RECEIVE) {
+                        override fun handleMessage(message: SoapMessage?) {
+                            if (message != null)
+                                message[Message.ENCODING] = "utf-8"
+                        }
+                    }
 
-        Runtime.getRuntime().addShutdownHook(Thread {
-            applicationServer.stop(10, 10, TimeUnit.SECONDS)
-        })
+                    inInterceptors.add(interceptor)
+                    inFaultInterceptors.add(interceptor)
+                    features.add(WSAddressingFeature())
+                }
 
-        listeners.forEach { it.join() }
+                port {
+                    withSTS(
+                        credentials.serviceuserUsername,
+                        credentials.serviceuserPassword,
+                        env.securityTokenServiceURL
+                    )
+                }
+            }
+
+            val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
+
+            launchListeners(applicationState, inputconsumer, jedis,
+                session, env, receiptProducer, backoutProducer, sarClient,
+                aktoerIdClient, credentials, personV3, helsepersonellV1,
+                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient)
+
+            Runtime.getRuntime().addShutdownHook(Thread {
+                connection.close()
+                applicationServer.stop(10, 10, TimeUnit.SECONDS)
+            })
+        }
     }
 }
 
-@KtorExperimentalAPI
-suspend fun createListener(
-    applicationState: ApplicationState,
-    env: Environment,
-    connection: Connection,
-    credentials: VaultCredentials
-) {
-    Jedis(env.redishost, 6379).use { jedis ->
-        val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
-        val inputconsumer = session.consumerForQueue(env.inputQueueName)
-        val receiptProducer = session.producerForQueue(env.apprecQueueName)
-        val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-
-        val oidcClient = StsOidcClient(credentials.serviceuserUsername, credentials.serviceuserPassword)
-        val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
-        val sarClient = SarClient(env.kuhrSarApiUrl, credentials)
-        val pdfgenClient = PdfgenClient(env.pdfgen)
-        val sakClient = SakClient(env.opprettSakUrl, oidcClient)
-        val dokmotClient = DokmotClient(env.dokmotMottaInngaaendeUrl, oidcClient)
-
-        val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
-            port {
-                withSTS(
-                    credentials.serviceuserUsername,
-                    credentials.serviceuserPassword,
-                    env.securityTokenServiceURL
-                )
-            }
+fun CoroutineScope.createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
+    launch {
+        try {
+            action()
+        } catch (e: TrackableException) {
+            log.error("En uhåndtert feil oppstod, applikasjonen restarter {}", e.cause)
+        } finally {
+            applicationState.running = false
         }
-
-        val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
-            proxy {
-                // TODO: Contact someone about this hacky workaround
-                // talk to HDIR about HPR about they claim to send a ISO-8859-1 but its really UTF-8 payload
-                val interceptor = object : AbstractSoapInterceptor(Phase.RECEIVE) {
-                    override fun handleMessage(message: SoapMessage?) {
-                        if (message != null)
-                            message[Message.ENCODING] = "utf-8"
-                    }
-                }
-
-                inInterceptors.add(interceptor)
-                inFaultInterceptors.add(interceptor)
-                features.add(WSAddressingFeature())
-            }
-
-            port {
-                withSTS(
-                    credentials.serviceuserUsername,
-                    credentials.serviceuserPassword,
-                    env.securityTokenServiceURL
-                )
-            }
-        }
-
-        val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
-
-        blockingApplicationLogic(
-            applicationState,
-            inputconsumer,
-            jedis,
-            session,
-            env,
-            receiptProducer,
-            backoutProducer,
-            sarClient,
-            aktoerIdClient,
-            credentials,
-            personV3,
-            helsepersonellV1,
-            legeSuspensjonClient,
-            pdfgenClient,
-            sakClient,
-            dokmotClient
-        )
     }
+
+@KtorExperimentalAPI
+suspend fun CoroutineScope.launchListeners(
+    applicationState: ApplicationState,
+    inputconsumer: MessageConsumer,
+    jedis: Jedis,
+    session: Session,
+    env: Environment,
+    receiptProducer: MessageProducer,
+    backoutProducer: MessageProducer,
+    kuhrSarClient: SarClient,
+    aktoerIdClient: AktoerIdClient,
+    credentials: VaultCredentials,
+    personV3: PersonV3,
+    helsepersonellv1: IHPR2Service,
+    legeSuspensjonClient: LegeSuspensjonClient,
+    pdfgenClient: PdfgenClient,
+    sakClient: SakClient,
+    dokmotClient: DokmotClient
+) {
+    val listeners = (0.until(env.applicationThreads)).map {
+        createListener(applicationState) {
+            blockingApplicationLogic(applicationState, inputconsumer, jedis,
+                session, env, receiptProducer, backoutProducer, kuhrSarClient,
+                aktoerIdClient, credentials, personV3, helsepersonellv1,
+                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient)
+        }
+    }.toList()
+
+    applicationState.ready = true
+    listeners.forEach { it.join() }
 }
 
 @KtorExperimentalAPI
@@ -280,228 +289,234 @@ suspend fun blockingApplicationLogic(
     sakClient: SakClient,
     dokmotClient: DokmotClient
 ) = coroutineScope {
-    loop@ while (applicationState.running) {
-        val message = inputconsumer.receiveNoWait()
-        if (message == null) {
-            delay(100)
-            continue
-        }
-
-        var logValues = arrayOf(
-            StructuredArguments.keyValue("mottakId", "missing"),
-            StructuredArguments.keyValue("organizationNumber", "missing"),
-            StructuredArguments.keyValue("msgId", "missing")
-        )
-
-        val logKeys = logValues.joinToString(prefix = "(", postfix = ")", separator = ",") {
-            "{}"
-        }
-        try {
-            val inputMessageText = when (message) {
-                is TextMessage -> message.text
-                else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
+    wrapExceptions {
+        loop@ while (applicationState.running) {
+            val message = inputconsumer.receiveNoWait()
+            if (message == null) {
+                delay(100)
+                continue
             }
-            val fellesformat = fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
-            val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
-            val msgHead = fellesformat.get<XMLMsgHead>()
-            val ediLoggId = receiverBlock.ediLoggId
-            val msgId = msgHead.msgInfo.msgId
-            val legekontorOrgNr = extractOrganisationNumberFromSender(fellesformat)?.id
-            val legeerklaring = extractLegeerklaering(fellesformat)
-            val sha256String = sha256hashstring(legeerklaring)
-            val personNumberPatient = extractPersonIdent(legeerklaring)!!
-            val legekontorOrgName = extractSenderOrganisationName(fellesformat)
-            val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
 
-            INCOMING_MESSAGE_COUNTER.inc()
-            val requestLatency = REQUEST_TIME.startTimer()
-
-            logValues = arrayOf(
-                StructuredArguments.keyValue("mottakId", ediLoggId),
-                StructuredArguments.keyValue("organizationNumber", legekontorOrgNr),
-                StructuredArguments.keyValue("msgId", msgId)
+            var logValues = arrayOf(
+                StructuredArguments.keyValue("mottakId", "missing"),
+                StructuredArguments.keyValue("organizationNumber", "missing"),
+                StructuredArguments.keyValue("msgId", "missing")
             )
 
-            log.info("Received message, $logKeys", *logValues)
-
-            val aktoerIdsDeferred = async {
-                aktoerIdClient.getAktoerIds(
-                    listOf(
-                        personNumberDoctor,
-                        personNumberPatient
-                    ),
-                    msgId, credentials.serviceuserUsername
-                )
+            val logKeys = logValues.joinToString(prefix = "(", postfix = ")", separator = ",") {
+                "{}"
             }
-
-            val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
-            val samhandlerPraksis = findBestSamhandlerPraksis(
-                samhandlerInfo,
-                legekontorOrgName
-            )?.samhandlerPraksis
-
             try {
-                val redisSha256String = jedis.get(sha256String)
-                val redisEdiloggid = jedis.get(ediLoggId)
-
-                if (redisSha256String != null) {
-                    log.warn(
-                        "Message with {} marked as duplicate $logKeys",
-                        StructuredArguments.keyValue("originalEdiLoggId", redisSha256String), *logValues
-                    )
-                    sendReceipt(
-                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                            createApprecError(
-                                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                        "Skal ikke sendes på nytt."
-                            )
-                        )
-                    )
-                    log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
-                    continue
-                } else if (redisEdiloggid != null) {
-                    log.warn(
-                        "Message with {} marked as duplicate $logKeys",
-                        StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), *logValues
-                    )
-                    sendReceipt(
-                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                            createApprecError(
-                                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                        "Skal ikke sendes på nytt."
-                            )
-                        )
-                    )
-                    log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
-                    continue
-                } else {
-                    jedis.setex(ediLoggId, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
-                    jedis.setex(sha256String, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
+                val inputMessageText = when (message) {
+                    is TextMessage -> message.text
+                    else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
                 }
-            } catch (connectionException: JedisConnectionException) {
-                log.warn("Unable to contact redis, will allow possible duplicates.", connectionException)
-            }
+                val fellesformat =
+                    fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+                val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
+                val msgHead = fellesformat.get<XMLMsgHead>()
+                val ediLoggId = receiverBlock.ediLoggId
+                val msgId = msgHead.msgInfo.msgId
+                val legekontorOrgNr = extractOrganisationNumberFromSender(fellesformat)?.id
+                val legeerklaring = extractLegeerklaering(fellesformat)
+                val sha256String = sha256hashstring(legeerklaring)
+                val personNumberPatient = extractPersonIdent(legeerklaring)!!
+                val legekontorOrgName = extractSenderOrganisationName(fellesformat)
+                val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
 
-            val aktoerIds = aktoerIdsDeferred.await()
-            val patientIdents = aktoerIds[personNumberPatient]
-            val doctorIdents = aktoerIds[personNumberDoctor]
+                INCOMING_MESSAGE_COUNTER.inc()
+                val requestLatency = REQUEST_TIME.startTimer()
 
-            if (patientIdents == null || patientIdents.feilmelding != null) {
-                log.info(
-                    "Patient not found i aktorRegister $logKeys, {}", *logValues,
-                    StructuredArguments.keyValue("errorMessage", patientIdents?.feilmelding ?: "No response for FNR")
+                logValues = arrayOf(
+                    StructuredArguments.keyValue("mottakId", ediLoggId),
+                    StructuredArguments.keyValue("organizationNumber", legekontorOrgNr),
+                    StructuredArguments.keyValue("msgId", msgId)
                 )
-                sendReceipt(
-                    session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                        no.nav.syfo.apprec.createApprecError("Pasienten er ikkje registrert i folkeregisteret")
+
+                log.info("Received message, $logKeys", *logValues)
+
+                val aktoerIdsDeferred = async {
+                    aktoerIdClient.getAktoerIds(
+                        listOf(
+                            personNumberDoctor,
+                            personNumberPatient
+                        ),
+                        msgId, credentials.serviceuserUsername
+                    )
+                }
+
+                val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
+                val samhandlerPraksis = findBestSamhandlerPraksis(
+                    samhandlerInfo,
+                    legekontorOrgName
+                )?.samhandlerPraksis
+
+                try {
+                    val redisSha256String = jedis.get(sha256String)
+                    val redisEdiloggid = jedis.get(ediLoggId)
+
+                    if (redisSha256String != null) {
+                        log.warn(
+                            "Message with {} marked as duplicate $logKeys",
+                            StructuredArguments.keyValue("originalEdiLoggId", redisSha256String), *logValues
+                        )
+                        sendReceipt(
+                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                                createApprecError(
+                                    "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                                            "Skal ikke sendes på nytt."
+                                )
+                            )
+                        )
+                        log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                        continue
+                    } else if (redisEdiloggid != null) {
+                        log.warn(
+                            "Message with {} marked as duplicate $logKeys",
+                            StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), *logValues
+                        )
+                        sendReceipt(
+                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                                createApprecError(
+                                    "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                                            "Skal ikke sendes på nytt."
+                                )
+                            )
+                        )
+                        log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                        continue
+                    } else {
+                        jedis.setex(ediLoggId, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
+                        jedis.setex(sha256String, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
+                    }
+                } catch (connectionException: JedisConnectionException) {
+                    log.warn("Unable to contact redis, will allow possible duplicates.", connectionException)
+                }
+
+                val aktoerIds = aktoerIdsDeferred.await()
+                val patientIdents = aktoerIds[personNumberPatient]
+                val doctorIdents = aktoerIds[personNumberDoctor]
+
+                if (patientIdents == null || patientIdents.feilmelding != null) {
+                    log.info(
+                        "Patient not found i aktorRegister $logKeys, {}", *logValues,
+                        StructuredArguments.keyValue(
+                            "errorMessage",
+                            patientIdents?.feilmelding ?: "No response for FNR"
+                        )
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            no.nav.syfo.apprec.createApprecError("Pasienten er ikkje registrert i folkeregisteret")
+                        )
+                    )
+                    log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                    INVALID_MESSAGE_NO_NOTICE.inc()
+                    continue@loop
+                }
+                if (doctorIdents == null || doctorIdents.feilmelding != null) {
+                    log.info(
+                        "Doctor not found i aktorRegister $logKeys, {}", *logValues,
+                        StructuredArguments.keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR")
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            no.nav.syfo.apprec.createApprecError("Behandler er ikkje registrert i folkeregisteret")
+                        )
+                    )
+                    log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
+                    INVALID_MESSAGE_NO_NOTICE.inc()
+                    continue@loop
+                }
+
+                val validationRuleResults: List<Rule<Any>> = listOf<List<Rule<RuleData<RuleMetadata>>>>(
+                    ValidationRuleChain.values().toList()
+                ).flatten().executeFlow(
+                    legeerklaring, RuleMetadata(
+                        receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
+                        signatureDate = msgHead.msgInfo.genDate,
+                        patientPersonNumber = personNumberPatient,
+                        legekontorOrgnr = legekontorOrgNr,
+                        tssid = samhandlerPraksis?.tss_ident
                     )
                 )
-                log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
-                INVALID_MESSAGE_NO_NOTICE.inc()
-                continue@loop
-            }
-            if (doctorIdents == null || doctorIdents.feilmelding != null) {
+
+                val patient = fetchPerson(personV3, personNumberPatient)
+                val tpsRuleResults = PostTPSRuleChain.values().executeFlow(legeerklaring, patient.await())
+
+                val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
+                val doctorSuspend =
+                    legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
+                val doctorRuleResults = LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
+
+                val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
+                val hprRuleResults = HPRRuleChain.values().executeFlow(legeerklaring, doctor)
+
+                val results = listOf(
+                    validationRuleResults,
+                    tpsRuleResults,
+                    hprRuleResults,
+                    doctorRuleResults
+                ).flatten()
+
+                log.info("Rules hit {}, $logKeys", results.map { it.name }, *logValues)
+
+                val legeerklaering = extractLegeerklaering(fellesformat)
+                val plan = legeerklaering.planUtredBehandle
+                val forslagTiltak = legeerklaering.forslagTiltak
+                val typeLegeerklaering = legeerklaering.legeerklaringGjelder[0].typeLegeerklaring.toInt()
+                val funksjonsevne = legeerklaering.vurderingFunksjonsevne
+                val prognose = legeerklaering.prognose
+                val healthcareProfessional =
+                    fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
+
+                val validationResult = validationResult(results)
+                RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
+
+                val pdfPayload = createPdfPayload(
+                    legeerklaering,
+                    plan,
+                    forslagTiltak,
+                    typeLegeerklaering,
+                    funksjonsevne,
+                    prognose,
+                    healthcareProfessional,
+                    fellesformat,
+                    validationResult
+                )
+
+                val sakid = findSakid(sakClient, patientIdents.identer!!.first().ident, msgId, logKeys, logValues)
+
+                val pdf = pdfgenClient.createPDF(pdfPayload)
+                log.info("PDF generated $logKeys", *logValues)
+
+                val journalpostPayload = createJournalpostPayload(
+                    legeerklaering,
+                    patientIdents.identer.first().ident,
+                    legekontorOrgNr,
+                    legekontorOrgName,
+                    msgId,
+                    sakid,
+                    pdf,
+                    msgHead,
+                    receiverBlock,
+                    validationResult
+                )
+
+                val journalpost = dokmotClient.createJournalpost(journalpostPayload)
                 log.info(
-                    "Doctor not found i aktorRegister $logKeys, {}", *logValues,
-                    StructuredArguments.keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR")
+                    "Message successfully persisted in Joark {} $logKeys",
+                    StructuredArguments.keyValue("journalpostId", journalpost.journalpostId), *logValues
                 )
-                sendReceipt(
-                    session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                        no.nav.syfo.apprec.createApprecError("Behandler er ikkje registrert i folkeregisteret")
-                    )
-                )
-                log.info("Apprec Receipt sent to {} $logKeys", env.apprecQueueName, *logValues)
-                INVALID_MESSAGE_NO_NOTICE.inc()
-                continue@loop
+
+                when (results.firstOrNull()) {
+                    null -> log.info("Message has NO rules hit $logKeys", *logValues)
+                    else -> log.info("Message has rules hit $logKeys", *logValues)
+                }
+            } catch (e: Exception) {
+                log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
+                backoutProducer.send(message)
             }
-
-            val validationRuleResults: List<Rule<Any>> = listOf<List<Rule<RuleData<RuleMetadata>>>>(
-                ValidationRuleChain.values().toList()
-            ).flatten().executeFlow(
-                legeerklaring, RuleMetadata(
-                    receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
-                    signatureDate = msgHead.msgInfo.genDate,
-                    patientPersonNumber = personNumberPatient,
-                    legekontorOrgnr = legekontorOrgNr,
-                    tssid = samhandlerPraksis?.tss_ident
-                )
-            )
-
-            val patient = fetchPerson(personV3, personNumberPatient)
-            val tpsRuleResults = PostTPSRuleChain.values().executeFlow(legeerklaring, patient.await())
-
-            val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
-            val doctorSuspend =
-                legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
-            val doctorRuleResults = LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
-
-            val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
-            val hprRuleResults = HPRRuleChain.values().executeFlow(legeerklaring, doctor)
-
-            val results = listOf(
-                validationRuleResults,
-                tpsRuleResults,
-                hprRuleResults,
-                doctorRuleResults
-            ).flatten()
-
-            log.info("Rules hit {}, $logKeys", results.map { it.name }, *logValues)
-
-            val legeerklaering = extractLegeerklaering(fellesformat)
-            val plan = legeerklaering.planUtredBehandle
-            val forslagTiltak = legeerklaering.forslagTiltak
-            val typeLegeerklaering = legeerklaering.legeerklaringGjelder[0].typeLegeerklaring.toInt()
-            val funksjonsevne = legeerklaering.vurderingFunksjonsevne
-            val prognose = legeerklaering.prognose
-            val healthcareProfessional =
-                fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
-
-            val validationResult = validationResult(results)
-            RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
-
-            val pdfPayload = createPdfPayload(
-                legeerklaering,
-                plan,
-                forslagTiltak,
-                typeLegeerklaering,
-                funksjonsevne,
-                prognose,
-                healthcareProfessional,
-                fellesformat,
-                validationResult
-            )
-
-            val sakid = findSakid(sakClient, patientIdents.identer!!.first().ident, msgId, logKeys, logValues)
-
-            val pdf = pdfgenClient.createPDF(pdfPayload)
-            log.info("PDF generated $logKeys", *logValues)
-
-            val journalpostPayload = createJournalpostPayload(
-                legeerklaering,
-                patientIdents.identer.first().ident,
-                legekontorOrgNr,
-                legekontorOrgName,
-                msgId,
-                sakid,
-                pdf,
-                msgHead,
-                receiverBlock,
-                validationResult
-            )
-
-            val journalpost = dokmotClient.createJournalpost(journalpostPayload)
-            log.info(
-                "Message successfully persisted in Joark {} $logKeys",
-                StructuredArguments.keyValue("journalpostId", journalpost.journalpostId), *logValues
-            )
-
-            when (results.firstOrNull()) {
-                null -> log.info("Message has NO rules hit $logKeys", *logValues)
-                else -> log.info("Message has rules hit $logKeys", *logValues)
-            }
-        } catch (e: Exception) {
-            log.error("Exception caught while handling message, sending to backout $logKeys", *logValues, e)
-            backoutProducer.send(message)
         }
     }
 }
@@ -538,7 +553,7 @@ fun sendReceipt(
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
     apprecStatus: ApprecStatus,
-    apprecErrors: List<no.kith.xmlstds.apprec._2004_11_21.XMLCV> = listOf()
+    apprecErrors: List<AppRecCV> = listOf()
 ) {
     APPREC_COUNTER.inc()
     receiptProducer.send(session.createTextMessage().apply {
