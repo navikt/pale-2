@@ -2,15 +2,14 @@ package no.nav.syfo
 
 import com.migesok.jaxb.adapter.javatime.LocalDateTimeXmlAdapter
 import com.migesok.jaxb.adapter.javatime.LocalDateXmlAdapter
+import javax.xml.bind.JAXBContext
+import javax.xml.bind.Marshaller
+import javax.xml.bind.Unmarshaller
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.arenainfo.ArenaEiaInfo
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.msgHead.XMLMsgHead
-
-import javax.xml.bind.JAXBContext
-import javax.xml.bind.Marshaller
-import javax.xml.bind.Unmarshaller
 
 val fellesformatJaxBContext: JAXBContext = JAXBContext.newInstance(XMLEIFellesformat::class.java, XMLMsgHead::class.java, Legeerklaring::class.java)
 val fellesformatUnmarshaller: Unmarshaller = fellesformatJaxBContext.createUnmarshaller().apply {

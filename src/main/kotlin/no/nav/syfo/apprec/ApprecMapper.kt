@@ -1,5 +1,6 @@
 package no.nav.syfo.apprec
 
+import java.time.LocalDateTime
 import no.nav.helse.apprecV1.XMLAdditionalId
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.apprecV1.XMLCS
@@ -8,17 +9,16 @@ import no.nav.helse.apprecV1.XMLHCP
 import no.nav.helse.apprecV1.XMLHCPerson
 import no.nav.helse.apprecV1.XMLInst
 import no.nav.helse.apprecV1.XMLOriginalMsgId
+import no.nav.helse.eiFellesformat.XMLEIFellesformat
+import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLCV as MsgHeadCV
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLIdent
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.helse.msgHead.XMLOrganisation
 import no.nav.syfo.PaleConstant
-import no.nav.syfo.model.RuleInfo
-import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.syfo.get
-import java.time.LocalDateTime
+import no.nav.syfo.model.RuleInfo
 
 fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): XMLEIFellesformat {
     val fellesformatApprec = XMLEIFellesformat().apply {

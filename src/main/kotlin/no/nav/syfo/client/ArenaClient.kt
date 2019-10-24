@@ -1,12 +1,12 @@
 package no.nav.syfo.client
 
+import java.math.BigInteger
 import no.nav.helse.arenainfo.ArenaEiaInfo
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.syfo.PaleConstant
 import no.nav.syfo.extractLegeerklaering
 import no.nav.syfo.formatName
-import java.math.BigInteger
 
 fun createArenaInfo(
     fellesformat: XMLEIFellesformat,

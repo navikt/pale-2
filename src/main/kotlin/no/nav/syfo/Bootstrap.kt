@@ -1,76 +1,90 @@
 package no.nav.syfo
 
 import com.ctc.wstx.exc.WstxException
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.ktor.application.Application
-import io.ktor.routing.routing
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.apache.Apache
+import io.ktor.client.features.auth.Auth
+import io.ktor.client.features.auth.providers.basic
+import io.ktor.client.features.json.JacksonSerializer
+import io.ktor.client.features.json.JsonFeature
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
+import java.io.IOException
+import java.io.StringReader
+import java.io.StringWriter
+import java.lang.IllegalStateException
+import java.nio.file.Paths
+import java.security.MessageDigest
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.GregorianCalendar
+import java.util.concurrent.TimeUnit
+import javax.jms.MessageConsumer
+import javax.jms.MessageProducer
+import javax.jms.Session
+import javax.jms.TextMessage
+import javax.xml.bind.Marshaller
+import javax.xml.datatype.DatatypeFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import net.logstash.logback.argument.StructuredArgument
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.apprecV1.XMLAppRec
+import no.nav.helse.apprecV1.XMLCV as AppRecCV
+import no.nav.helse.eiFellesformat.XMLEIFellesformat
+import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.legeerklaering.AktueltTiltak
 import no.nav.helse.legeerklaering.Arbeidssituasjon
 import no.nav.helse.legeerklaering.DiagnoseArbeidsuforhet
 import no.nav.helse.legeerklaering.Enkeltdiagnose
 import no.nav.helse.legeerklaering.ForslagTiltak
-import no.nav.helse.apprecV1.XMLCV as AppRecCV
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.legeerklaering.PlanUtredBehandle
 import no.nav.helse.legeerklaering.VurderingFunksjonsevne
+import no.nav.helse.msgHead.XMLHealthcareProfessional
+import no.nav.helse.msgHead.XMLIdent
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.api.DokmotClient
-import no.nav.syfo.api.LegeSuspensjonClient
-import no.nav.syfo.api.PdfgenClient
-import no.nav.syfo.api.SakClient
-import no.nav.syfo.api.registerNaisApi
+import no.nav.syfo.application.ApplicationServer
+import no.nav.syfo.application.ApplicationState
+import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
 import no.nav.syfo.client.AktoerIdClient
+import no.nav.syfo.client.DokArkivClient
+import no.nav.syfo.client.LegeSuspensjonClient
+import no.nav.syfo.client.Norg2Client
+import no.nav.syfo.client.PdfgenClient
+import no.nav.syfo.client.SakClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
+import no.nav.syfo.client.createJournalpostPayload
 import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.metrics.APPREC_COUNTER
-import no.nav.syfo.metrics.CASE_CREATED_COUNTER
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
-import no.nav.syfo.model.Aktoer
-import no.nav.syfo.model.AktoerWrapper
 import no.nav.syfo.model.Arbeidsgiver
-import no.nav.syfo.model.ArkivSak
 import no.nav.syfo.model.Diagnose
-import no.nav.syfo.model.DokumentInfo
-import no.nav.syfo.model.DokumentVariant
-import no.nav.syfo.model.ForsendelseInformasjon
 import no.nav.syfo.model.ForslagTilTiltak
 import no.nav.syfo.model.FunksjonsOgArbeidsevne
 import no.nav.syfo.model.Henvisning
 import no.nav.syfo.model.Kontakt
-import no.nav.syfo.model.MottaInngaaendeForsendelse
-import no.nav.syfo.model.OpprettSakResponse
-import no.nav.syfo.model.Organisasjon
 import no.nav.syfo.model.Pasient
 import no.nav.syfo.model.PdfPayload
-import no.nav.syfo.model.Person
 import no.nav.syfo.model.Plan
 import no.nav.syfo.model.Prognose
 import no.nav.syfo.model.RuleInfo
@@ -84,19 +98,15 @@ import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.rules.HPRRuleChain
 import no.nav.syfo.rules.LegesuspensjonRuleChain
+import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.rules.Rule
 import no.nav.syfo.rules.RuleData
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
-import no.nav.syfo.ws.createPort
-import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
-import no.nav.helse.msgHead.XMLHealthcareProfessional
-import no.nav.helse.msgHead.XMLIdent
-import no.nav.syfo.client.Norg2Client
-import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.services.DiskresjonskodeService
 import no.nav.syfo.services.FindNAVKontorService
+import no.nav.syfo.ws.createPort
+import no.nav.tjeneste.pip.diskresjonskode.DiskresjonskodePortType
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.binding.ArbeidsfordelingV1
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.ArbeidsfordelingKriterier
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Diskresjonskoder
@@ -112,70 +122,43 @@ import no.nav.tjeneste.virksomhet.person.v3.informasjon.PersonIdent
 import no.nav.tjeneste.virksomhet.person.v3.informasjon.Personidenter
 import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningRequest
 import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningResponse
-import org.slf4j.LoggerFactory
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.exceptions.JedisConnectionException
-import java.io.IOException
-import java.io.StringReader
-import java.io.StringWriter
-import java.nio.file.Paths
-import java.security.MessageDigest
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import javax.jms.MessageConsumer
-import javax.jms.MessageProducer
-import javax.jms.Session
-import javax.jms.TextMessage
-import javax.xml.bind.Marshaller
+import no.nhn.schemas.reg.hprv2.IHPR2Service
+import no.nhn.schemas.reg.hprv2.Person as HPRPerson
 import org.apache.cxf.binding.soap.SoapMessage
+import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
 import org.apache.cxf.message.Message
 import org.apache.cxf.phase.Phase
 import org.apache.cxf.ws.addressing.WSAddressingFeature
-import no.nhn.schemas.reg.hprv2.IHPR2Service
-import no.nhn.schemas.reg.hprv2.Person as HPRPerson
-import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
 import org.slf4j.Logger
-import java.lang.IllegalStateException
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.GregorianCalendar
-import javax.xml.datatype.DatatypeFactory
-
-fun doReadynessCheck(): Boolean {
-    return true
-}
+import org.slf4j.LoggerFactory
+import redis.clients.jedis.Jedis
+import redis.clients.jedis.exceptions.JedisConnectionException
 
 val objectMapper: ObjectMapper = ObjectMapper()
     .registerModule(JavaTimeModule())
     .registerKotlinModule()
     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 
-data class ApplicationState(
-    var running: Boolean = true,
-    var ready: Boolean = false
-)
-
 val datatypeFactory: DatatypeFactory = DatatypeFactory.newInstance()
-
-val coroutineContext = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
 const val NAV_OPPFOLGING_UTLAND_KONTOR_NR = "0393"
 
 @KtorExperimentalAPI
-fun main() = runBlocking(coroutineContext) {
+fun main() {
     val env = Environment()
     val credentials = objectMapper.readValue<VaultCredentials>(
             Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile()
         )
 
-    val applicationState = ApplicationState()
+    val applicationState = no.nav.syfo.application.ApplicationState()
+    val applicationEngine = createApplicationEngine(
+        env,
+        applicationState)
 
-    val applicationServer = embeddedServer(Netty, env.applicationPort) {
-        initRouting(applicationState)
-    }.start(wait = false)
+    val applicationServer = ApplicationServer(applicationEngine)
+    applicationServer.start()
 
     DefaultExports.initialize()
 
@@ -189,15 +172,53 @@ fun main() = runBlocking(coroutineContext) {
             val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
             val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
+            val httpClientMedBasicAuth = HttpClient(Apache) {
+                install(Auth) {
+                    basic {
+                        username = credentials.serviceuserUsername
+                        password = credentials.serviceuserPassword
+                        sendWithoutRequest = true
+                    }
+                }
+                install(JsonFeature) {
+                    serializer = JacksonSerializer {
+                        registerKotlinModule()
+                        registerModule(JavaTimeModule())
+                        configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    }
+                }
+            }
+
+            val httpClient = HttpClient(Apache) {
+                install(JsonFeature) {
+                    serializer = JacksonSerializer {
+                        registerKotlinModule()
+                        registerModule(JavaTimeModule())
+                        configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    }
+                }
+            }
+
             val oidcClient = StsOidcClient(credentials.serviceuserUsername, credentials.serviceuserPassword)
-            val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient)
-            val sarClient = SarClient(env.kuhrSarApiUrl, credentials)
-            val pdfgenClient = PdfgenClient(env.pdfgen)
-            val sakClient = SakClient(env.opprettSakUrl, oidcClient)
-            val dokmotClient = DokmotClient(env.dokmotMottaInngaaendeUrl, oidcClient)
-            val diskresjonskodeService = DiskresjonskodeService(env, credentials)
-            val norg2Client = Norg2Client(env.norg2V1EndpointURL)
-            val legeSuspensjonClient = LegeSuspensjonClient(env.legeSuspensjonEndpointURL, credentials, oidcClient)
+            val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient, httpClient)
+
+            val sarClient = SarClient(env.kuhrSarApiUrl, httpClientMedBasicAuth)
+            val pdfgenClient = PdfgenClient(env.pdfgen, httpClient)
+            val sakClient = SakClient(env.opprettSakUrl, oidcClient, httpClient)
+            val dokArkivClient = DokArkivClient(env.dokArkivUrl, oidcClient, httpClient)
+            val diskresjonskodePortType: DiskresjonskodePortType = createPort(env.diskresjonskodeEndpointUrl) {
+                port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+            }
+            val diskresjonskodeService = DiskresjonskodeService(diskresjonskodePortType)
+            val norg2Client = Norg2Client(env.norg2V1EndpointURL, httpClient)
+            val legeSuspensjonClient = LegeSuspensjonClient(
+                env.legeSuspensjonEndpointURL,
+                credentials,
+                oidcClient,
+                httpClient
+            )
 
             val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
                 proxy {
@@ -241,30 +262,27 @@ fun main() = runBlocking(coroutineContext) {
             launchListeners(applicationState, inputconsumer, jedis,
                 session, env, receiptProducer, backoutProducer, sarClient,
                 aktoerIdClient, credentials, helsepersonellV1,
-                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService,
+                legeSuspensjonClient, pdfgenClient, sakClient, dokArkivClient, diskresjonskodeService,
                 arenaProducer, personV3, norg2Client, arbeidsfordelingV1)
 
-            Runtime.getRuntime().addShutdownHook(Thread {
-                connection.close()
-                applicationServer.stop(10, 10, TimeUnit.SECONDS)
-            })
+            applicationState.ready = true
         }
     }
 }
 
-fun CoroutineScope.createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
-    launch {
+fun createListener(applicationState: no.nav.syfo.application.ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
+    GlobalScope.launch {
         try {
             action()
         } catch (e: TrackableException) {
             log.error("En uhåndtert feil oppstod, applikasjonen restarter {}", e.cause)
         } finally {
-            applicationState.running = false
+            applicationState.alive = false
         }
     }
 
 @KtorExperimentalAPI
-suspend fun CoroutineScope.launchListeners(
+fun launchListeners(
     applicationState: ApplicationState,
     inputconsumer: MessageConsumer,
     jedis: Jedis,
@@ -279,25 +297,20 @@ suspend fun CoroutineScope.launchListeners(
     legeSuspensjonClient: LegeSuspensjonClient,
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
-    dokmotClient: DokmotClient,
+    dokArkivClient: DokArkivClient,
     diskresjonskodeService: DiskresjonskodeService,
     arenaProducer: MessageProducer,
     personV3: PersonV3,
     norg2Client: Norg2Client,
     arbeidsfordelingV1: ArbeidsfordelingV1
 ) {
-    val listeners = (0.until(env.applicationThreads)).map {
         createListener(applicationState) {
             blockingApplicationLogic(applicationState, inputconsumer, jedis,
                 session, env, receiptProducer, backoutProducer, kuhrSarClient,
                 aktoerIdClient, credentials, helsepersonellv1,
-                legeSuspensjonClient, pdfgenClient, sakClient, dokmotClient, diskresjonskodeService, arenaProducer,
+                legeSuspensjonClient, pdfgenClient, sakClient, dokArkivClient, diskresjonskodeService, arenaProducer,
                 personV3, norg2Client, arbeidsfordelingV1)
         }
-    }.toList()
-
-    applicationState.ready = true
-    listeners.forEach { it.join() }
 }
 
 @KtorExperimentalAPI
@@ -316,7 +329,7 @@ suspend fun blockingApplicationLogic(
     legeSuspensjonClient: LegeSuspensjonClient,
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
-    dokmotClient: DokmotClient,
+    dokArkivClient: DokArkivClient,
     diskresjonskodeService: DiskresjonskodeService,
     arenaProducer: MessageProducer,
     personV3: PersonV3,
@@ -324,7 +337,7 @@ suspend fun blockingApplicationLogic(
     arbeidsfordelingV1: ArbeidsfordelingV1
 ) = coroutineScope {
     wrapExceptions {
-        loop@ while (applicationState.running) {
+        loop@ while (applicationState.ready) {
             val message = inputconsumer.receiveNoWait()
             if (message == null) {
                 delay(100)
@@ -370,15 +383,10 @@ suspend fun blockingApplicationLogic(
 
                 log.info("Received message, {}", fields(loggingMeta))
 
-                val aktoerIdsDeferred = async {
-                    aktoerIdClient.getAktoerIds(
-                        listOf(
-                            personNumberDoctor,
-                            personNumberPatient
-                        ),
-                        msgId, credentials.serviceuserUsername
-                    )
-                }
+                val aktoerIds = aktoerIdClient.getAktoerIds(
+                    listOf(personNumberDoctor,
+                        personNumberPatient),
+                    msgId, credentials.serviceuserUsername)
 
                 val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
                 val samhandlerPraksis = findBestSamhandlerPraksis(
@@ -431,7 +439,6 @@ suspend fun blockingApplicationLogic(
                     log.warn("Unable to contact redis, will allow possible duplicates.", connectionException)
                 }
 
-                val aktoerIds = aktoerIdsDeferred.await()
                 val patientIdents = aktoerIds[personNumberPatient]
                 val doctorIdents = aktoerIds[personNumberDoctor]
 
@@ -530,17 +537,14 @@ suspend fun blockingApplicationLogic(
                     validationResult
                 )
 
-                val sakid = findSakid(sakClient, patientIdents.identer!!.first().ident, msgId, logKeys, logValues)
+                val sakid = sakClient.findOrCreateSak(patientIdents.identer!!.first().ident, msgId,
+                    loggingMeta).id.toString()
 
                 val pdf = pdfgenClient.createPDF(pdfPayload)
                 log.info("PDF generated $logKeys", *logValues)
 
                 val journalpostPayload = createJournalpostPayload(
                     legeerklaering,
-                    patientIdents.identer.first().ident,
-                    legekontorOrgNr,
-                    legekontorOrgName,
-                    msgId,
                     sakid,
                     pdf,
                     msgHead,
@@ -548,7 +552,7 @@ suspend fun blockingApplicationLogic(
                     validationResult
                 )
 
-                val journalpost = dokmotClient.createJournalpost(journalpostPayload)
+                val journalpost = dokArkivClient.createJournalpost(journalpostPayload, loggingMeta)
                 log.info(
                     "Message successfully persisted in Joark {}, {}",
                     StructuredArguments.keyValue("journalpostId", journalpost.journalpostId),
@@ -567,12 +571,6 @@ suspend fun blockingApplicationLogic(
                 backoutProducer.send(message)
             }
         }
-    }
-}
-
-fun Application.initRouting(applicationState: ApplicationState) {
-    routing {
-        registerNaisApi(readynessCheck = ::doReadynessCheck, livenessCheck = { applicationState.running })
     }
 }
 
@@ -833,106 +831,6 @@ fun validationResult(results: List<Rule<Any>>): ValidationResult =
             },
         ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForUser!!, rule.messageForSender!!) }
     )
-
-@KtorExperimentalAPI
-suspend fun CoroutineScope.findSakid(
-    sakClient: SakClient,
-    aktorId: String,
-    msgId: String,
-    logKeys: String,
-    logValues: Array<StructuredArgument>
-): String {
-
-    val findSakResponseDeferred = async {
-        sakClient.findSak(aktorId, msgId)
-    }
-
-    val findSakResponse = findSakResponseDeferred.await()
-
-    return if (findSakResponse != null && findSakResponse.isNotEmpty() && findSakResponse.sortedOpprettSakResponse().lastOrNull()?.id != null) {
-        log.info(
-            "Found a sak, {} $logKeys",
-            findSakResponse.sortedOpprettSakResponse().last().id.toString(),
-            *logValues
-        )
-        findSakResponse.sortedOpprettSakResponse().last().id.toString()
-    } else {
-        val createSakResponseDeferred = async {
-            sakClient.createSak(aktorId, msgId)
-        }
-        val createSakResponse = createSakResponseDeferred.await()
-
-        CASE_CREATED_COUNTER.inc()
-        log.info("Created a sak, {} $logKeys", createSakResponse.id.toString(), *logValues)
-
-        createSakResponse.id.toString()
-    }
-}
-
-fun List<OpprettSakResponse>.sortedOpprettSakResponse(): List<OpprettSakResponse> =
-    sortedBy { it.opprettetTidspunkt }
-
-fun createJournalpostPayload(
-    legeerklaering: Legeerklaring,
-    aktorId: String,
-    legekontorOrgNr: String?,
-    legekontorOrgName: String,
-    msgId: String,
-    caseId: String,
-    pdf: ByteArray,
-    msgHead: XMLMsgHead,
-    receiverBlock: XMLMottakenhetBlokk,
-    validationResult: ValidationResult
-) = MottaInngaaendeForsendelse(
-    forsokEndeligJF = true,
-    forsendelseInformasjon = ForsendelseInformasjon(
-        bruker = AktoerWrapper(Aktoer(person = Person(ident = aktorId))),
-        avsender = AktoerWrapper(
-            Aktoer(
-                organisasjon = Organisasjon(
-                    orgnr = legekontorOrgNr,
-                    navn = legekontorOrgName
-                )
-            )
-        ),
-        tema = "SYM",
-        kanalReferanseId = msgId,
-        forsendelseInnsendt = msgHead.msgInfo.genDate.atZone(ZoneId.systemDefault()),
-        forsendelseMottatt = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime(),
-        mottaksKanal = "HELSENETTET",
-        tittel = createTittleJournalpost(validationResult, msgHead),
-        arkivSak = ArkivSak(
-            arkivSakSystem = "FS22",
-            arkivSakId = caseId
-        )
-    ),
-    tilleggsopplysninger = listOf(),
-    dokumentInfoHoveddokument = DokumentInfo(
-        tittel = createTittleJournalpost(validationResult, msgHead),
-        dokumentkategori = "Legeerklæring",
-        dokumentVariant = listOf(
-            DokumentVariant(
-                arkivFilType = "PDFA",
-                variantFormat = "ARKIV",
-                dokument = pdf
-            ),
-            DokumentVariant(
-                arkivFilType = "XML",
-                variantFormat = "ORIGINAL",
-                dokument = objectMapper.writeValueAsBytes(legeerklaering)
-            )
-        )
-    ),
-    dokumentInfoVedlegg = listOf()
-)
-
-fun createTittleJournalpost(validationResult: ValidationResult, msgHead: XMLMsgHead): String {
-    return if (validationResult.status == Status.INVALID) {
-        "Avvist egeerklaering opprettet:${msgHead.msgInfo.genDate}"
-    } else {
-        "Legeerklaering opprettet:${msgHead.msgInfo.genDate}"
-    }
-}
 
 suspend fun fetchGeografiskTilknytningAsync(
     personV3: PersonV3,

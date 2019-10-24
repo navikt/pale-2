@@ -1,5 +1,6 @@
 package no.nav.syfo
 
+import java.time.ZonedDateTime
 import no.nav.syfo.model.Arbeidsgiver
 import no.nav.syfo.model.Diagnose
 import no.nav.syfo.model.ForslagTilTiltak
@@ -17,7 +18,6 @@ import no.nav.syfo.model.SykdomsOpplysninger
 import no.nav.syfo.model.ValidationResult
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
-import java.time.ZonedDateTime
 
 object PdfModelSpek : Spek({
     describe("Generate a few pdf models") {

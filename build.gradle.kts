@@ -6,11 +6,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "1.2.2"
+val ktorVersion = "1.2.5"
 val prometheusVersion = "0.6.0"
-val spekVersion = "2.0.2"
+val spekVersion = "2.0.8"
 val kluentVersion = "1.39"
-val smCommonVersion = "2019.08.08-03-52-c78281e2409af36f3ef07df4369fa29b0ea81a46"
+val smCommonVersion = "2019.09.25-05-44-08e26429f4e37cd57d99ba4d39fc74099a078b97"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
 val jacksonVersion = "2.9.7"
@@ -35,9 +35,9 @@ val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 
 plugins {
     id("no.nils.wsdl2java") version "0.10"
-    kotlin("jvm") version "1.3.40"
+    kotlin("jvm") version "1.3.50"
     id("com.github.johnrengelman.shadow") version "4.0.4"
-    id("org.jmailen.kotlinter") version "1.26.0"
+    id("org.jmailen.kotlinter") version "2.1.1"
 }
 
 buildscript {
@@ -77,9 +77,8 @@ dependencies {
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
 
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    implementation("io.ktor:ktor-client-auth-basic-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-client-auth-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
@@ -104,7 +103,7 @@ dependencies {
     implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
-    implementation( "no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
+    implementation("no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
 
     implementation("no.nav.tjenestespesifikasjoner:diskresjonskodev1-tjenestespesifikasjon:$diskresjonskodeV1Version")
     implementation("no.nav.tjenestespesifikasjoner:person-v3-tjenestespesifikasjon:$navPersonv3Version")

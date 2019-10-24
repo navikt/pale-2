@@ -1,52 +1,28 @@
 package no.nav.syfo.client
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache.Apache
-import io.ktor.client.features.auth.basic.BasicAuth
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.util.KtorExperimentalAPI
+import java.util.Date
+import kotlin.math.max
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.syfo.LoggingMeta
-import no.nav.syfo.VaultCredentials
+import no.nav.syfo.SamhandlerPraksisType
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.log
 import org.apache.commons.text.similarity.LevenshteinDistance
-import java.util.Date
-import kotlin.math.max
 
 @KtorExperimentalAPI
 class SarClient(
     private val endpointUrl: String,
-    private val credentials: VaultCredentials
+    private val httpClient: HttpClient
 ) {
-
-    private val kuhrSarClient = HttpClient(Apache) {
-        install(JsonFeature) {
-            serializer = JacksonSerializer {
-                registerKotlinModule()
-                registerModule(JavaTimeModule())
-                configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            }
-        }
-        install(BasicAuth) {
-            this.username = credentials.serviceuserUsername
-            this.password = credentials.serviceuserPassword
-        }
-    }
-
     suspend fun getSamhandler(ident: String): List<Samhandler> = retry("get_samhandler") {
-        kuhrSarClient.get<List<Samhandler>>("$endpointUrl/rest/sar/samh") {
+        httpClient.get<List<Samhandler>>("$endpointUrl/rest/sar/samh") {
             accept(ContentType.Application.Json)
             parameter("ident", ident)
         }
@@ -132,13 +108,6 @@ fun findBestSamhandlerPraksis(
 ): SamhandlerPraksisMatch? {
     val aktiveSamhandlere = samhandlere.flatMap { it.samh_praksis }
         .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
-        .filter {
-            it.samh_praksis_periode
-                .filter { periode -> periode.gyldig_fra <= Date() }
-                .filter { periode -> periode.gyldig_til == null || periode.gyldig_til >= Date() }
-                .any()
-        }
-        .filter { !it.navn.isNullOrEmpty() }
 
     if (aktiveSamhandlere.isEmpty()) {
         log.info("Fant ingen aktive samhandlere. {}  Meta: {}, {} ",
@@ -159,7 +128,23 @@ fun findBestSamhandlerPraksis(
         }
     }
 
-    return aktiveSamhandlere
+    val aktiveSamhandlereMedNavn = samhandlere.flatMap { it.samh_praksis }
+        .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
+        .filter { !it.navn.isNullOrEmpty() }
+
+    if (aktiveSamhandlereMedNavn.isNullOrEmpty() && !aktiveSamhandlere.isNullOrEmpty()) {
+        val samhandlerFALEOrFALO = aktiveSamhandlere.find {
+            it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLEGE.string ||
+                    it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLONNET.string
+        }
+        if (samhandlerFALEOrFALO != null) {
+            return SamhandlerPraksisMatch(samhandlerFALEOrFALO, 100.0)
+        }
+    } else if (aktiveSamhandlere.isNullOrEmpty()) {
+        return null
+    }
+
+    return aktiveSamhandlereMedNavn
         .map { samhandlerPraksis ->
             SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn, orgName) * 100)
         }.maxBy { it.percentageMatch }
