@@ -36,8 +36,6 @@ spec:
   vault:
     enabled: true
   env:
-    - name: APPLICATION_THREADS
-      value: 4
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.Q1_PALE.INPUT
     - name: MQ_HOST_NAME
