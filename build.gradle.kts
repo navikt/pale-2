@@ -10,7 +10,7 @@ val ktorVersion = "1.2.5"
 val prometheusVersion = "0.6.0"
 val spekVersion = "2.0.8"
 val kluentVersion = "1.39"
-val smCommonVersion = "2019.09.25-05-44-08e26429f4e37cd57d99ba4d39fc74099a078b97"
+val smCommonVersion = "1.bba46d9"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
 val jacksonVersion = "2.9.7"
@@ -35,7 +35,7 @@ val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 
 plugins {
     id("no.nils.wsdl2java") version "0.10"
-    kotlin("jvm") version "1.3.50"
+    kotlin("jvm") version "1.3.60"
     id("com.github.johnrengelman.shadow") version "4.0.4"
     id("org.jmailen.kotlinter") version "2.1.1"
 }
@@ -51,6 +51,8 @@ buildscript {
     }
 }
 
+val githubUser: String by project
+val githubPassword: String by project
 
 repositories {
     mavenCentral()
@@ -58,6 +60,13 @@ repositories {
     maven(url= "https://dl.bintray.com/spekframework/spek-dev")
     maven(url= "http://packages.confluent.io/maven/")
     maven(url= "https://kotlin.bintray.com/kotlinx")
+    maven {
+        url = uri("https://maven.pkg.github.com/navikt/syfosm-common")
+        credentials {
+            username = githubUser
+            password = githubPassword
+        }
+    }
     maven(url = "https://oss.sonatype.org/content/groups/staging/")
 }
 
@@ -95,10 +104,10 @@ dependencies {
         exclude(group = "com.sun.xml.ws", module = "policy")
     }
 
-    implementation("no.nav.syfo.sm:syfosm-common-mq:$smCommonVersion")
-    implementation("no.nav.syfo.sm:syfosm-common-rest-sts:$smCommonVersion")
-    implementation("no.nav.syfo.sm:syfosm-common-networking:$smCommonVersion")
-    implementation("no.nav.syfo.sm:syfosm-common-ws:$smCommonVersion")
+    implementation("no.nav.helse:syfosm-common-mq:$smCommonVersion")
+    implementation("no.nav.helse:syfosm-common-rest-sts:$smCommonVersion")
+    implementation("no.nav.helse:syfosm-common-networking:$smCommonVersion")
+    implementation("no.nav.helse:syfosm-common-ws:$smCommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$fellesformatVersion")
     implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")

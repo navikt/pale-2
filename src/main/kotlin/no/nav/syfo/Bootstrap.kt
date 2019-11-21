@@ -152,12 +152,12 @@ fun main() {
             Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile()
         )
 
-    val applicationState = no.nav.syfo.application.ApplicationState()
+    val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(
         env,
         applicationState)
 
-    val applicationServer = ApplicationServer(applicationEngine)
+    val applicationServer = ApplicationServer(applicationEngine, applicationState)
     applicationServer.start()
 
     DefaultExports.initialize()
