@@ -9,9 +9,9 @@ import no.nav.tjeneste.pip.diskresjonskode.meldinger.WSHentDiskresjonskodeReques
 class DiskresjonskodeService(private val diskresjonskodePortType: DiskresjonskodePortType) {
 
     suspend fun hentDiskresjonskode(ident: String): String = retry(
-        callName = "hent_diskresjonskode",
-        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L, 60000L),
-        legalExceptions = *arrayOf(IOException::class, WstxException::class)
+            callName = "hent_diskresjonskode",
+            retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L, 60000L),
+            legalExceptions = *arrayOf(IOException::class, WstxException::class)
     ) {
         diskresjonskodePortType.hentDiskresjonskode(WSHentDiskresjonskodeRequest().withIdent(ident)).diskresjonskode
     }

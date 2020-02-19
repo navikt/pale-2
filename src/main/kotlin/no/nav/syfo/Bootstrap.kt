@@ -497,22 +497,26 @@ suspend fun blockingApplicationLogic(
                     async { diskresjonskodeService.hentDiskresjonskode(personNumberPatient) }
                 val patientDiskresjonskode = patientDiskresjonskodeDeferred.await()
 
-                val postDiskresjonskodeResults =
-                    PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonskode)
-
                 val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
+
                 val doctorSuspend =
                     legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
-                val doctorRuleResults = LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
 
                 val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
-                val hprRuleResults = HPRRuleChain.values().executeFlow(legeerklaring, doctor)
 
                 val results = listOf(
-                    validationRuleResults,
-                    postDiskresjonskodeResults,
-                    hprRuleResults,
-                    doctorRuleResults
+                    ValidationRuleChain.values().executeFlow(
+                    legeerklaring, RuleMetadata(
+                        receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
+                        signatureDate = msgHead.msgInfo.genDate,
+                        patientPersonNumber = personNumberPatient,
+                        legekontorOrgnr = legekontorOrgNr,
+                        tssid = samhandlerPraksis?.tss_ident
+                    )
+                ),
+                    PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonskode),
+                    HPRRuleChain.values().executeFlow(legeerklaring, doctor),
+                    LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
                 ).flatten()
 
                 log.info("Rules hit {}, {}", results.map { it.name }, fields(loggingMeta))

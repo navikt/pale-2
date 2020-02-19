@@ -49,7 +49,7 @@ spec:
     - name: MQ_APPREC_QUEUE_NAME
       value: QA.Q414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
-      value: Q1_SYFOSMMOTTAK.INPUT_BOQ
+      value: Q1_PALE_2.INPUT_BOQ
     - name: MQ_GATEWAY_NAME
       value: MQ1LSC04
     - name: MQ_CHANNEL_NAME
@@ -62,8 +62,6 @@ spec:
       value: https://pep-gw-q1.oera-q.local:9443/samhandler/helse/helsepersonell/v1
     - name: DOK_ARKIV_URL
       value: https://dokarkiv-q1.nais.preprod.local/rest/journalpostapi/v1/journalpost
-    - name: DISKRESJONSKODE_ENDPOINT_URL
-      value: https://wasapp-q1.adeo.no/tpsws/Diskresjonskode
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.Q1_414.FS06_ARENA
     - name: NORG2_V1_ENDPOINT_URL
@@ -72,3 +70,5 @@ spec:
       value: https://app-q1.adeo.no/norg2/ws/Arbeidsfordeling/v1
     - name: PERSON_V3_ENDPOINT_URL
       value: https://wasapp-q1.adeo.no/tpsws/ws/Person/v3
+    - name: DISKRESJONSKODE_ENDPOINT_URL
+      value: https://wasapp-q1.adeo.no/tpsws/Diskresjonskode

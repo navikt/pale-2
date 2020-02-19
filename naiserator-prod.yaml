@@ -37,38 +37,38 @@ spec:
     enabled: true
   env:
     - name: MQ_INPUT_QUEUE_NAME
-      value: QA.Q1_PALE.INPUT
+      value: QA.P_PALE.INPUT
     - name: MQ_HOST_NAME
-      value: b27apvl177.preprod.local
+      value: a01apvl064.adeo.no
     - name: MQ_PORT
-      value: '1413'
+      value: '1414'
     - name: MQ_GATEWAY_NAME
-      value: MQ1LSC04
+      value: MPLSC04
     - name: MQ_CHANNEL_NAME
-      value: Q1_PALE_2
+      value: P_PALE_2
     - name: MQ_APPREC_QUEUE_NAME
       value: QA.Q414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
-      value: Q1_SYFOSMMOTTAK.INPUT_BOQ
+      value: P_PALE-2.INPUT_BOQ
     - name: MQ_GATEWAY_NAME
-      value: MQ1LSC04
+      value: MPLSC04
     - name: MQ_CHANNEL_NAME
-      value: Q1_SYFOSMMOTTAK
+      value: P_PALE-2
     - name: AKTOR_REGISTER_V1_URL
-      value: https://app-q1.adeo.no/aktoerregister/api/v1
+      value: https://app.adeo.no/aktoerregister/api/v1
     - name: SECURITY_TOKEN_SERVICE_URL
-      value: https://sts-q1.preprod.local/SecurityTokenServiceProvider/
+      value: https://sts.adeo.no/SecurityTokenServiceProvider/
     - name: HELSEPERSONELL_V1_ENDPOINT_URL
-      value: https://pep-gw-q1.oera-q.local:9443/samhandler/helse/helsepersonell/v1
+      value: https://pep-gw.oera.no:9443/samhandler/helse/helsepersonell/v1
     - name: DOK_ARKIV_URL
       value: http://dokarkiv/rest/journalpostapi/v1/journalpost
-    - name: DISKRESJONSKODE_ENDPOINT_URL
-      value: https://wasapp-q1.adeo.no/tpsws/Diskresjonskode
     - name: ARENA_OUTBOUND_QUEUENAME
-      value: QA.Q1_414.FS06_ARENA
+      value: QA.P_414.FS06_ARENA
     - name: NORG2_V1_ENDPOINT_URL
-      value: https://app-q1.adeo.no/norg2/api/v1
+      value: https://app.adeo.no/norg2/ws/Arbeidsfordeling/v1
     - name: ARBEIDSFORDELING_V1_ENDPOINT_URL
-      value: https://app-q1.adeo.no/norg2/ws/Arbeidsfordeling/v1
+      value: https://app.adeo.no/norg2/ws/Arbeidsfordeling/v1
     - name: PERSON_V3_ENDPOINT_URL
       value: https://wasapp.adeo.no/tpsws/ws/Person/v3
+    - name: DISKRESJONSKODE_ENDPOINT_URL
+      value: https://wasapp.adeo.no/tpsws/Diskresjonskode

@@ -16,7 +16,7 @@ class FindNAVKontorService @KtorExperimentalAPI constructor(
     val personV3: PersonV3,
     val norg2Client: Norg2Client,
     val arbeidsfordelingV1: ArbeidsfordelingV1,
-    val patientDiskresjonsKode: String,
+    val patientDiskresjonsKode: String?,
     val loggingMeta: LoggingMeta
 ) {
 
