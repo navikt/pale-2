@@ -9,7 +9,7 @@ Repository for Pale. Application written in Kotlin used to receive legeerklærin
 
 #### Requirements
 
-* JDK 11
+* JDK 12
 
 ### Getting github-package-registry packages NAV-IT
 Some packages used in this repo is uploaded to the Github Package Registry which requires authentication. It can, for example, be solved like this in Gradle:

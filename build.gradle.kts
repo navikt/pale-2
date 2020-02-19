@@ -36,8 +36,8 @@ val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 plugins {
     id("no.nils.wsdl2java") version "0.10"
     kotlin("jvm") version "1.3.61"
-    id("com.github.johnrengelman.shadow") version "4.0.4"
-    id("org.jmailen.kotlinter") version "2.1.1"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
+    id("org.jmailen.kotlinter") version "2.2.0"
 }
 
 buildscript {
@@ -149,7 +149,7 @@ tasks {
 
     withType<KotlinCompile> {
         dependsOn("wsdl2java")
-        kotlinOptions.jvmTarget = "11"
+        kotlinOptions.jvmTarget = "12"
     }
 
     withType<Wsdl2JavaTask> {
