@@ -6,11 +6,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "1.2.5"
+val ktorVersion = "1.2.6"
 val prometheusVersion = "0.6.0"
 val spekVersion = "2.0.8"
 val kluentVersion = "1.39"
-val smCommonVersion = "1.bba46d9"
+val smCommonVersion = "1.7bf5e6f"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
 val jacksonVersion = "2.9.7"
@@ -35,7 +35,7 @@ val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 
 plugins {
     id("no.nils.wsdl2java") version "0.10"
-    kotlin("jvm") version "1.3.60"
+    kotlin("jvm") version "1.3.61"
     id("com.github.johnrengelman.shadow") version "4.0.4"
     id("org.jmailen.kotlinter") version "2.1.1"
 }

@@ -63,6 +63,8 @@ Creating a docker image should be as simple as `docker build -t pale-2 .`
 * Andreas Nilsen, `andreas.nilsen@nav.no`
 * Sebastian Knudsen, `sebastian.knudsen@nav.no`
 * Tia Firing, `tia.firing@nav.no`
+* Jonas Henie, `jonas.henie@nav.no`
+* Mathias Hellevang, `mathias.hellevang@nav.no`
 
 ### For NAV employees
 We are available at the Slack channel #team-sykmelding

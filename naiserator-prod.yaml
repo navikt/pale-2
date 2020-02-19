@@ -4,9 +4,9 @@ metadata:
   name: pale-2
   namespace: default
   labels:
-    team: {{team}}
+    team: teamsykefravr
 spec:
-  image: "docker.pkg.github.com/navikt/pale-2:{{tag}}"
+  image: {{ image }}
   replicas:
     min: 2
     max: 4

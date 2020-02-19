@@ -386,7 +386,7 @@ suspend fun blockingApplicationLogic(
                 val aktoerIds = aktoerIdClient.getAktoerIds(
                     listOf(personNumberDoctor,
                         personNumberPatient),
-                    msgId, credentials.serviceuserUsername)
+                    credentials.serviceuserUsername, loggingMeta)
 
                 val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
                 val samhandlerPraksis = findBestSamhandlerPraksis(
