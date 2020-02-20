@@ -15,6 +15,6 @@ enum class PostDiskresjonskodeRuleChain(
             Status.MANUAL_PROCESSING,
             "Pasient er registrert med sperrekode 6, sperret adresse, strengt fortrolig",
             "Pasient er registrert med sperrekode 6, sperret adresse, strengt fortrolig", { (_, diskresjonskode) ->
-            diskresjonskode != null && diskresjonskode == "6"
+            diskresjonskode != null && diskresjonskode == "SPSF"
     })
 }
