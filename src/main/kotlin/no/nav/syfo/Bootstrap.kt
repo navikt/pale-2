@@ -403,6 +403,8 @@ suspend fun blockingApplicationLogic(
                     loggingMeta
                 )?.samhandlerPraksis
 
+                log.info("Ferdig med KUHR SAR {}", fields(loggingMeta))
+
                 try {
                     val redisSha256String = jedis.get(sha256String)
                     val redisEdiloggid = jedis.get(ediLoggId)

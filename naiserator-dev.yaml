@@ -59,7 +59,7 @@ spec:
     - name: SECURITY_TOKEN_SERVICE_URL
       value: https://sts-q1.preprod.local/SecurityTokenServiceProvider/
     - name: HELSEPERSONELL_V1_ENDPOINT_URL
-      value: https://pep-gw-q1.oera-q.local:9443/samhandler/helse/helsepersonell/v1
+      value: https://pep-gw-q4.oera-q.local:9443/samhandler/helse/helsepersonell/v1
     - name: DOK_ARKIV_URL
       value: https://dokarkiv-q1.nais.preprod.local/rest/journalpostapi/v1/journalpost
     - name: ARENA_OUTBOUND_QUEUENAME

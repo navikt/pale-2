@@ -1,4 +1,4 @@
-package no.nav.syfo
+package no.nav.syfo.model
 
 enum class SamhandlerPraksisType(val kodeVerdi: String) {
     AUDIOPEDAGOG("AUDI"),

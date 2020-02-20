@@ -44,6 +44,7 @@ data class Samhandler(
 )
 
 data class SamhandlerPraksis(
+    val org_id: String?,
     val refusjon_type_kode: String,
     val laerer: String?,
     val lege_i_spesialisering: String?,
@@ -113,7 +114,8 @@ fun findBestSamhandlerPraksis(
         log.info("Fant ingen aktive samhandlere. {}  Meta: {}, {} ",
             keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
             keyValue("antall praksiser", samhandlere.size),
-            StructuredArguments.fields(loggingMeta))
+            StructuredArguments.fields(loggingMeta)
+        )
     }
 
     if (!herId.isNullOrEmpty() && aktiveSamhandlere.isNotEmpty()) {
@@ -123,7 +125,8 @@ fun findBestSamhandlerPraksis(
         if (samhandlerByHerId != null) {
             log.info("Fant samhandler basert på herid. herid: $herId, {}, {}",
                 keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
-                StructuredArguments.fields(loggingMeta))
+                StructuredArguments.fields(loggingMeta)
+            )
             return SamhandlerPraksisMatch(samhandlerByHerId, 100.0)
         }
     }
@@ -134,18 +137,60 @@ fun findBestSamhandlerPraksis(
 
     if (aktiveSamhandlereMedNavn.isNullOrEmpty() && !aktiveSamhandlere.isNullOrEmpty()) {
         val samhandlerFALEOrFALO = aktiveSamhandlere.find {
-            it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLEGE.string ||
-                    it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLONNET.string
+            it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLEGE.kodeVerdi ||
+                    it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLONNET.kodeVerdi
         }
         if (samhandlerFALEOrFALO != null) {
-            return SamhandlerPraksisMatch(samhandlerFALEOrFALO, 100.0)
+            return SamhandlerPraksisMatch(samhandlerFALEOrFALO, 999.0)
         }
     } else if (aktiveSamhandlere.isNullOrEmpty()) {
-        return null
+        val inaktiveSamhandlerMatchingPaaOrganisjonsNavn = samhandlerMatchingPaaOrganisjonsNavn(samhandlere, orgName)
+        return filtererBortSamhanlderPraksiserPaaProsentMatch(
+            inaktiveSamhandlerMatchingPaaOrganisjonsNavn,
+            70.0,
+            orgName,
+            loggingMeta
+        )
     }
 
     return aktiveSamhandlereMedNavn
         .map { samhandlerPraksis ->
             SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn, orgName) * 100)
         }.maxBy { it.percentageMatch }
+}
+
+fun samhandlerMatchingPaaOrganisjonsNavn(samhandlere: List<Samhandler>, orgName: String): SamhandlerPraksisMatch? {
+    val inaktiveSamhandlereMedNavn = samhandlere.flatMap { it.samh_praksis }
+        .filter { samhandlerPraksis -> samhandlerPraksis.samh_praksis_status_kode == "inaktiv" }
+        .filter { samhandlerPraksis -> !samhandlerPraksis.navn.isNullOrEmpty() }
+    return if (!inaktiveSamhandlereMedNavn.isNullOrEmpty()) {
+        inaktiveSamhandlereMedNavn
+            .map { samhandlerPraksis ->
+                SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn?.toLowerCase(), orgName.toLowerCase()) * 100)
+            }.maxBy { it.percentageMatch }
+    } else {
+        null
+    }
+}
+
+fun filtererBortSamhanlderPraksiserPaaProsentMatch(
+    samhandlerPraksis: SamhandlerPraksisMatch?,
+    prosentMatch: Double,
+    orgName: String,
+    loggingMeta: LoggingMeta
+): SamhandlerPraksisMatch? {
+    return if (samhandlerPraksis != null && samhandlerPraksis.percentageMatch >= prosentMatch) {
+        log.info("Beste match ble samhandler praksis: " +
+                "Orgnumer: ${samhandlerPraksis.samhandlerPraksis.org_id} " +
+                "Navn: ${samhandlerPraksis.samhandlerPraksis.navn} " +
+                "Tssid: ${samhandlerPraksis.samhandlerPraksis.tss_ident} " +
+                "Adresselinje1: ${samhandlerPraksis.samhandlerPraksis.arbeids_adresse_linje_1} " +
+                "Samhandler praksis type: ${samhandlerPraksis.samhandlerPraksis.samh_praksis_type_kode} " +
+                "Prosent match:${samhandlerPraksis.percentageMatch} %, basert på sykmeldingens organisjons navn: $orgName " +
+                "{}", StructuredArguments.fields(loggingMeta)
+        )
+        samhandlerPraksis
+    } else {
+        null
+    }
 }
