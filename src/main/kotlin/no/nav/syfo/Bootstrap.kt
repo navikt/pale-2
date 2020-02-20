@@ -422,7 +422,7 @@ suspend fun blockingApplicationLogic(
                             )
                         )
                         log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-                        continue
+                        continue@loop
                     } else if (redisEdiloggid != null) {
                         log.warn(
                             "Message with {} marked as duplicate, {}",
@@ -437,7 +437,7 @@ suspend fun blockingApplicationLogic(
                             )
                         )
                         log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-                        continue
+                        continue@loop
                     } else {
                         jedis.setex(ediLoggId, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
                         jedis.setex(sha256String, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
