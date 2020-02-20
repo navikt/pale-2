@@ -9,8 +9,8 @@ object PostDiskresjonskodeRuleChainSpek : Spek({
 
     fun ruleData(
         legeerklaring: Legeerklaring,
-        diskresjonskode: String
-    ): RuleData<String> = RuleData(legeerklaring, diskresjonskode)
+        diskresjonskode: String?
+    ): RuleData<String?> = RuleData(legeerklaring, diskresjonskode)
 
     describe("Testing validation rules and checking the rule outcomes") {
 

@@ -102,10 +102,9 @@ import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.rules.Rule
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
-import no.nav.syfo.services.DiskresjonskodeService
 import no.nav.syfo.services.FindNAVKontorService
+import no.nav.syfo.services.fetchDiskresjonsKode
 import no.nav.syfo.ws.createPort
-import no.nav.tjeneste.pip.diskresjonskode.DiskresjonskodePortType
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.binding.ArbeidsfordelingV1
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.ArbeidsfordelingKriterier
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Diskresjonskoder
@@ -198,10 +197,6 @@ fun main() {
     val pdfgenClient = PdfgenClient(env.pdfgen, httpClient)
     val sakClient = SakClient(env.opprettSakUrl, oidcClient, httpClient)
     val dokArkivClient = DokArkivClient(env.dokArkivUrl, oidcClient, httpClient)
-    val diskresjonskodePortType: DiskresjonskodePortType = createPort(env.diskresjonskodeEndpointUrl) {
-        port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
-    }
-    val diskresjonskodeService = DiskresjonskodeService(diskresjonskodePortType)
     val norg2Client = Norg2Client(env.norg2V1EndpointURL, httpClient)
     val legeSuspensjonClient = LegeSuspensjonClient(
         env.legeSuspensjonEndpointURL,
@@ -252,7 +247,7 @@ fun main() {
     launchListeners(
         applicationState, env, sarClient,
         aktoerIdClient, credentials, helsepersonellV1,
-        legeSuspensjonClient, pdfgenClient, sakClient, dokArkivClient, diskresjonskodeService,
+        legeSuspensjonClient, pdfgenClient, sakClient, dokArkivClient,
         personV3, norg2Client, arbeidsfordelingV1
     )
 }
@@ -280,7 +275,6 @@ fun launchListeners(
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
     dokArkivClient: DokArkivClient,
-    diskresjonskodeService: DiskresjonskodeService,
     personV3: PersonV3,
     norg2Client: Norg2Client,
     arbeidsfordelingV1: ArbeidsfordelingV1
@@ -314,7 +308,6 @@ fun launchListeners(
                     pdfgenClient,
                     sakClient,
                     dokArkivClient,
-                    diskresjonskodeService,
                     arenaProducer,
                     personV3,
                     norg2Client,
@@ -342,7 +335,6 @@ suspend fun blockingApplicationLogic(
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
     dokArkivClient: DokArkivClient,
-    diskresjonskodeService: DiskresjonskodeService,
     arenaProducer: MessageProducer,
     personV3: PersonV3,
     norg2Client: Norg2Client,
@@ -403,51 +395,49 @@ suspend fun blockingApplicationLogic(
 
                 log.info("Ferdig med KUHR SAR {}", fields(loggingMeta))
 
-                try {
-                    val redisSha256String = jedis.get(sha256String)
-                    val redisEdiloggid = jedis.get(ediLoggId)
+                val redisSha256String = jedis.get(sha256String)
+                val redisEdiloggid = jedis.get(ediLoggId)
 
-                    if (redisSha256String != null) {
-                        log.warn(
-                            "Message with {} marked as duplicate {}",
-                            StructuredArguments.keyValue("originalEdiLoggId", redisSha256String),
-                            fields(loggingMeta)
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError(
-                                    "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                            "Skal ikke sendes på nytt."
-                                )
+                if (redisSha256String != null) {
+                    log.warn(
+                        "Message with {} marked as duplicate {}",
+                        StructuredArguments.keyValue("originalEdiLoggId", redisSha256String),
+                        fields(loggingMeta)
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            createApprecError(
+                                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                                        "Skal ikke sendes på nytt."
                             )
                         )
-                        log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-                        continue@loop
-                    } else if (redisEdiloggid != null) {
-                        log.warn(
-                            "Message with {} marked as duplicate, {}",
-                            StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), fields(loggingMeta)
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError(
-                                    "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                            "Skal ikke sendes på nytt."
-                                )
+                    )
+                    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+                    continue@loop
+                } else if (redisEdiloggid != null) {
+                    log.warn(
+                        "Message with {} marked as duplicate, {}",
+                        StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid), fields(loggingMeta)
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            createApprecError(
+                                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                                        "Skal ikke sendes på nytt."
                             )
                         )
-                        log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-                        continue@loop
-                    } else {
-                        jedis.setex(ediLoggId, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
-                        jedis.setex(sha256String, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
-                    }
-                } catch (connectionException: JedisConnectionException) {
-                    log.warn("Unable to contact redis, will allow possible duplicates.", connectionException)
+                    )
+                    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+                    continue@loop
+                } else {
+                    jedis.setex(ediLoggId, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
+                    jedis.setex(sha256String, TimeUnit.DAYS.toSeconds(7).toInt(), ediLoggId)
                 }
 
                 val patientIdents = aktoerIds[personNumberPatient]
                 val doctorIdents = aktoerIds[personNumberDoctor]
+
+                log.info("Hentet ut aktorider, {}", fields(loggingMeta))
 
                 if (patientIdents == null || patientIdents.feilmelding != null) {
                     log.info(
@@ -481,28 +471,30 @@ suspend fun blockingApplicationLogic(
                     continue@loop
                 }
 
-                val patientDiskresjonskodeDeferred =
-                    async { diskresjonskodeService.hentDiskresjonskode(personNumberPatient) }
-                val patientDiskresjonskode = patientDiskresjonskodeDeferred.await()
+                val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
+
+                log.info("Hentet ut patientDiskresjonskodeDeferred, {}", fields(loggingMeta))
 
                 val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
 
                 val doctorSuspend =
                     legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
 
+                log.info("Hentet ut legeSuspensjonClient, {}", fields(loggingMeta))
+
                 val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
 
                 val results = listOf(
                     ValidationRuleChain.values().executeFlow(
-                    legeerklaring, RuleMetadata(
-                        receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
-                        signatureDate = msgHead.msgInfo.genDate,
-                        patientPersonNumber = personNumberPatient,
-                        legekontorOrgnr = legekontorOrgNr,
-                        tssid = samhandlerPraksis?.tss_ident
-                    )
-                ),
-                    PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonskode),
+                        legeerklaring, RuleMetadata(
+                            receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
+                            signatureDate = msgHead.msgInfo.genDate,
+                            patientPersonNumber = personNumberPatient,
+                            legekontorOrgnr = legekontorOrgNr,
+                            tssid = samhandlerPraksis?.tss_ident
+                        )
+                    ),
+                    PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
                     HPRRuleChain.values().executeFlow(legeerklaring, doctor),
                     LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
                 ).flatten()
@@ -514,7 +506,7 @@ suspend fun blockingApplicationLogic(
                     personV3,
                     norg2Client,
                     arbeidsfordelingV1,
-                    patientDiskresjonskode,
+                    patientDiskresjonsKode,
                     loggingMeta
                 )
 
@@ -577,6 +569,11 @@ suspend fun blockingApplicationLogic(
                     // sendArenaInfo(arenaProducer, session, fellesformat, validationResult)
                 }
                 val currentRequestLatency = requestLatency.observeDuration()
+            } catch (jedisException: JedisConnectionException) {
+                log.error("Exception caught, redis issue while handling message, sending to backout", jedisException)
+                backoutProducer.send(message)
+                log.error("Setting applicationState.alive to false")
+                applicationState.alive = false
             } catch (e: Exception) {
                 log.error("Exception caught while handling message, sending to backout, {}", e)
                 backoutProducer.send(message)
