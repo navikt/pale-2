@@ -100,7 +100,6 @@ import no.nav.syfo.rules.HPRRuleChain
 import no.nav.syfo.rules.LegesuspensjonRuleChain
 import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.rules.Rule
-import no.nav.syfo.rules.RuleData
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.services.DiskresjonskodeService
@@ -388,12 +387,11 @@ suspend fun blockingApplicationLogic(
                 log.info("Received message, {}", fields(loggingMeta))
 
                 val aktoerIds = aktoerIdClient.getAktoerIds(
-                    listOf(
-                        personNumberDoctor,
-                        personNumberPatient
-                    ),
+                    listOf(personNumberDoctor, personNumberPatient),
                     credentials.serviceuserUsername, loggingMeta
                 )
+
+                log.info("Ferdig med aktoerIdClient {}", fields(loggingMeta))
 
                 val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
                 val samhandlerPraksis = findBestSamhandlerPraksis(
@@ -482,18 +480,6 @@ suspend fun blockingApplicationLogic(
                     INVALID_MESSAGE_NO_NOTICE.inc()
                     continue@loop
                 }
-
-                val validationRuleResults: List<Rule<Any>> = listOf<List<Rule<RuleData<RuleMetadata>>>>(
-                    ValidationRuleChain.values().toList()
-                ).flatten().executeFlow(
-                    legeerklaring, RuleMetadata(
-                        receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
-                        signatureDate = msgHead.msgInfo.genDate,
-                        patientPersonNumber = personNumberPatient,
-                        legekontorOrgnr = legekontorOrgNr,
-                        tssid = samhandlerPraksis?.tss_ident
-                    )
-                )
 
                 val patientDiskresjonskodeDeferred =
                     async { diskresjonskodeService.hentDiskresjonskode(personNumberPatient) }

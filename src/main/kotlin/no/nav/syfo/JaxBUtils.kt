@@ -11,7 +11,10 @@ import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.msgHead.XMLMsgHead
 
-val fellesformatJaxBContext: JAXBContext = JAXBContext.newInstance(XMLEIFellesformat::class.java, XMLMsgHead::class.java, Legeerklaring::class.java)
+val fellesformatJaxBContext: JAXBContext = JAXBContext.newInstance(
+    XMLEIFellesformat::class.java,
+    XMLMsgHead::class.java,
+    Legeerklaring::class.java)
 val fellesformatUnmarshaller: Unmarshaller = fellesformatJaxBContext.createUnmarshaller().apply {
     setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
     setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
