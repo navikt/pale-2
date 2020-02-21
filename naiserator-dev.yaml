@@ -40,6 +40,9 @@ spec:
         mountPath: /secrets/azuread/pale-2
       - kvPath: /kv/preprod/fss/pale-2/default
         mountPath: /secrets/default
+  webproxy: true
+  ingresses:
+    - "https://pale-2.nais.preprod.local"
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.Q1_PALE.INPUT

@@ -40,6 +40,9 @@ spec:
         mountPath: /secrets/azuread/pale-2
       - kvPath: /kv/prod/fss/pale-2/default
         mountPath: /secrets/default
+  webproxy: true
+  ingresses:
+    - "https://pale-2.nais.adeo.no"
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.P_PALE.INPUT
