@@ -11,7 +11,6 @@ import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.LoggingMeta
 import no.nav.syfo.extractPersonIdent
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.log
@@ -25,6 +24,7 @@ import no.nav.syfo.model.Sak
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.objectMapper
+import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.validation.validatePersonAndDNumber
 
 @KtorExperimentalAPI

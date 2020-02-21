@@ -16,8 +16,8 @@ import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLIdent
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.helse.msgHead.XMLOrganisation
-import no.nav.syfo.PaleConstant
 import no.nav.syfo.get
+import no.nav.syfo.model.PaleConstant
 import no.nav.syfo.model.RuleInfo
 
 fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): XMLEIFellesformat {

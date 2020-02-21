@@ -2,12 +2,12 @@ package no.nav.syfo.services
 
 import io.ktor.util.KtorExperimentalAPI
 import net.logstash.logback.argument.StructuredArguments
-import no.nav.syfo.LoggingMeta
 import no.nav.syfo.NAV_OPPFOLGING_UTLAND_KONTOR_NR
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.fetchBehandlendeEnhet
 import no.nav.syfo.fetchGeografiskTilknytningAsync
 import no.nav.syfo.log
+import no.nav.syfo.util.LoggingMeta
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.binding.ArbeidsfordelingV1
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
 

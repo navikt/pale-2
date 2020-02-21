@@ -7,16 +7,11 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.util.KtorExperimentalAPI
-import no.nav.syfo.VaultCredentials
+import no.nav.syfo.VaultSecrets
 import no.nav.syfo.helpers.retry
 
 @KtorExperimentalAPI
-class LegeSuspensjonClient(
-    private val endpointUrl: String,
-    private val credentials: VaultCredentials,
-    private val stsClient: StsOidcClient,
-    private val httpClient: HttpClient
-) {
+class LegeSuspensjonClient(private val endpointUrl: String, private val secrets: VaultSecrets, private val stsClient: StsOidcClient, private val httpClient: HttpClient) {
 
     suspend fun checkTherapist(therapistId: String, ediloggid: String, oppslagsdato: String): Suspendert = retry("lege_suspansjon") {
         httpClient.get<Suspendert>("$endpointUrl/api/v1/suspensjon/status") {
@@ -24,7 +19,7 @@ class LegeSuspensjonClient(
             val oidcToken = stsClient.oidcToken()
             headers {
                 append("Nav-Call-Id", ediloggid)
-                append("Nav-Consumer-Id", credentials.serviceuserUsername)
+                append("Nav-Consumer-Id", secrets.serviceuserUsername)
                 append("Nav-Personident", therapistId)
 
                 append("Authorization", "Bearer ${oidcToken.access_token}")

@@ -9,9 +9,9 @@ import io.ktor.client.request.parameter
 import io.ktor.client.response.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.util.KtorExperimentalAPI
-import no.nav.syfo.LoggingMeta
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.model.IdentInfoResult
+import no.nav.syfo.util.LoggingMeta
 
 @KtorExperimentalAPI
 class AktoerIdClient(

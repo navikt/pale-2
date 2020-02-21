@@ -5,12 +5,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache.Apache
-import io.ktor.client.features.auth.Auth
-import io.ktor.client.features.auth.providers.basic
+import io.ktor.client.engine.apache.ApacheEngineConfig
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.util.KtorExperimentalAPI
@@ -19,7 +18,7 @@ import java.io.IOException
 import java.io.StringReader
 import java.io.StringWriter
 import java.lang.IllegalStateException
-import java.nio.file.Paths
+import java.net.ProxySelector
 import java.security.MessageDigest
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -61,10 +60,12 @@ import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
+import no.nav.syfo.client.AccessTokenClient
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.DokArkivClient
 import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
+import no.nav.syfo.client.NorskHelsenettClient
 import no.nav.syfo.client.PdfgenClient
 import no.nav.syfo.client.SakClient
 import no.nav.syfo.client.SarClient
@@ -104,6 +105,12 @@ import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.fetchDiskresjonsKode
+import no.nav.syfo.util.LoggingMeta
+import no.nav.syfo.util.TrackableException
+import no.nav.syfo.util.apprecMarshaller
+import no.nav.syfo.util.fellesformatUnmarshaller
+import no.nav.syfo.util.getFileAsString
+import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.binding.ArbeidsfordelingV1
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.ArbeidsfordelingKriterier
@@ -122,11 +129,7 @@ import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningR
 import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningResponse
 import no.nhn.schemas.reg.hprv2.IHPR2Service
 import no.nhn.schemas.reg.hprv2.Person as HPRPerson
-import org.apache.cxf.binding.soap.SoapMessage
-import org.apache.cxf.binding.soap.interceptor.AbstractSoapInterceptor
-import org.apache.cxf.message.Message
-import org.apache.cxf.phase.Phase
-import org.apache.cxf.ws.addressing.WSAddressingFeature
+import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
@@ -146,8 +149,14 @@ const val NAV_OPPFOLGING_UTLAND_KONTOR_NR = "0393"
 @KtorExperimentalAPI
 fun main() {
     val env = Environment()
-    val credentials = objectMapper.readValue<VaultCredentials>(
-        Paths.get("/var/run/secrets/nais.io/vault/credentials.json").toFile()
+
+    val vaultSecrets = VaultSecrets(
+        serviceuserPassword = getFileAsString("/secrets/default/serviceuserPassword"),
+        serviceuserUsername = getFileAsString("/secrets/default/serviceuserUsername"),
+        mqUsername = getFileAsString("/secrets/default/mqUsername"),
+        mqPassword = getFileAsString("/secrets/default/mqPassword"),
+        clientId = getFileAsString("/secrets/azuread/pale-2/client_id"),
+        clientsecret = getFileAsString("/secrets/azuread/pale-2/client_secret")
     )
 
     val applicationState = ApplicationState()
@@ -161,14 +170,7 @@ fun main() {
 
     DefaultExports.initialize()
 
-    val httpClientMedBasicAuth = HttpClient(Apache) {
-        install(Auth) {
-            basic {
-                username = credentials.serviceuserUsername
-                password = credentials.serviceuserPassword
-                sendWithoutRequest = true
-            }
-        }
+    val config: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
         install(JsonFeature) {
             serializer = JacksonSerializer {
                 registerKotlinModule()
@@ -177,78 +179,58 @@ fun main() {
                 configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             }
         }
+        expectSuccess = false
     }
 
-    val httpClient = HttpClient(Apache) {
-        install(JsonFeature) {
-            serializer = JacksonSerializer {
-                registerKotlinModule()
-                registerModule(JavaTimeModule())
-                configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    val proxyConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+        config()
+        engine {
+            customizeClient {
+                setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
             }
         }
     }
 
-    val oidcClient = StsOidcClient(credentials.serviceuserUsername, credentials.serviceuserPassword)
+    val httpClientWithProxy = HttpClient(Apache, proxyConfig)
+    val httpClient = HttpClient(Apache, config)
+
+    val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword)
     val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient, httpClient)
 
-    val sarClient = SarClient(env.kuhrSarApiUrl, httpClientMedBasicAuth)
+    val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
     val pdfgenClient = PdfgenClient(env.pdfgen, httpClient)
     val sakClient = SakClient(env.opprettSakUrl, oidcClient, httpClient)
     val dokArkivClient = DokArkivClient(env.dokArkivUrl, oidcClient, httpClient)
     val norg2Client = Norg2Client(env.norg2V1EndpointURL, httpClient)
     val legeSuspensjonClient = LegeSuspensjonClient(
         env.legeSuspensjonEndpointURL,
-        credentials,
+        vaultSecrets,
         oidcClient,
         httpClient
     )
 
-    val helsepersonellV1 = createPort<IHPR2Service>(env.helsepersonellv1EndpointURL) {
-        proxy {
-            // TODO: Contact someone about this hacky workaround
-            // talk to HDIR about HPR about they claim to send a ISO-8859-1 but its really UTF-8 payload
-            val interceptor = object : AbstractSoapInterceptor(Phase.RECEIVE) {
-                override fun handleMessage(message: SoapMessage?) {
-                    if (message != null)
-                        message[Message.ENCODING] = "utf-8"
-                }
-            }
-
-            inInterceptors.add(interceptor)
-            inFaultInterceptors.add(interceptor)
-            features.add(WSAddressingFeature())
-        }
-
-        port {
-            withSTS(
-                credentials.serviceuserUsername,
-                credentials.serviceuserPassword,
-                env.securityTokenServiceURL
-            )
-        }
-    }
-
     val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
         port {
             withSTS(
-                credentials.serviceuserUsername,
-                credentials.serviceuserPassword,
+                vaultSecrets.serviceuserUsername,
+                vaultSecrets.serviceuserPassword,
                 env.securityTokenServiceURL
             )
         }
     }
 
     val arbeidsfordelingV1 = createPort<ArbeidsfordelingV1>(env.arbeidsfordelingV1EndpointURL) {
-        port { withSTS(credentials.serviceuserUsername, credentials.serviceuserPassword, env.securityTokenServiceURL) }
+        port { withSTS(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword, env.securityTokenServiceURL) }
     }
+    val accessTokenClient = AccessTokenClient(env.aadAccessTokenUrl, vaultSecrets.clientId, vaultSecrets.clientsecret, httpClientWithProxy)
+
+    val norskHelsenettClient = NorskHelsenettClient(env.norskHelsenettEndpointURL, accessTokenClient, env.helsenettproxyId, httpClient)
 
     launchListeners(
         applicationState, env, sarClient,
-        aktoerIdClient, credentials, helsepersonellV1,
+        aktoerIdClient, vaultSecrets,
         legeSuspensjonClient, pdfgenClient, sakClient, dokArkivClient,
-        personV3, norg2Client, arbeidsfordelingV1
+        personV3, norg2Client, arbeidsfordelingV1, norskHelsenettClient
     )
 }
 
@@ -269,18 +251,18 @@ fun launchListeners(
     env: Environment,
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
-    credentials: VaultCredentials,
-    helsepersonellv1: IHPR2Service,
+    secrets: VaultSecrets,
     legeSuspensjonClient: LegeSuspensjonClient,
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
     dokArkivClient: DokArkivClient,
     personV3: PersonV3,
     norg2Client: Norg2Client,
-    arbeidsfordelingV1: ArbeidsfordelingV1
+    arbeidsfordelingV1: ArbeidsfordelingV1,
+    norskHelsenettClient: NorskHelsenettClient
 ) {
     createListener(applicationState) {
-        connectionFactory(env).createConnection(credentials.mqUsername, credentials.mqPassword).use { connection ->
+        connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
             Jedis(env.redishost, 6379).use { jedis ->
                 connection.start()
                 val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
@@ -302,8 +284,7 @@ fun launchListeners(
                     backoutProducer,
                     kuhrSarClient,
                     aktoerIdClient,
-                    credentials,
-                    helsepersonellv1,
+                    secrets,
                     legeSuspensjonClient,
                     pdfgenClient,
                     sakClient,
@@ -311,7 +292,8 @@ fun launchListeners(
                     arenaProducer,
                     personV3,
                     norg2Client,
-                    arbeidsfordelingV1
+                    arbeidsfordelingV1,
+                    norskHelsenettClient
                 )
             }
         }
@@ -329,8 +311,7 @@ suspend fun blockingApplicationLogic(
     backoutProducer: MessageProducer,
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
-    credentials: VaultCredentials,
-    helsepersonellv1: IHPR2Service,
+    secrets: VaultSecrets,
     legeSuspensjonClient: LegeSuspensjonClient,
     pdfgenClient: PdfgenClient,
     sakClient: SakClient,
@@ -338,7 +319,8 @@ suspend fun blockingApplicationLogic(
     arenaProducer: MessageProducer,
     personV3: PersonV3,
     norg2Client: Norg2Client,
-    arbeidsfordelingV1: ArbeidsfordelingV1
+    arbeidsfordelingV1: ArbeidsfordelingV1,
+    norskHelsenettClient: NorskHelsenettClient
 ) = coroutineScope {
     wrapExceptions {
         loop@ while (applicationState.ready) {
@@ -380,7 +362,7 @@ suspend fun blockingApplicationLogic(
 
                 val aktoerIds = aktoerIdClient.getAktoerIds(
                     listOf(personNumberDoctor, personNumberPatient),
-                    credentials.serviceuserUsername, loggingMeta
+                    secrets.serviceuserUsername, loggingMeta
                 )
 
                 log.info("Ferdig med aktoerIdClient {}", fields(loggingMeta))
@@ -473,16 +455,37 @@ suspend fun blockingApplicationLogic(
 
                 val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
-                log.info("Hentet ut patientDiskresjonskodeDeferred, {}", fields(loggingMeta))
+                log.info("Hentet ut patientDiskresjonsKode, {}", fields(loggingMeta))
 
-                val signaturDatoString = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(msgHead.msgInfo.genDate)
-
-                val doctorSuspend =
+                val doctorSuspendDeferred = async {
+                    val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
                     legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
+                }
 
                 log.info("Hentet ut legeSuspensjonClient, {}", fields(loggingMeta))
 
-                val doctor = fetchDoctor(helsepersonellv1, personNumberDoctor).await()
+                val behandler = norskHelsenettClient.finnBehandler(
+                    behandlerFnr = personNumberDoctor,
+                    msgId = msgId,
+                    loggingMeta = loggingMeta
+                )
+
+                if (behandler == null) {
+                    log.info(
+                        "Doctor not found i aktorRegister {}, {}", fields(loggingMeta),
+                        StructuredArguments.keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR")
+                    )
+                    sendReceipt(
+                        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+                            createApprecError("Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR)")
+                        )
+                    )
+                    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+                    INVALID_MESSAGE_NO_NOTICE.inc()
+                    continue@loop
+                }
+
+                log.info("Avsender behandler har hprnummer: ${behandler.hprNummer}, {}", fields(loggingMeta))
 
                 val results = listOf(
                     ValidationRuleChain.values().executeFlow(
@@ -495,8 +498,8 @@ suspend fun blockingApplicationLogic(
                         )
                     ),
                     PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
-                    HPRRuleChain.values().executeFlow(legeerklaring, doctor),
-                    LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
+                    HPRRuleChain.values().executeFlow(legeerklaring, behandler),
+                    LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspendDeferred.await())
                 ).flatten()
 
                 log.info("Rules hit {}, {}", results.map { it.name }, fields(loggingMeta))
