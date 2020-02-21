@@ -11,10 +11,9 @@ import no.nav.syfo.model.PaleConstant
 fun createArenaInfo(
     fellesformat: XMLEIFellesformat,
     tssId: String?,
-    sperrekode: Int? = null,
     navkontor: String?,
     mottakid: String,
-    healthcareProfessional: XMLHealthcareProfessional,
+    healthcareProfessional: XMLHealthcareProfessional?,
     fnrbehandler: String
 ): ArenaEiaInfo = ArenaEiaInfo().apply {
     val legeerklaering = extractLegeerklaering(fellesformat)
@@ -31,9 +30,6 @@ fun createArenaInfo(
             else -> false
         }
         tkNummer = navkontor
-        if (sperrekode != null && (sperrekode == 6 || sperrekode == 7)) {
-            spesreg = sperrekode
-        }
     }
     legeData = ArenaEiaInfo.LegeData().apply {
         navn = hcp?.formatName() ?: ""

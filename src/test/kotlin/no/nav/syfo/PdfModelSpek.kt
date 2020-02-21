@@ -130,12 +130,14 @@ object PdfModelSpek : Spek({
                         RuleInfo(
                             ruleName = "PASIENT_YNGRE_ENN_13",
                             messageForUser = "Pasienten er under 13 år. Sykmelding kan ikke benyttes.",
-                            messageForSender = "Pasienten er under 13 år. Sykmelding kan ikke benyttes."
+                            messageForSender = "Pasienten er under 13 år. Sykmelding kan ikke benyttes.",
+                            status = Status.INVALID
                         ),
                         RuleInfo(
                             ruleName = "PASIENT_ELDRE_ENN_70",
                             messageForUser = "Sykmelding kan ikke benyttes etter at du har fylt 70 år",
-                            messageForSender = "Pasienten er over 70 år. Sykmelding kan ikke benyttes."
+                            messageForSender = "Pasienten er over 70 år. Sykmelding kan ikke benyttes.",
+                            status = Status.INVALID
                         )
                     )
                 )

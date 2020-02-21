@@ -22,7 +22,8 @@ class NorskHelsenettClient(
     private val endpointUrl: String,
     private val accessTokenClient: AccessTokenClient,
     private val resourceId: String,
-    private val httpClient: HttpClient) {
+    private val httpClient: HttpClient
+) {
 
     suspend fun finnBehandler(behandlerFnr: String, msgId: String, loggingMeta: LoggingMeta): Behandler? = retry(
         callName = "finnbehandler",

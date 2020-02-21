@@ -1,6 +1,5 @@
 package no.nav.syfo
 
-import com.ctc.wstx.exc.WstxException
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -14,15 +13,12 @@ import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
-import java.io.IOException
 import java.io.StringReader
 import java.io.StringWriter
-import java.lang.IllegalStateException
 import java.net.ProxySelector
 import java.security.MessageDigest
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.GregorianCalendar
 import java.util.concurrent.TimeUnit
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
@@ -31,7 +27,6 @@ import javax.jms.TextMessage
 import javax.xml.bind.Marshaller
 import javax.xml.datatype.DatatypeFactory
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -70,9 +65,9 @@ import no.nav.syfo.client.PdfgenClient
 import no.nav.syfo.client.SakClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
+import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.client.createJournalpostPayload
 import no.nav.syfo.client.findBestSamhandlerPraksis
-import no.nav.syfo.helpers.retry
 import no.nav.syfo.metrics.APPREC_COUNTER
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
@@ -108,27 +103,13 @@ import no.nav.syfo.services.fetchDiskresjonsKode
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.util.apprecMarshaller
+import no.nav.syfo.util.arenaMarshaller
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.binding.ArbeidsfordelingV1
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.ArbeidsfordelingKriterier
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Diskresjonskoder
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Geografi
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Oppgavetyper
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.informasjon.Tema
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.meldinger.FinnBehandlendeEnhetListeRequest
-import no.nav.tjeneste.virksomhet.arbeidsfordeling.v1.meldinger.FinnBehandlendeEnhetListeResponse
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.GeografiskTilknytning
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.NorskIdent
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.PersonIdent
-import no.nav.tjeneste.virksomhet.person.v3.informasjon.Personidenter
-import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningRequest
-import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningResponse
-import no.nhn.schemas.reg.hprv2.IHPR2Service
-import no.nhn.schemas.reg.hprv2.Person as HPRPerson
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -508,12 +489,10 @@ suspend fun blockingApplicationLogic(
                     personNumberPatient,
                     personV3,
                     norg2Client,
-                    arbeidsfordelingV1,
                     patientDiskresjonsKode,
                     loggingMeta
                 )
 
-                val behandlendeEnhet = findNAVKontorService.finnBehandlendeEnhet()
                 val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
                 val legeerklaering = extractLegeerklaering(fellesformat)
@@ -569,9 +548,17 @@ suspend fun blockingApplicationLogic(
                     log.info("Not sending message to arena, {}", fields(loggingMeta))
                 } else {
                     log.info("Sending message to arena, {}", fields(loggingMeta))
-                    // sendArenaInfo(arenaProducer, session, fellesformat, validationResult)
+                    sendArenaInfo(arenaProducer, session, fellesformat,
+                        lokaltNavkontor, samhandlerPraksis?.tss_ident,
+                        ediLoggId, healthcareProfessional, personNumberDoctor)
                 }
                 val currentRequestLatency = requestLatency.observeDuration()
+
+                log.info("Message got outcome {}, {}, processing took {}s",
+                    StructuredArguments.keyValue("status", validationResult.status),
+                    StructuredArguments.keyValue("ruleHits", validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName }),
+                    StructuredArguments.keyValue("latency", currentRequestLatency),
+                    fields(loggingMeta))
             } catch (jedisException: JedisConnectionException) {
                 log.error("Exception caught, redis issue while handling message, sending to backout", jedisException)
                 backoutProducer.send(message)
@@ -584,6 +571,20 @@ suspend fun blockingApplicationLogic(
         }
     }
 }
+
+fun sendArenaInfo(
+    producer: MessageProducer,
+    session: Session,
+    fellesformat: XMLEIFellesformat,
+    lokaltNavkontor: String,
+    tssId: String?,
+    mottakid: String,
+    healthcareProfessional: XMLHealthcareProfessional?,
+    fnrbehandler: String
+) = producer.send(session.createTextMessage().apply {
+    val info = createArenaInfo(fellesformat, tssId, lokaltNavkontor, mottakid, healthcareProfessional, fnrbehandler)
+    text = arenaMarshaller.toString(info)
+})
 
 fun extractOrganisationNumberFromSender(fellesformat: XMLEIFellesformat): XMLIdent? =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.ident.find {
@@ -636,16 +637,6 @@ fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
 
 fun extractSenderOrganisationName(fellesformat: XMLEIFellesformat): String =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.organisationName ?: ""
-
-fun CoroutineScope.fetchDoctor(hprService: IHPR2Service, doctorIdent: String): Deferred<HPRPerson> = async {
-    retry(
-        callName = "hpr_hent_person_med_personnummer",
-        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
-        legalExceptions = *arrayOf(IOException::class, WstxException::class)
-    ) {
-        hprService.hentPersonMedPersonnummer(doctorIdent, datatypeFactory.newXMLGregorianCalendar(GregorianCalendar()))
-    }
-}
 
 fun createPdfPayload(
     legeerklaring: Legeerklaring,
@@ -840,83 +831,7 @@ fun validationResult(results: List<Rule<Any>>): ValidationResult =
                 it.firstOrNull { status -> status == Status.MANUAL_PROCESSING }
                     ?: Status.OK
             },
-        ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForUser!!, rule.messageForSender!!) }
+        ruleHits = results.map { rule ->
+            RuleInfo(rule.name, rule.messageForUser!!, rule.messageForSender!!, rule.status
+        ) }
     )
-
-suspend fun fetchGeografiskTilknytningAsync(
-    personV3: PersonV3,
-    personFNR: String
-): HentGeografiskTilknytningResponse =
-    retry(
-        callName = "tps_hent_geografisktilknytning",
-        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
-        legalExceptions = *arrayOf(IOException::class, WstxException::class, IllegalStateException::class)
-    ) {
-        personV3.hentGeografiskTilknytning(
-            HentGeografiskTilknytningRequest().withAktoer(
-                PersonIdent().withIdent(
-                    NorskIdent()
-                        .withIdent(personFNR)
-                        .withType(Personidenter().withValue("FNR"))
-                )
-            )
-        )
-    }
-
-suspend fun fetchBehandlendeEnhet(
-    arbeidsfordelingV1: ArbeidsfordelingV1,
-    geografiskTilknytning: GeografiskTilknytning?,
-    patientDiskresjonsKode: String?
-): FinnBehandlendeEnhetListeResponse? =
-    retry(
-        callName = "finn_nav_kontor",
-        retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
-        legalExceptions = *arrayOf(IOException::class, WstxException::class)
-    ) {
-        arbeidsfordelingV1.finnBehandlendeEnhetListe(FinnBehandlendeEnhetListeRequest().apply {
-            val afk = ArbeidsfordelingKriterier()
-            if (geografiskTilknytning?.geografiskTilknytning != null) {
-                afk.geografiskTilknytning = Geografi().apply {
-                    value = geografiskTilknytning.geografiskTilknytning
-                }
-            }
-            afk.tema = Tema().apply {
-                value = "SYM"
-            }
-
-            afk.oppgavetype = Oppgavetyper().apply {
-                value = "BEH_EL_SYM"
-            }
-
-            if (!patientDiskresjonsKode.isNullOrBlank()) {
-                afk.diskresjonskode = Diskresjonskoder().apply {
-                    value = patientDiskresjonsKode
-                }
-            }
-
-            arbeidsfordelingKriterier = afk
-        })
-    }
-
-/*
-fun sendArenaInfo(
-    producer: MessageProducer,
-    session: Session,
-    fellesformat: XMLEIFellesformat,
-    validationResult: ValidationResult
-    tssid: String?
-    navkontorNr: Sting
-) = producer.send(session.createTextMessage().apply {
-    val info = createArenaInfo(fellesformat, tssid, sperrekode, navkontor).apply {
-        // TODO eiaData may not be used by Arena
-        eiaData = ArenaEiaInfo.EiaData().apply {
-            systemSvar.addAll(validationResult.outcomes
-                .map { it.toSystemSvar() })
-
-            if (systemSvar.isEmpty()) {
-                systemSvar.add(OutcomeType.LEGEERKLAERING_MOTTAT.toOutcome().toSystemSvar())
-            }
-        }
-    }
-    text = arenaMarshaller.toString(info)
-}) */

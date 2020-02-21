@@ -8,7 +8,8 @@ data class ValidationResult(
 data class RuleInfo(
     val ruleName: String,
     val messageForSender: String,
-    val messageForUser: String
+    val messageForUser: String,
+    val status: Status
 )
 
 enum class Status {
