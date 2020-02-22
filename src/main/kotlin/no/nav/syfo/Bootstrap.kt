@@ -25,7 +25,6 @@ import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
 import javax.xml.bind.Marshaller
-import javax.xml.datatype.DatatypeFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -55,6 +54,7 @@ import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
+import no.nav.syfo.apprec.toApprecCV
 import no.nav.syfo.client.AccessTokenClient
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.DokArkivClient
@@ -120,8 +120,6 @@ val objectMapper: ObjectMapper = ObjectMapper()
     .registerModule(JavaTimeModule())
     .registerKotlinModule()
     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-
-val datatypeFactory: DatatypeFactory = DatatypeFactory.newInstance()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
@@ -551,6 +549,13 @@ suspend fun blockingApplicationLogic(
                     sendArenaInfo(arenaProducer, session, fellesformat,
                         lokaltNavkontor, samhandlerPraksis?.tss_ident,
                         ediLoggId, healthcareProfessional, personNumberDoctor)
+                }
+
+                if (validationResult.status == Status.INVALID) {
+                    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist,
+                        validationResult.ruleHits.map { it.toApprecCV() })
+                } else {
+                    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
                 }
                 val currentRequestLatency = requestLatency.observeDuration()
 
