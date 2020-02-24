@@ -14,7 +14,6 @@ import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.Environment
 import no.nav.syfo.VaultSecrets
-import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.DokArkivClient
 import no.nav.syfo.client.LegeSuspensjonClient
@@ -25,15 +24,18 @@ import no.nav.syfo.client.SakClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.createJournalpostPayload
 import no.nav.syfo.client.findBestSamhandlerPraksis
-import no.nav.syfo.createApprecError
 import no.nav.syfo.extractPersonIdent
 import no.nav.syfo.get
+import no.nav.syfo.handlestatus.avsenderNotinHPR
+import no.nav.syfo.handlestatus.handleDoctorNotFoundInAktorRegister
+import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
+import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
+import no.nav.syfo.handlestatus.handlePatientNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusMANUALPROCESSING
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
-import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
 import no.nav.syfo.model.RuleMetadata
@@ -43,7 +45,6 @@ import no.nav.syfo.rules.LegesuspensjonRuleChain
 import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
-import no.nav.syfo.sendReceipt
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.fetchDiskresjonsKode
 import no.nav.syfo.services.sha256hashstring
@@ -138,42 +139,12 @@ class BlockingApplicationRunner {
                     val redisEdiloggid = jedis.get(ediLoggId)
 
                     if (redisSha256String != null) {
-                        log.warn(
-                            "Message with {} marked as duplicate {}",
-                            StructuredArguments.keyValue("originalEdiLoggId", redisSha256String),
-                            StructuredArguments.fields(loggingMeta)
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError(
-                                    "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                            "Skal ikke sendes på nytt."
-                                )
-                            )
-                        )
-                        log.info(
-                            "Apprec Receipt sent to {}, {}", env.apprecQueueName,
-                            StructuredArguments.fields(loggingMeta)
-                        )
+                        handleDuplicateSM2013Content(session, receiptProducer,
+                            fellesformat, loggingMeta, env, redisSha256String)
                         continue@loop
                     } else if (redisEdiloggid != null) {
-                        log.warn(
-                            "Message with {} marked as duplicate, {}",
-                            StructuredArguments.keyValue("originalEdiLoggId", redisEdiloggid),
-                            StructuredArguments.fields(loggingMeta)
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError(
-                                    "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
-                                            "Skal ikke sendes på nytt."
-                                )
-                            )
-                        )
-                        log.info(
-                            "Apprec Receipt sent to {}, {}", env.apprecQueueName,
-                            StructuredArguments.fields(loggingMeta)
-                        )
+                        handleDuplicateEdiloggid(session, receiptProducer,
+                            fellesformat, loggingMeta, env, redisEdiloggid)
                         continue@loop
                     } else {
                         updateRedis(jedis, ediLoggId, sha256String)
@@ -185,43 +156,13 @@ class BlockingApplicationRunner {
                     log.info("Hentet ut aktorider, {}", StructuredArguments.fields(loggingMeta))
 
                     if (patientIdents == null || patientIdents.feilmelding != null) {
-                        log.info(
-                            "Patient not found i aktorRegister {}, {}", StructuredArguments.fields(loggingMeta),
-                            StructuredArguments.keyValue(
-                                "errorMessage",
-                                patientIdents?.feilmelding ?: "No response for FNR"
-                            )
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError("Pasienten er ikkje registrert i folkeregisteret")
-                            )
-                        )
-                        log.info(
-                            "Apprec Receipt sent to {}, {}", env.apprecQueueName,
-                            StructuredArguments.fields(loggingMeta)
-                        )
-                        INVALID_MESSAGE_NO_NOTICE.inc()
+                        handlePatientNotFoundInAktorRegister(patientIdents, session,
+                            receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta)
                         continue@loop
                     }
                     if (doctorIdents == null || doctorIdents.feilmelding != null) {
-                        log.info(
-                            "Doctor not found i aktorRegister {}, {}", StructuredArguments.fields(loggingMeta),
-                            StructuredArguments.keyValue(
-                                "errorMessage",
-                                doctorIdents?.feilmelding ?: "No response for FNR"
-                            )
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError("Behandler er ikkje registrert i folkeregisteret")
-                            )
-                        )
-                        log.info(
-                            "Apprec Receipt sent to {}, {}", env.apprecQueueName,
-                            StructuredArguments.fields(loggingMeta)
-                        )
-                        INVALID_MESSAGE_NO_NOTICE.inc()
+                        handleDoctorNotFoundInAktorRegister(doctorIdents, session,
+                            receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta)
                         continue@loop
                     }
 
@@ -234,35 +175,20 @@ class BlockingApplicationRunner {
 
                     log.info("Hentet ut legeSuspensjonClient, {}", StructuredArguments.fields(loggingMeta))
 
-                    val behandler = norskHelsenettClient.finnBehandler(
+                    val avsenderBehandler = norskHelsenettClient.finnBehandler(
                         behandlerFnr = personNumberDoctor,
                         msgId = msgId,
                         loggingMeta = loggingMeta
                     )
 
-                    if (behandler == null) {
-                        log.info(
-                            "Doctor not found i aktorRegister {}, {}", StructuredArguments.fields(loggingMeta),
-                            StructuredArguments.keyValue(
-                                "errorMessage",
-                                doctorIdents.feilmelding ?: "No response for FNR"
-                            )
-                        )
-                        sendReceipt(
-                            session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-                                createApprecError("Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR)")
-                            )
-                        )
-                        log.info(
-                            "Apprec Receipt sent to {}, {}", env.apprecQueueName,
-                            StructuredArguments.fields(loggingMeta)
-                        )
-                        INVALID_MESSAGE_NO_NOTICE.inc()
+                    if (avsenderBehandler == null) {
+                        avsenderNotinHPR(session, receiptProducer, fellesformat,
+                            ediLoggId, jedis, redisSha256String, env, loggingMeta)
                         continue@loop
                     }
 
                     log.info(
-                        "Avsender behandler har hprnummer: ${behandler.hprNummer}, {}",
+                        "Avsender behandler har hprnummer: ${avsenderBehandler.hprNummer}, {}",
                         StructuredArguments.fields(loggingMeta)
                     )
 
@@ -277,7 +203,7 @@ class BlockingApplicationRunner {
                             )
                         ),
                         PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
-                        HPRRuleChain.values().executeFlow(legeerklaring, behandler),
+                        HPRRuleChain.values().executeFlow(legeerklaring, avsenderBehandler),
                         LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
                     ).flatten()
 
@@ -353,20 +279,23 @@ class BlockingApplicationRunner {
                             samhandlerPraksis?.tss_ident,
                             ediLoggId,
                             personNumberDoctor,
-                            healthcareProfessional
+                            healthcareProfessional,
+                            loggingMeta
                         )
 
                         Status.MANUAL_PROCESSING -> handleStatusMANUALPROCESSING(
                             session,
                             receiptProducer,
-                            fellesformat
+                            fellesformat,
+                            loggingMeta
                         )
 
                         Status.INVALID -> handleStatusINVALID(
                             validationResult,
                             session,
                             receiptProducer,
-                            fellesformat
+                            fellesformat,
+                            loggingMeta
                         )
                     }
 

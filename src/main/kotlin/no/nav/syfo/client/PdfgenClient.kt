@@ -10,6 +10,7 @@ import io.ktor.util.KtorExperimentalAPI
 import java.time.ZonedDateTime
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.AktueltTiltak
+import no.nav.helse.legeerklaering.Arbeidssituasjon
 import no.nav.helse.legeerklaering.DiagnoseArbeidsuforhet
 import no.nav.helse.legeerklaering.Enkeltdiagnose
 import no.nav.helse.legeerklaering.ForslagTiltak
@@ -18,10 +19,6 @@ import no.nav.helse.legeerklaering.PlanUtredBehandle
 import no.nav.helse.legeerklaering.VurderingFunksjonsevne
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.ArbeidssituasjonType
-import no.nav.syfo.KontaktType
-import no.nav.syfo.LegeerklaeringType
-import no.nav.syfo.contains
 import no.nav.syfo.formatName
 import no.nav.syfo.get
 import no.nav.syfo.helpers.retry
@@ -201,4 +198,35 @@ class PdfgenClient(
 
     operator fun Iterable<AktueltTiltak>.contains(typeTiltak: TypeTiltak) =
         any { it.typeTiltak.toInt() == typeTiltak.typeTiltak }
+
+    enum class LegeerklaeringType(val type: Int) {
+        Arbeidsevnevurdering(1),
+        Arbeidsavklaringspenger(2),
+        YrkesrettetAttfoering(3),
+        Ufoerepensjon(4)
+    }
+
+    enum class ArbeidssituasjonType(val type: Int) {
+        InntektsgivendeArbeid(1),
+        Hjemmearbeidende(2),
+        Student(3),
+        Annet(4)
+    }
+
+    operator fun Iterable<Arbeidssituasjon>.contains(arbeidssituasjonType: ArbeidssituasjonType): Boolean =
+        any {
+            it.arbeidssituasjon?.let {
+                it.toInt() == arbeidssituasjonType.type
+            } ?: false
+        }
+
+    enum class KontaktType(val type: Int) {
+        BehandlendeLege(1),
+        Arbeidsgiver(2),
+        Basisgruppe(4),
+        AnnenInstans(5)
+    }
+
+    operator fun Iterable<no.nav.helse.legeerklaering.Kontakt>.contains(kontaktType: KontaktType): Boolean =
+        any { it.kontakt.toInt() == kontaktType.type }
 }

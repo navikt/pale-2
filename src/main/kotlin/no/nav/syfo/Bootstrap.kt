@@ -25,7 +25,6 @@ import kotlinx.coroutines.launch
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.apprecV1.XMLCV as AppRecCV
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.helse.legeerklaering.Arbeidssituasjon
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.syfo.application.ApplicationServer
@@ -208,12 +207,6 @@ fun launchListeners(
 
 inline fun <reified T> XMLEIFellesformat.get() = this.any.find { it is T } as T
 
-fun createApprecError(textToTreater: String): AppRecCV = AppRecCV().apply {
-    dn = textToTreater
-    v = "2.16.578.1.12.4.1.1.8221"
-    s = "X99"
-}
-
 fun sendReceipt(
     session: Session,
     receiptProducer: MessageProducer,
@@ -236,37 +229,6 @@ fun Marshaller.toString(input: Any): String = StringWriter().use {
 
 fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
     legeerklaering.pasientopplysninger.pasient.fodselsnummer
-
-enum class LegeerklaeringType(val type: Int) {
-    Arbeidsevnevurdering(1),
-    Arbeidsavklaringspenger(2),
-    YrkesrettetAttfoering(3),
-    Ufoerepensjon(4)
-}
-
-enum class ArbeidssituasjonType(val type: Int) {
-    InntektsgivendeArbeid(1),
-    Hjemmearbeidende(2),
-    Student(3),
-    Annet(4)
-}
-
-operator fun Iterable<Arbeidssituasjon>.contains(arbeidssituasjonType: ArbeidssituasjonType): Boolean =
-    any {
-        it.arbeidssituasjon?.let {
-            it.toInt() == arbeidssituasjonType.type
-        } ?: false
-    }
-
-enum class KontaktType(val type: Int) {
-    BehandlendeLege(1),
-    Arbeidsgiver(2),
-    Basisgruppe(4),
-    AnnenInstans(5)
-}
-
-operator fun Iterable<no.nav.helse.legeerklaering.Kontakt>.contains(kontaktType: KontaktType): Boolean =
-    any { it.kontakt.toInt() == kontaktType.type }
 
 fun XMLHealthcareProfessional.formatName(): String = if (middleName == null) {
     "${familyName.toUpperCase()} ${givenName.toUpperCase()}"
