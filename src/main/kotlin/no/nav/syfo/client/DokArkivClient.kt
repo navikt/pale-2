@@ -26,6 +26,8 @@ import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.objectMapper
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.validation.validatePersonAndDNumber
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @KtorExperimentalAPI
 class DokArkivClient(
@@ -115,8 +117,12 @@ fun createAvsenderMottakerNotValidFnr(): AvsenderMottaker = AvsenderMottaker(
 
 fun createTittleJournalpost(validationResult: ValidationResult, msgHead: XMLMsgHead): String {
     return if (validationResult.status == Status.INVALID) {
-        "Avvist egeerklaering opprettet:${msgHead.msgInfo.genDate}"
+        "Avvist Legeerklaering ${formaterDato(msgHead.msgInfo.genDate)}"
     } else {
-        "Legeerklaering opprettet:${msgHead.msgInfo.genDate}"
+        "Legeerklaering ${formaterDato(msgHead.msgInfo.genDate)}"
     }
+}
+fun formaterDato(dato: LocalDateTime): String {
+    val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+    return dato.format(formatter)
 }
