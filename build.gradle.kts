@@ -8,7 +8,7 @@ version = "1.0.0"
 
 val ktorVersion = "1.2.6"
 val prometheusVersion = "0.6.0"
-val spekVersion = "2.0.8"
+val spekVersion = "2.0.9"
 val kluentVersion = "1.39"
 val smCommonVersion = "1.7bf5e6f"
 val logbackVersion = "1.2.3"
@@ -31,11 +31,13 @@ val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
 val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
+val jfairyVersion = "0.6.2"
 
 plugins {
     id("no.nils.wsdl2java") version "0.10"
     kotlin("jvm") version "1.3.61"
     id("com.github.johnrengelman.shadow") version "5.2.0"
+    id("com.diffplug.gradle.spotless") version "3.24.0"
     id("org.jmailen.kotlinter") version "2.2.0"
 }
 
@@ -131,6 +133,7 @@ dependencies {
     testRuntimeOnly ("org.spekframework.spek2:spek-runner-junit5:$spekVersion") {
         exclude(group = "org.jetbrains.kotlin")
     }
+    testImplementation("com.devskiller:jfairy:$jfairyVersion")
 }
 
 tasks {

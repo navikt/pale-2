@@ -15,7 +15,7 @@ enum class ValidationRuleChain(
 ) : Rule<RuleData<RuleMetadata>> {
 
     @Description("Pasienten sitt fødselsnummer eller D-nummer er ikke 11 tegn.")
-    UGYLDIG_FNR_LENGDE(
+    UGYLDIG_FNR_LENGDE_PASIENT(
             1002,
             Status.INVALID,
             "Pasienten sitt fødselsnummer eller D-nummer er ikke 11 tegn.",
@@ -24,11 +24,11 @@ enum class ValidationRuleChain(
     }),
 
     @Description("Fødselsnummer/D-nummer kan passerer ikke modulus 11")
-    UGYLDIG_FNR(
+    UGYLDIG_FNR_PASIENT(
             1006,
             Status.INVALID,
             "Fødselsnummer/D-nummer kan passerer ikke modulus 11",
-            "Fødselsnummer/D-nummer kan passerer ikke modulus 11", { (_, metadata) ->
+            "Pasientens fødselsnummer/D-nummer er ikke gyldig", { (_, metadata) ->
         !validatePersonAndDNumber(metadata.patientPersonNumber)
     }),
 
@@ -39,15 +39,6 @@ enum class ValidationRuleChain(
             "Pasienten er under 13 år. Sykmelding kan ikke benyttes.",
             "Pasienten er under 13 år. Sykmelding kan ikke benyttes.", { (_, metadata) ->
             metadata.signatureDate.toLocalDate() < extractBornDate(metadata.patientPersonNumber).plusYears(13)
-    }),
-
-    @Description("Hele sykmeldingsperioden er etter at bruker har fylt 70 år. Dersom bruker fyller 70 år i perioden skal sykmelding gå gjennom på vanlig måte.")
-    PASIENT_ELDRE_ENN_70(
-            1102,
-            Status.INVALID,
-            "Sykmelding kan ikke benyttes etter at du har fylt 70 år",
-            "Pasienten er over 70 år. Sykmelding kan ikke benyttes.", { (_, metadata) ->
-            metadata.signatureDate.toLocalDate() > extractBornDate(metadata.patientPersonNumber).plusYears(70)
     }),
 
     @Description("Organisasjonsnummeret som er oppgitt er ikke 9 tegn.")

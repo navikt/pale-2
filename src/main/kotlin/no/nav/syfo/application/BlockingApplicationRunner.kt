@@ -34,6 +34,7 @@ import no.nav.syfo.handlestatus.handlePatientNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusMANUALPROCESSING
 import no.nav.syfo.handlestatus.handleStatusOK
+import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.REQUEST_TIME
@@ -50,6 +51,7 @@ import no.nav.syfo.services.fetchDiskresjonsKode
 import no.nav.syfo.services.sha256hashstring
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
+import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.extractOrganisationHerNumberFromSender
 import no.nav.syfo.util.extractOrganisationNumberFromSender
@@ -165,15 +167,16 @@ class BlockingApplicationRunner {
                             receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta)
                         continue@loop
                     }
+                    if (erTestFnr(personNumberPatient) && env.cluster == "prod-fss") {
+                        handleTestFnrInProd(session, receiptProducer, fellesformat,
+                            ediLoggId, jedis, redisSha256String, env, loggingMeta)
+                        continue@loop
+                    }
 
                     val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
-                    log.info("Hentet ut patientDiskresjonsKode, {}", StructuredArguments.fields(loggingMeta))
-
                     val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
                     val doctorSuspend = legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
-
-                    log.info("Hentet ut legeSuspensjonClient, {}", StructuredArguments.fields(loggingMeta))
 
                     val avsenderBehandler = norskHelsenettClient.finnBehandler(
                         behandlerFnr = personNumberDoctor,
