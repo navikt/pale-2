@@ -99,7 +99,7 @@ fun createJournalpostPayload(
                 arkivsaksnummer = caseId,
                 arkivsaksystem = "GSAK"
         ),
-        tema = "SYM",
+        tema = "OPP",
         tittel = createTittleJournalpost(validationResult, msgHead)
 )
 
