@@ -7,8 +7,6 @@ import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
@@ -84,7 +82,7 @@ class BlockingApplicationRunner {
         personV3: PersonV3,
         norg2Client: Norg2Client,
         norskHelsenettClient: NorskHelsenettClient
-    ) = coroutineScope {
+    ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
                 val message = inputconsumer.receiveNoWait()
@@ -231,10 +229,8 @@ class BlockingApplicationRunner {
 
                     log.info("Hentet ut patientDiskresjonsKode, {}", StructuredArguments.fields(loggingMeta))
 
-                    val doctorSuspendDeferred = async {
-                        val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
-                        legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
-                    }
+                    val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
+                    val doctorSuspend = legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
 
                     log.info("Hentet ut legeSuspensjonClient, {}", StructuredArguments.fields(loggingMeta))
 
@@ -249,7 +245,7 @@ class BlockingApplicationRunner {
                             "Doctor not found i aktorRegister {}, {}", StructuredArguments.fields(loggingMeta),
                             StructuredArguments.keyValue(
                                 "errorMessage",
-                                doctorIdents?.feilmelding ?: "No response for FNR"
+                                doctorIdents.feilmelding ?: "No response for FNR"
                             )
                         )
                         sendReceipt(
@@ -282,7 +278,7 @@ class BlockingApplicationRunner {
                         ),
                         PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
                         HPRRuleChain.values().executeFlow(legeerklaring, behandler),
-                        LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspendDeferred.await())
+                        LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
                     ).flatten()
 
                     log.info("Rules hit {}, {}", results.map { it.name }, StructuredArguments.fields(loggingMeta))
