@@ -202,7 +202,8 @@ class BlockingApplicationRunner {
                                 signatureDate = msgHead.msgInfo.genDate,
                                 patientPersonNumber = personNumberPatient,
                                 legekontorOrgnr = legekontorOrgNr,
-                                tssid = samhandlerPraksis?.tss_ident
+                                tssid = samhandlerPraksis?.tss_ident,
+                                avsenderfnr = personNumberDoctor
                             )
                         ),
                         PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),

@@ -49,4 +49,22 @@ enum class ValidationRuleChain(
             "Feil format på organisasjonsnummer. Dette skal være 9 sifre..", { (_, metadata) ->
         metadata.legekontorOrgnr != null && metadata.legekontorOrgnr.length != 9
     }),
+
+    @Description("Avsender fødselsnummer/D-nummer kan passerer ikke modulus 11")
+    UGYLDIG_FNR_AVSENDER(
+        1006,
+        Status.INVALID,
+        "Fødselsnummer for den sykmeldte deg, er ikke gyldig",
+        "Avsenders fødselsnummer/D-nummer er ikke gyldig", { (_, metadata) ->
+            !validatePersonAndDNumber(metadata.avsenderfnr)
+        }),
+
+    @Description("Avsender fødselsnummer/D-numme er det samme som pasient fnr")
+    AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR(
+        9999,
+        Status.INVALID,
+        "Den som signert sykmeldingen er også pasient.",
+        "Avsender fnr er det samme som pasient fnr", { (_, metadata) ->
+            metadata.avsenderfnr.equals(metadata.patientPersonNumber)
+        }),
 }

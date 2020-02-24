@@ -23,9 +23,10 @@ object ValidationRuleChainSpek : Spek({
         signatureDate: LocalDateTime = LocalDateTime.now(),
         patientPersonNumber: String = "1234567891",
         legekontorOrgNr: String = "123456789",
-        tssid: String? = "1314445"
+        tssid: String? = "1314445",
+        avsenderfnr: String = "131515"
     ): RuleData<RuleMetadata> = RuleData(legeerklaring,
-        RuleMetadata(signatureDate, receivedDate, patientPersonNumber, legekontorOrgNr, tssid)
+        RuleMetadata(signatureDate, receivedDate, patientPersonNumber, legekontorOrgNr, tssid, avsenderfnr)
     )
 
     describe("Testing validation rules and checking the rule outcomes") {
@@ -71,12 +72,38 @@ object ValidationRuleChainSpek : Spek({
 
         it("UGYLDIG_ORGNR_LENGDE should trigger on when orgnr lengt is not 9") {
 
-            ValidationRuleChain.UGYLDIG_ORGNR_LENGDE(ruleData(Legeerklaring(), legekontorOrgNr = "1234567890")) shouldEqual true
+            ValidationRuleChain.UGYLDIG_ORGNR_LENGDE(
+                ruleData(Legeerklaring(), legekontorOrgNr = "1234567890")) shouldEqual true
         }
 
         it("UGYLDIG_ORGNR_LENGDE should not trigger on when orgnr is 9") {
 
-            ValidationRuleChain.UGYLDIG_ORGNR_LENGDE(ruleData(Legeerklaring(), legekontorOrgNr = "123456789")) shouldEqual false
+            ValidationRuleChain.UGYLDIG_ORGNR_LENGDE(
+                ruleData(Legeerklaring(), legekontorOrgNr = "123456789")) shouldEqual false
+        }
+
+        it("UGYLDIG_FNR_AVSENDER should trigger on rule") {
+
+            ValidationRuleChain.UGYLDIG_FNR_AVSENDER(
+                ruleData(Legeerklaring(), avsenderfnr = "30063104424")) shouldEqual true
+        }
+
+        it("UGYLDIG_FNR_AVSENDER should not trigger on rule") {
+
+            ValidationRuleChain.UGYLDIG_FNR_AVSENDER(
+                ruleData(Legeerklaring(), avsenderfnr = "04030350265")) shouldEqual false
+        }
+
+        it("AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR should trigger on rule") {
+
+            ValidationRuleChain.AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR(
+                ruleData(Legeerklaring(), avsenderfnr = "30063104424", patientPersonNumber = "30063104424")) shouldEqual true
+        }
+
+        it("AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR should not trigger on rule") {
+
+            ValidationRuleChain.AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR(
+                ruleData(Legeerklaring(), avsenderfnr = "04030350265", patientPersonNumber = "04030350261")) shouldEqual false
         }
     }
 })
