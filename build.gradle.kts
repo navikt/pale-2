@@ -114,7 +114,6 @@ dependencies {
     implementation("no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
 
     implementation("no.nav.tjenestespesifikasjoner:person-v3-tjenestespesifikasjon:$navPersonv3Version")
-    implementation("no.nav.tjenestespesifikasjoner:arbeidsfordeling-v1-tjenestespesifikasjon:$navArbeidsfordelingv1Version")
 
     implementation("redis.clients:jedis:$jedisVersion")
 

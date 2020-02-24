@@ -22,7 +22,6 @@ data class Environment(
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val personV3EndpointURL: String = getEnvVar("PERSON_V3_ENDPOINT_URL"),
     val norg2V1EndpointURL: String = getEnvVar("NORG2_V1_ENDPOINT_URL"),
-    val arbeidsfordelingV1EndpointURL: String = getEnvVar("ARBEIDSFORDELING_V1_ENDPOINT_URL"),
     val dokArkivUrl: String = getEnvVar("DOK_ARKIV_URL"),
     val norskHelsenettEndpointURL: String = getEnvVar("HELSENETT_ENDPOINT_URL", "http://syfohelsenettproxy"),
     val helsenettproxyId: String = getEnvVar("HELSENETTPROXY_ID"),

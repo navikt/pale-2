@@ -4,9 +4,9 @@ import java.math.BigInteger
 import no.nav.helse.arenainfo.ArenaEiaInfo
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.msgHead.XMLHealthcareProfessional
-import no.nav.syfo.extractLegeerklaering
 import no.nav.syfo.formatName
 import no.nav.syfo.model.PaleConstant
+import no.nav.syfo.util.extractLegeerklaering
 
 fun createArenaInfo(
     fellesformat: XMLEIFellesformat,

@@ -72,8 +72,6 @@ spec:
       value: QA.Q1_414.FS06_ARENA
     - name: NORG2_V1_ENDPOINT_URL
       value: https://app-q1.adeo.no/norg2/api/v1
-    - name: ARBEIDSFORDELING_V1_ENDPOINT_URL
-      value: https://app-q1.adeo.no/norg2/ws/Arbeidsfordeling/v1
     - name: PERSON_V3_ENDPOINT_URL
       value: https://wasapp-q1.adeo.no/tpsws/ws/Person/v3
     - name: HELSENETTPROXY_ID
