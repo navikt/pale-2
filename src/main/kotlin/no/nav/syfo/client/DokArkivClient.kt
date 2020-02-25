@@ -89,7 +89,7 @@ fun createJournalpostPayload(
                     )
                 ),
                 tittel = createTittleJournalpost(validationResult, msgHead),
-                brevkode = "NAV 08-07.04 A"
+                brevkode = "NAV 08-07.08"
         )),
         eksternReferanseId = receiverBlock.ediLoggId,
         journalfoerendeEnhet = "9999",
