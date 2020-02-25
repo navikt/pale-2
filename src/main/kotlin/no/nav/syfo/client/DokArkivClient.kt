@@ -7,6 +7,8 @@ import io.ktor.client.request.post
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.util.KtorExperimentalAPI
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.legeerklaering.Legeerklaring
@@ -26,8 +28,6 @@ import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.objectMapper
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.validation.validatePersonAndDNumber
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @KtorExperimentalAPI
 class DokArkivClient(
