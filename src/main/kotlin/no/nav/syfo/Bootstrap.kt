@@ -35,6 +35,7 @@ import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
 import no.nav.syfo.client.AccessTokenClient
 import no.nav.syfo.client.AktoerIdClient
+import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
@@ -140,6 +141,8 @@ fun main() {
     val accessTokenClient = AccessTokenClient(env.aadAccessTokenUrl, vaultSecrets.clientId, vaultSecrets.clientsecret, httpClientWithProxy)
 
     val norskHelsenettClient = NorskHelsenettClient(env.norskHelsenettEndpointURL, accessTokenClient, env.helsenettproxyId, httpClient)
+
+    val kafkaProducers = KafkaClients(env, vaultSecrets)
 
     launchListeners(
         applicationState, env, sarClient,

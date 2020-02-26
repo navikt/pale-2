@@ -31,6 +31,8 @@ val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
 val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 val jfairyVersion = "0.6.2"
 val pale2CommonVersion = "1.30a1033"
+val confluentVersion = "5.3.1"
+val kafkaVersion = "2.4.0"
 
 plugins {
     kotlin("jvm") version "1.3.61"
@@ -86,6 +88,9 @@ dependencies {
     implementation("io.ktor:ktor-client-auth-jvm:$ktorVersion")
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
 
+    implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
+    implementation("io.confluent:kafka-avro-serializer:$confluentVersion")
+
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
 
@@ -105,6 +110,7 @@ dependencies {
     implementation("no.nav.syfo:pale-2-common-networking:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-ws:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$fellesformatVersion")
     implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")

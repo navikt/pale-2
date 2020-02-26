@@ -1,5 +1,7 @@
 package no.nav.syfo
 
+import no.nav.syfo.kafka.KafkaConfig
+import no.nav.syfo.kafka.KafkaCredentials
 import no.nav.syfo.mq.MqConfig
 
 data class Environment(
@@ -26,8 +28,10 @@ data class Environment(
     val norskHelsenettEndpointURL: String = getEnvVar("HELSENETT_ENDPOINT_URL", "http://syfohelsenettproxy"),
     val helsenettproxyId: String = getEnvVar("HELSENETTPROXY_ID"),
     val aadAccessTokenUrl: String = getEnvVar("AADACCESSTOKEN_URL"),
-    val cluster: String = getEnvVar("NAIS_CLUSTER_NAME")
-) : MqConfig
+    val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
+    override val kafkaBootstrapServers: String = getEnvVar("KAFKA_BOOTSTRAP_SERVERS_URL"),
+    val pale2SakTopic: String = getEnvVar("KAFKA_PALE_2_SAK_TOPIC", "privat-syfo-pale2-sak-v1")
+) : MqConfig, KafkaConfig
 
 data class VaultSecrets(
     val serviceuserUsername: String,
@@ -36,7 +40,10 @@ data class VaultSecrets(
     val mqPassword: String,
     val clientId: String,
     val clientsecret: String
-)
+) : KafkaCredentials {
+    override val kafkaUsername: String = serviceuserUsername
+    override val kafkaPassword: String = serviceuserPassword
+}
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
-        System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")
+    System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")
