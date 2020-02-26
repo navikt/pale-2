@@ -16,14 +16,10 @@ import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.Environment
 import no.nav.syfo.VaultSecrets
 import no.nav.syfo.client.AktoerIdClient
-import no.nav.syfo.client.DokArkivClient
 import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
-import no.nav.syfo.client.PdfgenClient
-import no.nav.syfo.client.SakClient
 import no.nav.syfo.client.SarClient
-import no.nav.syfo.client.createJournalpostPayload
 import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.extractPersonIdent
 import no.nav.syfo.get
@@ -80,9 +76,6 @@ class BlockingApplicationRunner {
         aktoerIdClient: AktoerIdClient,
         secrets: VaultSecrets,
         legeSuspensjonClient: LegeSuspensjonClient,
-        pdfgenClient: PdfgenClient,
-        sakClient: SakClient,
-        dokArkivClient: DokArkivClient,
         arenaProducer: MessageProducer,
         personV3: PersonV3,
         norg2Client: Norg2Client,
@@ -236,6 +229,7 @@ class BlockingApplicationRunner {
                     val validationResult = validationResult(results)
                     RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
 
+                    /* Move this to pale-2-sak, send to a kafka legeerkleringSak, to kafka topic
                     val pdfPayload = pdfgenClient.createPdfPayload(
                         legeerklaring,
                         validationResult
@@ -266,6 +260,8 @@ class BlockingApplicationRunner {
                         StructuredArguments.keyValue("journalpostId", journalpost.journalpostId),
                         StructuredArguments.fields(loggingMeta)
                     )
+
+                     */
 
                     when (validationResult.status) {
 

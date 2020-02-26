@@ -35,12 +35,9 @@ import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.createApprec
 import no.nav.syfo.client.AccessTokenClient
 import no.nav.syfo.client.AktoerIdClient
-import no.nav.syfo.client.DokArkivClient
 import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
-import no.nav.syfo.client.PdfgenClient
-import no.nav.syfo.client.SakClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
 import no.nav.syfo.metrics.APPREC_COUNTER
@@ -122,9 +119,6 @@ fun main() {
     val aktoerIdClient = AktoerIdClient(env.aktoerregisterV1Url, oidcClient, httpClient)
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
-    val pdfgenClient = PdfgenClient(env.pdfgen, httpClient)
-    val sakClient = SakClient(env.opprettSakUrl, oidcClient, httpClient)
-    val dokArkivClient = DokArkivClient(env.dokArkivUrl, oidcClient, httpClient)
     val norg2Client = Norg2Client(env.norg2V1EndpointURL, httpClient)
     val legeSuspensjonClient = LegeSuspensjonClient(
         env.legeSuspensjonEndpointURL,
@@ -150,7 +144,7 @@ fun main() {
     launchListeners(
         applicationState, env, sarClient,
         aktoerIdClient, vaultSecrets,
-        legeSuspensjonClient, pdfgenClient, sakClient, dokArkivClient,
+        legeSuspensjonClient,
         personV3, norg2Client, norskHelsenettClient
     )
 }
@@ -174,9 +168,6 @@ fun launchListeners(
     aktoerIdClient: AktoerIdClient,
     secrets: VaultSecrets,
     legeSuspensjonClient: LegeSuspensjonClient,
-    pdfgenClient: PdfgenClient,
-    sakClient: SakClient,
-    dokArkivClient: DokArkivClient,
     personV3: PersonV3,
     norg2Client: Norg2Client,
     norskHelsenettClient: NorskHelsenettClient
@@ -197,7 +188,7 @@ fun launchListeners(
                 BlockingApplicationRunner().run(applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
                     kuhrSarClient, aktoerIdClient, secrets, legeSuspensjonClient,
-                    pdfgenClient, sakClient, dokArkivClient, arenaProducer, personV3,
+                    arenaProducer, personV3,
                     norg2Client, norskHelsenettClient
                 )
             }
