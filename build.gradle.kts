@@ -31,6 +31,7 @@ val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6
 val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
 val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 val jfairyVersion = "0.6.2"
+val legeerklearingVersion = "1.ae6951f"
 
 plugins {
     kotlin("jvm") version "1.3.61"
@@ -66,7 +67,13 @@ repositories {
             password = githubPassword
         }
     }
-    maven(url = "https://oss.sonatype.org/content/groups/staging/")
+    maven {
+        url = uri("https://maven.pkg.github.com/navikt/pale-2-common")
+        credentials {
+            username = githubUser
+            password = githubPassword
+        }
+    }
 }
 
 dependencies {
@@ -103,6 +110,7 @@ dependencies {
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
     implementation("no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
+    implementation("no.nav.syfo:pale-2-common-models:$legeerklearingVersion")
 
     implementation("no.nav.tjenestespesifikasjoner:person-v3-tjenestespesifikasjon:$navPersonv3Version")
 

@@ -13,7 +13,6 @@ import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.extractPersonIdent
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.log
 import no.nav.syfo.model.AvsenderMottaker
@@ -59,6 +58,7 @@ class DokArkivClient(
 
 fun createJournalpostPayload(
     legeerklaering: Legeerklaring,
+    pasientfnr: String,
     caseId: String,
     pdf: ByteArray,
     msgHead: XMLMsgHead,
@@ -70,7 +70,7 @@ fun createJournalpostPayload(
             else -> createAvsenderMottakerNotValidFnr()
         },
         bruker = Bruker(
-                id = extractPersonIdent(legeerklaering)!!,
+                id = pasientfnr,
                 idType = "FNR"
         ),
         dokumenter = listOf(Dokument(

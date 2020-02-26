@@ -3,6 +3,7 @@ package no.nav.syfo.application
 import io.ktor.util.KtorExperimentalAPI
 import java.io.StringReader
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
@@ -41,6 +42,7 @@ import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
 import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.model.Status
+import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.rules.HPRRuleChain
 import no.nav.syfo.rules.LegesuspensjonRuleChain
 import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
@@ -106,12 +108,14 @@ class BlockingApplicationRunner {
                     val ediLoggId = receiverBlock.ediLoggId
                     val msgId = msgHead.msgInfo.msgId
                     val legekontorOrgNr = extractOrganisationNumberFromSender(fellesformat)?.id
-                    val legeerklaring = extractLegeerklaering(fellesformat)
-                    val sha256String = sha256hashstring(legeerklaring)
-                    val personNumberPatient = extractPersonIdent(legeerklaring)!!
+                    val legeerklaringxml = extractLegeerklaering(fellesformat)
+                    val sha256String = sha256hashstring(legeerklaringxml)
+                    val personNumberPatient = extractPersonIdent(legeerklaringxml)!!
                     val legekontorOrgName = extractSenderOrganisationName(fellesformat)
                     val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
                     val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
+                    val healthcareProfessional =
+                        fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
 
                     INCOMING_MESSAGE_COUNTER.inc()
                     val requestLatency = REQUEST_TIME.startTimer()
@@ -173,6 +177,12 @@ class BlockingApplicationRunner {
                         continue@loop
                     }
 
+                    val legeerklaring = legeerklaringxml.toLegeerklaring(
+                        legeerklaringId = UUID.randomUUID().toString(),
+                        fellesformat = fellesformat,
+                        signaturDato = msgHead.msgInfo.genDate
+                    )
+
                     val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
                     val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
@@ -197,7 +207,7 @@ class BlockingApplicationRunner {
 
                     val results = listOf(
                         ValidationRuleChain.values().executeFlow(
-                            legeerklaring, RuleMetadata(
+                            legeerklaringxml, RuleMetadata(
                                 receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
                                 signatureDate = msgHead.msgInfo.genDate,
                                 patientPersonNumber = personNumberPatient,
@@ -206,9 +216,9 @@ class BlockingApplicationRunner {
                                 avsenderfnr = personNumberDoctor
                             )
                         ),
-                        PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
-                        HPRRuleChain.values().executeFlow(legeerklaring, avsenderBehandler),
-                        LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
+                        PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaringxml, patientDiskresjonsKode),
+                        HPRRuleChain.values().executeFlow(legeerklaringxml, avsenderBehandler),
+                        LegesuspensjonRuleChain.values().executeFlow(legeerklaringxml, doctorSuspend)
                     ).flatten()
 
                     log.info("Rules hit {}, {}", results.map { it.name }, StructuredArguments.fields(loggingMeta))
@@ -223,27 +233,11 @@ class BlockingApplicationRunner {
 
                     val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
-                    val legeerklaering = extractLegeerklaering(fellesformat)
-                    val plan = legeerklaering.planUtredBehandle
-                    val forslagTiltak = legeerklaering.forslagTiltak
-                    val typeLegeerklaering = legeerklaering.legeerklaringGjelder[0].typeLegeerklaring.toInt()
-                    val funksjonsevne = legeerklaering.vurderingFunksjonsevne
-                    val prognose = legeerklaering.prognose
-                    val healthcareProfessional =
-                        fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
-
                     val validationResult = validationResult(results)
                     RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
 
                     val pdfPayload = pdfgenClient.createPdfPayload(
-                        legeerklaering,
-                        plan,
-                        forslagTiltak,
-                        typeLegeerklaering,
-                        funksjonsevne,
-                        prognose,
-                        healthcareProfessional,
-                        fellesformat,
+                        legeerklaring,
                         validationResult
                     )
 
@@ -256,7 +250,8 @@ class BlockingApplicationRunner {
                     log.info("PDF generated {}", StructuredArguments.fields(loggingMeta))
 
                     val journalpostPayload = createJournalpostPayload(
-                        legeerklaering,
+                        legeerklaringxml,
+                        legeerklaring.pasient.foedselsnummer,
                         sakid,
                         pdf,
                         msgHead,
