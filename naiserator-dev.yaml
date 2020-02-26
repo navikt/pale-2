@@ -45,7 +45,7 @@ spec:
     - "https://pale-2.nais.preprod.local"
   env:
     - name: MQ_INPUT_QUEUE_NAME
-      value: QA.Q1_PALE.INPUT
+      value: QA.Q1_PALE_2.TEMP_ROUTED_INPUT
     - name: MQ_HOST_NAME
       value: b27apvl177.preprod.local
     - name: MQ_PORT
