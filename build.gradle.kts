@@ -9,7 +9,6 @@ val ktorVersion = "1.2.6"
 val prometheusVersion = "0.6.0"
 val spekVersion = "2.0.9"
 val kluentVersion = "1.39"
-val smCommonVersion = "1.7bf5e6f"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
 val jacksonVersion = "2.9.7"
@@ -31,7 +30,7 @@ val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6
 val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
 val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 val jfairyVersion = "0.6.2"
-val legeerklearingVersion = "1.ae6951f"
+val pale2CommonVersion = "1.30a1033"
 
 plugins {
     kotlin("jvm") version "1.3.61"
@@ -101,16 +100,16 @@ dependencies {
         exclude(group = "com.sun.xml.ws", module = "policy")
     }
 
-    implementation("no.nav.helse:syfosm-common-mq:$smCommonVersion")
-    implementation("no.nav.helse:syfosm-common-rest-sts:$smCommonVersion")
-    implementation("no.nav.helse:syfosm-common-networking:$smCommonVersion")
-    implementation("no.nav.helse:syfosm-common-ws:$smCommonVersion")
+    implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-rest-sts:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-networking:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-ws:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$fellesformatVersion")
     implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
     implementation("no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
-    implementation("no.nav.syfo:pale-2-common-models:$legeerklearingVersion")
 
     implementation("no.nav.tjenestespesifikasjoner:person-v3-tjenestespesifikasjon:$navPersonv3Version")
 
