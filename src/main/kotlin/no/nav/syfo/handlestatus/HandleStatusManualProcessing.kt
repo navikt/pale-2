@@ -17,5 +17,5 @@ fun handleStatusMANUALPROCESSING(
 
 ) {
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
-    log.info("Legeerklæring ikkje sendt til arena {}", fields(loggingMeta))
+    log.info("Informasjon om Legeerklæring blir ikkje sendt til arena {}", fields(loggingMeta))
 }

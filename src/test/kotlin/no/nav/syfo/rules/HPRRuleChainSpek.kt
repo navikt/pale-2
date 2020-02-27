@@ -1,22 +1,24 @@
 package no.nav.syfo.rules
 
-import no.nav.helse.legeerklaering.Legeerklaring
+import io.mockk.mockk
 import no.nav.syfo.client.Behandler
 import no.nav.syfo.client.Godkjenning
 import no.nav.syfo.client.Kode
 import no.nav.syfo.model.HelsepersonellKategori
+import no.nav.syfo.model.Legeerklaering
 import org.amshove.kluent.shouldEqual
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
 object HPRRuleChainSpek : Spek({
 
+    val legeerklaring = mockk<Legeerklaering>()
+
     describe("Testing validation rules and checking the rule outcomes") {
-        fun ruleData(legeerklaring: Legeerklaring, behandler: Behandler) =
+        fun ruleData(legeerklaring: Legeerklaering, behandler: Behandler) =
                 RuleData(legeerklaring, behandler)
 
         it("Should check rule BEHANDLER_IKKE_GYLDIG_I_HPR, should trigger rule") {
-            val legeerklaring = Legeerklaring()
             val behandler = Behandler(listOf(
                 Godkjenning(
                 autorisasjon = Kode(
@@ -30,7 +32,7 @@ object HPRRuleChainSpek : Spek({
         }
 
         it("Should check rule BEHANDLER_IKKE_GYLDIG_I_HPR, should NOT trigger rule") {
-            val legeerklaring = Legeerklaring()
+
             val behandler = Behandler(listOf(Godkjenning(
                 autorisasjon = Kode(
                     aktiv = true,
@@ -42,7 +44,6 @@ object HPRRuleChainSpek : Spek({
         }
 
         it("Should check rule BEHANDLER_NOT_VALID_AUTHORIZATION_IN_HPR, should trigger rule") {
-            val legeerklaring = Legeerklaring()
             val behandler = Behandler(listOf(Godkjenning(
                 autorisasjon = Kode(
                     aktiv = true,
@@ -54,7 +55,6 @@ object HPRRuleChainSpek : Spek({
         }
 
         it("Should check rule BEHANDLER_MANGLER_AUTORISASJON_I_HPR, should NOT trigger rule") {
-            val legeerklaring = Legeerklaring()
             val behandler = Behandler(listOf(Godkjenning(
                 autorisasjon = Kode(
                     aktiv = true,
@@ -66,7 +66,6 @@ object HPRRuleChainSpek : Spek({
         }
 
         it("Should check rule BEHANDLER_MANGLER_AUTORISASJON_I_HPR, should trigger rule") {
-            val legeerklaring = Legeerklaring()
             val behandler = Behandler(listOf(Godkjenning(
                 autorisasjon = Kode(
                     aktiv = true,
@@ -84,7 +83,6 @@ object HPRRuleChainSpek : Spek({
         }
 
         it("Should check rule BEHANDLER_IKKE_LE_KI_MT_TL_FT_I_HPR, should NOT trigger rule") {
-            val legeerklaring = Legeerklaring()
             val behandler = Behandler(listOf(Godkjenning(
                 autorisasjon = Kode(
                     aktiv = true,
@@ -102,7 +100,6 @@ object HPRRuleChainSpek : Spek({
         }
 
         it("Should check rule BEHANDLER_IKKE_LE_KI_MT_TL_FT_I_HPR, should trigger rule") {
-            val legeerklaring = Legeerklaring()
             val behandler = Behandler(listOf(Godkjenning(
                 autorisasjon = Kode(
                     aktiv = true,

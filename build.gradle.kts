@@ -33,6 +33,7 @@ val jfairyVersion = "0.6.2"
 val pale2CommonVersion = "1.ee30e14"
 val confluentVersion = "5.3.1"
 val kafkaVersion = "2.4.0"
+val mockkVersion = "1.9.3"
 
 plugins {
     kotlin("jvm") version "1.3.61"
@@ -136,6 +137,7 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin")
     }
     testImplementation("com.devskiller:jfairy:$jfairyVersion")
+    testImplementation("io.mockk:mockk:$mockkVersion")
 }
 
 tasks {

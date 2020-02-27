@@ -226,7 +226,7 @@ class BlockingApplicationRunner {
 
                     val results = listOf(
                         ValidationRuleChain.values().executeFlow(
-                            legeerklaringxml, RuleMetadata(
+                            legeerklaring, RuleMetadata(
                                 receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
                                 signatureDate = msgHead.msgInfo.genDate,
                                 patientPersonNumber = personNumberPatient,
@@ -235,9 +235,9 @@ class BlockingApplicationRunner {
                                 avsenderfnr = personNumberDoctor
                             )
                         ),
-                        PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaringxml, patientDiskresjonsKode),
-                        HPRRuleChain.values().executeFlow(legeerklaringxml, avsenderBehandler),
-                        LegesuspensjonRuleChain.values().executeFlow(legeerklaringxml, doctorSuspend)
+                        PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
+                        HPRRuleChain.values().executeFlow(legeerklaring, avsenderBehandler),
+                        LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
                     ).flatten()
 
                     log.info("Rules hit {}, {}", results.map { it.name }, StructuredArguments.fields(loggingMeta))
@@ -262,15 +262,13 @@ class BlockingApplicationRunner {
                         loggingMeta
                     )
 
-                    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
-
                     when (validationResult.status) {
                         Status.OK -> handleStatusOK(
                             session,
                             receiptProducer,
                             fellesformat,
                             arenaProducer,
-                            lokaltNavkontor,
+                            findNAVKontorService,
                             samhandlerPraksis?.tss_ident,
                             ediLoggId,
                             personNumberDoctor,

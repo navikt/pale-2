@@ -1,5 +1,6 @@
 package no.nav.syfo.handlestatus
 
+import io.ktor.util.KtorExperimentalAPI
 import javax.jms.MessageProducer
 import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
@@ -9,22 +10,26 @@ import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.sendReceipt
+import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.toString
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
 
-fun handleStatusOK(
+@KtorExperimentalAPI
+suspend fun handleStatusOK(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
     arenaProducer: MessageProducer,
-    lokaltNavkontor: String,
+    findNAVKontorService: FindNAVKontorService,
     tssId: String?,
     ediLoggId: String,
     personNumberDoctor: String,
     healthcareProfessional: XMLHealthcareProfessional?,
     loggingMeta: LoggingMeta
 ) {
+    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
+
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
 
     sendArenaInfo(arenaProducer, session, fellesformat,

@@ -3,10 +3,11 @@ package no.nav.syfo.rules
 import com.devskiller.jfairy.Fairy
 import com.devskiller.jfairy.producer.person.PersonProperties
 import com.devskiller.jfairy.producer.person.PersonProvider
+import io.mockk.mockk
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import no.nav.helse.legeerklaering.Legeerklaring
+import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.validation.validatePersonAndDNumber
 import org.amshove.kluent.shouldEqual
@@ -17,8 +18,11 @@ val fairy: Fairy = Fairy.create() // (Locale("no", "NO"))
 val personNumberDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("ddMMyy")
 
 object ValidationRuleChainSpek : Spek({
+
+    val legeerklaring = mockk<Legeerklaering>()
+
     fun ruleData(
-        legeerklaring: Legeerklaring = Legeerklaring(),
+        legeerklaring: Legeerklaering = mockk<Legeerklaering>(),
         receivedDate: LocalDateTime = LocalDateTime.now(),
         signatureDate: LocalDateTime = LocalDateTime.now(),
         patientPersonNumber: String = "1234567891",
@@ -33,29 +37,29 @@ object ValidationRuleChainSpek : Spek({
 
         it("Should check rule UGYLDIG_FNR_LENGDE, should trigger rule") {
             ValidationRuleChain.UGYLDIG_FNR_LENGDE_PASIENT(
-                ruleData(Legeerklaring(), patientPersonNumber = "3006310441")) shouldEqual true
+                ruleData(legeerklaring, patientPersonNumber = "3006310441")) shouldEqual true
         }
 
         it("Should check rule UGYLDIG_FNR_LENGDE, should NOT trigger rule") {
             ValidationRuleChain.UGYLDIG_FNR_LENGDE_PASIENT(
-                ruleData(Legeerklaring(), patientPersonNumber = "04030350265")) shouldEqual false
+                ruleData(legeerklaring, patientPersonNumber = "04030350265")) shouldEqual false
         }
 
         it("Should check rule UGYLDIG_FNR_PASIENT, should trigger rule") {
             ValidationRuleChain.UGYLDIG_FNR_PASIENT(
-                ruleData(Legeerklaring(), patientPersonNumber = "30063104424")) shouldEqual true
+                ruleData(legeerklaring, patientPersonNumber = "30063104424")) shouldEqual true
         }
 
         it("Should check rule UGYLDIG_FNR, should NOT trigger rule") {
             ValidationRuleChain.UGYLDIG_FNR_PASIENT(
-                ruleData(Legeerklaring(), patientPersonNumber = "04030350265")) shouldEqual false
+                ruleData(legeerklaring, patientPersonNumber = "04030350265")) shouldEqual false
         }
 
         it("Should check rule PASIENT_YNGRE_ENN_13,should trigger rule") {
             val person = fairy.person(PersonProperties.ageBetween(PersonProvider.MIN_AGE, 12))
 
             ValidationRuleChain.PASIENT_YNGRE_ENN_13(ruleData(
-                Legeerklaring(),
+                legeerklaring,
                 patientPersonNumber = generatePersonNumber(person.dateOfBirth, false)
             )) shouldEqual true
         }
@@ -65,7 +69,7 @@ object ValidationRuleChainSpek : Spek({
                 PersonProperties.ageBetween(13, 70))
 
             ValidationRuleChain.PASIENT_YNGRE_ENN_13(ruleData(
-                Legeerklaring(),
+                legeerklaring,
                 patientPersonNumber = generatePersonNumber(person.dateOfBirth, false)
             )) shouldEqual false
         }
@@ -73,37 +77,37 @@ object ValidationRuleChainSpek : Spek({
         it("UGYLDIG_ORGNR_LENGDE should trigger on when orgnr lengt is not 9") {
 
             ValidationRuleChain.UGYLDIG_ORGNR_LENGDE(
-                ruleData(Legeerklaring(), legekontorOrgNr = "1234567890")) shouldEqual true
+                ruleData(legeerklaring, legekontorOrgNr = "1234567890")) shouldEqual true
         }
 
         it("UGYLDIG_ORGNR_LENGDE should not trigger on when orgnr is 9") {
 
             ValidationRuleChain.UGYLDIG_ORGNR_LENGDE(
-                ruleData(Legeerklaring(), legekontorOrgNr = "123456789")) shouldEqual false
+                ruleData(legeerklaring, legekontorOrgNr = "123456789")) shouldEqual false
         }
 
         it("UGYLDIG_FNR_AVSENDER should trigger on rule") {
 
             ValidationRuleChain.UGYLDIG_FNR_AVSENDER(
-                ruleData(Legeerklaring(), avsenderfnr = "30063104424")) shouldEqual true
+                ruleData(legeerklaring, avsenderfnr = "30063104424")) shouldEqual true
         }
 
         it("UGYLDIG_FNR_AVSENDER should not trigger on rule") {
 
             ValidationRuleChain.UGYLDIG_FNR_AVSENDER(
-                ruleData(Legeerklaring(), avsenderfnr = "04030350265")) shouldEqual false
+                ruleData(legeerklaring, avsenderfnr = "04030350265")) shouldEqual false
         }
 
         it("AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR should trigger on rule") {
 
             ValidationRuleChain.AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR(
-                ruleData(Legeerklaring(), avsenderfnr = "30063104424", patientPersonNumber = "30063104424")) shouldEqual true
+                ruleData(legeerklaring, avsenderfnr = "30063104424", patientPersonNumber = "30063104424")) shouldEqual true
         }
 
         it("AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR should not trigger on rule") {
 
             ValidationRuleChain.AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR(
-                ruleData(Legeerklaring(), avsenderfnr = "04030350265", patientPersonNumber = "04030350261")) shouldEqual false
+                ruleData(legeerklaring, avsenderfnr = "04030350265", patientPersonNumber = "04030350261")) shouldEqual false
         }
     }
 })
