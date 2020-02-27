@@ -262,40 +262,6 @@ class BlockingApplicationRunner {
                         )
                     )
 
-                    /* Move this to pale-2-sak, send to a kafka legeerkleringSak, to kafka topic
-                    val pdfPayload = pdfgenClient.createPdfPayload(
-                        legeerklaring,
-                        validationResult
-                    )
-
-                    val sakid = sakClient.findOrCreateSak(
-                        patientIdents.identer!!.first().ident, msgId,
-                        loggingMeta
-                    ).id.toString()
-
-                    val pdf = pdfgenClient.createPDF(pdfPayload)
-                    log.info("PDF generated {}", StructuredArguments.fields(loggingMeta))
-
-                    val journalpostPayload = createJournalpostPayload(
-                        legeerklaringxml,
-                        legeerklaring.pasient.foedselsnummer,
-                        sakid,
-                        pdf,
-                        msgHead,
-                        receiverBlock,
-                        validationResult
-                    )
-
-                    val journalpost = dokArkivClient.createJournalpost(journalpostPayload, loggingMeta)
-
-                    log.info(
-                        "Message successfully persisted in Joark {}, {}",
-                        StructuredArguments.keyValue("journalpostId", journalpost.journalpostId),
-                        StructuredArguments.fields(loggingMeta)
-                    )
-
-                     */
-
                     when (validationResult.status) {
 
                         Status.OK -> handleStatusOK(
