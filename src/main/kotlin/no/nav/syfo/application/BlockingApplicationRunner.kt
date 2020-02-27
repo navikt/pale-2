@@ -242,6 +242,18 @@ class BlockingApplicationRunner {
 
                     log.info("Rules hit {}, {}", results.map { it.name }, StructuredArguments.fields(loggingMeta))
 
+                    val validationResult = validationResult(results)
+                    RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
+
+                    val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult)
+
+                    kafkaProducerLegeerklaeringSak.send(
+                        ProducerRecord(env.pale2SakTopic, legeerklaring.id, legeerklaeringSak)
+                    )
+                    log.info("Melding sendt til kafka topic {}, {}", env.pale2SakTopic,
+                        StructuredArguments.fields(loggingMeta)
+                    )
+
                     val findNAVKontorService = FindNAVKontorService(
                         personNumberPatient,
                         personV3,
@@ -252,21 +264,7 @@ class BlockingApplicationRunner {
 
                     val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
-                    val validationResult = validationResult(results)
-                    RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
-
-                    kafkaProducerLegeerklaeringSak.send(
-                        ProducerRecord(env.pale2SakTopic,
-                            legeerklaring.id,
-                            LegeerklaeringSak(receivedLegeerklaering, validationResult)
-                        )
-                    )
-                    log.info("Melding sendt til kafka topic {}, {}", env.pale2SakTopic,
-                        StructuredArguments.fields(loggingMeta)
-                    )
-
                     when (validationResult.status) {
-
                         Status.OK -> handleStatusOK(
                             session,
                             receiptProducer,
