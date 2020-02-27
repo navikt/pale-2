@@ -16,7 +16,7 @@ import no.nav.syfo.model.Prognose
 import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Signatur
 import no.nav.syfo.model.Status
-import no.nav.syfo.model.SykdomsOpplysninger
+import no.nav.syfo.model.Sykdomsopplysninger
 import no.nav.syfo.model.ValidationResult
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
@@ -27,14 +27,14 @@ object PdfModelSpek : Spek({
             val legeerklaering = Legeerklaering(
                 id = "12314",
                 arbeidsvurderingVedSykefravaer = true,
-                arbeidsavklaringsPenger = true,
-                yrkesrettetAttfoering = false,
-                ufoerepensjon = true,
+                arbeidsavklaringspenger = true,
+                yrkesrettetAttforing = false,
+                uforepensjon = true,
                 pasient = Pasient(
                     fornavn = "Test",
                     mellomnavn = "Testerino",
                     etternavn = "Testsen",
-                    foedselsnummer = "0123456789",
+                    fnr = "0123456789",
                     navKontor = "NAV Stockholm",
                     adresse = "Oppdiktet veg 99",
                     postnummer = 9999,
@@ -47,7 +47,7 @@ object PdfModelSpek : Spek({
                         poststed = "Oslo"
                     )
                 ),
-                sykdomsOpplysninger = SykdomsOpplysninger(
+                sykdomsopplysninger = Sykdomsopplysninger(
                     hoveddiagnose = Diagnose(
                         tekst = "Fysikalsk behandling/rehabilitering",
                         kode = "-57"
@@ -56,10 +56,10 @@ object PdfModelSpek : Spek({
                         tekst = "Engstelig for hjertesykdom",
                         kode = "K24"
                     )),
-                    arbeidsufoerFra = ZonedDateTime.now().minusDays(3),
-                    sykdomsHistorie = "Tekst",
+                    arbeidsuforFra = ZonedDateTime.now().minusDays(3),
+                    sykdomshistorie = "Tekst",
                     statusPresens = "Tekst",
-                    boerNavKontoretVurdereOmDetErEnYrkesskade = true
+                    borNavKontoretVurdereOmDetErEnYrkesskade = true
                 ),
                 plan = Plan(
                     utredning = null,
@@ -71,17 +71,17 @@ object PdfModelSpek : Spek({
                     utredningsplan = "Tekst",
                     behandlingsplan = "Tekst",
                     vurderingAvTidligerePlan = "Tekst",
-                    naarSpoerreOmNyeLegeopplysninger = "Tekst",
-                    videreBehandlingIkkeAktuellGrunn = "Tekst"
+                    narSporreOmNyeLegeopplysninger = "Tekst",
+                    videreBehandlingIkkeAktueltGrunn = "Tekst"
                 ),
                 forslagTilTiltak = ForslagTilTiltak(
                     behov = true,
-                    kjoepAvHelsetjenester = true,
+                    kjopAvHelsetjenester = true,
                     reisetilskudd = false,
-                    aktivSykMelding = false,
+                    aktivSykmelding = false,
                     hjelpemidlerArbeidsplassen = true,
-                    arbeidsavklaringsPenger = true,
-                    friskemeldingTilArbeidsformidling = false,
+                    arbeidsavklaringspenger = true,
+                    friskmeldingTilArbeidsformidling = false,
                     andreTiltak = "Trenger taco i lunsjen",
                     naermereOpplysninger = "Tacoen må bestå av ordentlige råvarer",
                     tekst = "Pasienten har store problemer med fordøying av annen mat enn Taco"
@@ -89,34 +89,34 @@ object PdfModelSpek : Spek({
                 ),
                 funksjonsOgArbeidsevne = FunksjonsOgArbeidsevne(
                     vurderingFunksjonsevne = "Kan ikke spise annet enn Taco",
-                    iIntektsgivendeArbeid = false,
+                    inntektsgivendeArbeid = false,
                     hjemmearbeidende = false,
                     student = false,
                     annetArbeid = "Reisende taco tester",
                     kravTilArbeid = "Kun taco i kantina",
                     kanGjenopptaTidligereArbeid = true,
-                    kanGjenopptaTidligereArbeidNaa = true,
+                    kanGjenopptaTidligereArbeidNa = true,
                     kanGjenopptaTidligereArbeidEtterBehandling = true,
                     kanTaAnnetArbeid = true,
-                    kanTaAnnetArbeidNaa = true,
+                    kanTaAnnetArbeidNa = true,
                     kanTaAnnetArbeidEtterBehandling = true,
-                    kanIkkeINaaverendeArbeid = "Spise annen mat enn Taco",
-                    kanIkkeIAnnetArbeid = "Spise annen mat enn Taco"
+                    kanIkkeGjenopptaNaverendeArbeid = "Spise annen mat enn Taco",
+                    kanIkkeTaAnnetArbeid = "Spise annen mat enn Taco"
                 ),
                 prognose = Prognose(
                     vilForbedreArbeidsevne = true,
-                    anslaatVarighetSykdom = "1 uke",
-                    anslaatVarighetFunksjonsNedsetting = "2 uker",
-                    anslaatVarighetNedsattArbeidsevne = "4 uker"
+                    anslattVarighetSykdom = "1 uke",
+                    anslattVarighetFunksjonsnedsetting = "2 uker",
+                    anslattVarighetNedsattArbeidsevne = "4 uker"
                 ),
-                aarsaksSammenheng = "Funksjonsnedsettelsen har stor betydning for at arbeidsevnen er nedsatt",
+                arsakssammenheng = "Funksjonsnedsettelsen har stor betydning for at arbeidsevnen er nedsatt",
                 andreOpplysninger = "Tekst",
                 kontakt = Kontakt(
                     skalKontakteBehandlendeLege = true,
                     skalKontakteArbeidsgiver = true,
                     skalKontakteBasisgruppe = false,
                     kontakteAnnenInstans = null,
-                    oenskesKopiAvVedtak = true
+                    onskesKopiAvVedtak = true
                 ),
                 pasientenBurdeIkkeVite = null,
                 signatur = Signatur(
