@@ -261,6 +261,9 @@ class BlockingApplicationRunner {
                             LegeerklaeringSak(receivedLegeerklaering, validationResult)
                         )
                     )
+                    log.info("Melding sendt til kafka topic {}, {}", env.pale2SakTopic,
+                        StructuredArguments.fields(loggingMeta)
+                    )
 
                     when (validationResult.status) {
 
