@@ -2,6 +2,7 @@ package no.nav.syfo.application
 
 import io.ktor.util.KtorExperimentalAPI
 import java.io.StringReader
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.jms.MessageConsumer
@@ -36,6 +37,8 @@ import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
+import no.nav.syfo.model.LegeerklaeringSak
+import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
@@ -53,11 +56,14 @@ import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.extractOrganisationHerNumberFromSender
 import no.nav.syfo.util.extractOrganisationNumberFromSender
+import no.nav.syfo.util.extractOrganisationRashNumberFromSender
 import no.nav.syfo.util.extractSenderOrganisationName
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.validationResult
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
 
@@ -79,7 +85,8 @@ class BlockingApplicationRunner {
         arenaProducer: MessageProducer,
         personV3: PersonV3,
         norg2Client: Norg2Client,
-        norskHelsenettClient: NorskHelsenettClient
+        norskHelsenettClient: NorskHelsenettClient,
+        kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -107,6 +114,7 @@ class BlockingApplicationRunner {
                     val legekontorOrgName = extractSenderOrganisationName(fellesformat)
                     val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
                     val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
+                    val legekontorReshId = extractOrganisationRashNumberFromSender(fellesformat)?.id
                     val healthcareProfessional =
                         fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
 
@@ -176,6 +184,24 @@ class BlockingApplicationRunner {
                         signaturDato = msgHead.msgInfo.genDate
                     )
 
+                    val receivedLegeerklaering = ReceivedLegeerklaering(
+                        legeerklaering = legeerklaring,
+                        personNrPasient = personNumberPatient,
+                        pasientAktoerId = patientIdents.identer!!.first().ident,
+                        personNrLege = personNumberDoctor,
+                        legeAktoerId = doctorIdents.identer!!.first().ident,
+                        navLogId = ediLoggId,
+                        msgId = msgId,
+                        legekontorOrgNr = legekontorOrgNr,
+                        legekontorOrgName = legekontorOrgName,
+                        legekontorHerId = legekontorHerId,
+                        legekontorReshId = legekontorReshId,
+                        mottattDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().withZoneSameInstant(
+                            ZoneOffset.UTC).toLocalDateTime(),
+                        fellesformat = inputMessageText,
+                        tssid = samhandlerPraksis?.tss_ident ?: ""
+                    )
+
                     val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
                     val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
@@ -228,6 +254,13 @@ class BlockingApplicationRunner {
 
                     val validationResult = validationResult(results)
                     RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
+
+                    kafkaProducerLegeerklaeringSak.send(
+                        ProducerRecord(env.pale2SakTopic,
+                            legeerklaring.id,
+                            LegeerklaeringSak(receivedLegeerklaering, validationResult)
+                        )
+                    )
 
                     /* Move this to pale-2-sak, send to a kafka legeerkleringSak, to kafka topic
                     val pdfPayload = pdfgenClient.createPdfPayload(

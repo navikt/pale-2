@@ -42,6 +42,7 @@ import no.nav.syfo.client.NorskHelsenettClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
 import no.nav.syfo.metrics.APPREC_COUNTER
+import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.ValidationResult
@@ -55,6 +56,7 @@ import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
@@ -142,13 +144,13 @@ fun main() {
 
     val norskHelsenettClient = NorskHelsenettClient(env.norskHelsenettEndpointURL, accessTokenClient, env.helsenettproxyId, httpClient)
 
-    val kafkaProducers = KafkaClients(env, vaultSecrets)
+    val kafkaClients = KafkaClients(env, vaultSecrets)
 
     launchListeners(
         applicationState, env, sarClient,
         aktoerIdClient, vaultSecrets,
         legeSuspensjonClient,
-        personV3, norg2Client, norskHelsenettClient
+        personV3, norg2Client, norskHelsenettClient, kafkaClients.kafkaProducerLegeerklaeringSak
     )
 }
 
@@ -173,7 +175,8 @@ fun launchListeners(
     legeSuspensjonClient: LegeSuspensjonClient,
     personV3: PersonV3,
     norg2Client: Norg2Client,
-    norskHelsenettClient: NorskHelsenettClient
+    norskHelsenettClient: NorskHelsenettClient,
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
@@ -191,8 +194,7 @@ fun launchListeners(
                 BlockingApplicationRunner().run(applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
                     kuhrSarClient, aktoerIdClient, secrets, legeSuspensjonClient,
-                    arenaProducer, personV3,
-                    norg2Client, norskHelsenettClient
+                    arenaProducer, personV3, norg2Client, norskHelsenettClient, kafkaProducerLegeerklaeringSak
                 )
             }
         }
