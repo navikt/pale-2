@@ -39,10 +39,10 @@ fun createArenaInfo(
     eiaData = ArenaEiaInfo.EiaData().apply {
         systemSvar.add(
             ArenaEiaInfo.EiaData.SystemSvar().apply {
-                meldingsPrioritet = 4.toBigInteger()
+                meldingsPrioritet = 3.toBigInteger()
                 meldingsNr = 245.toBigInteger()
                 meldingsTekst = "Legeerklæring er mottatt."
-                meldingsType = "3"
+                meldingsType = "4"
             }
         )
     }
