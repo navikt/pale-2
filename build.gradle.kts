@@ -28,10 +28,8 @@ val javaxJaxwsApiVersion = "2.2.1"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val navPersonv3Version = "1.2019.07.11-06.47-b55f47790a9d"
-val navArbeidsfordelingv1Version = "1.2019.07.11-06.47-b55f47790a9d"
 val jfairyVersion = "0.6.2"
 val pale2CommonVersion = "1.ee30e14"
-val confluentVersion = "5.3.1"
 val kafkaVersion = "2.4.0"
 val mockkVersion = "1.9.3"
 
@@ -90,7 +88,6 @@ dependencies {
     implementation("io.ktor:ktor-client-jackson:$ktorVersion")
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
-    implementation("io.confluent:kafka-avro-serializer:$confluentVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
