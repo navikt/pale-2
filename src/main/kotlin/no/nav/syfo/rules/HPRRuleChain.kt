@@ -1,6 +1,7 @@
 package no.nav.syfo.rules
 
 import no.nav.syfo.client.Behandler
+import no.nav.syfo.model.HelsepersonellKategori
 import no.nav.syfo.model.Status
 
 enum class HPRRuleChain(
@@ -49,11 +50,11 @@ enum class HPRRuleChain(
                 it.helsepersonellkategori?.aktiv != null &&
                         it.autorisasjon?.aktiv == true && it.helsepersonellkategori.verdi != null &&
                         harAktivHelsepersonellAutorisasjonsSom(behandler, listOf(
-                            no.nav.syfo.model.HelsepersonellKategori.LEGE.verdi,
-                            no.nav.syfo.model.HelsepersonellKategori.KIROPRAKTOR.verdi,
-                            no.nav.syfo.model.HelsepersonellKategori.MANUELLTERAPEUT.verdi,
-                            no.nav.syfo.model.HelsepersonellKategori.TANNLEGE.verdi,
-                            no.nav.syfo.model.HelsepersonellKategori.FYSIOTERAPAEUT.verdi))
+                            HelsepersonellKategori.LEGE.verdi,
+                            HelsepersonellKategori.KIROPRAKTOR.verdi,
+                            HelsepersonellKategori.MANUELLTERAPEUT.verdi,
+                            HelsepersonellKategori.TANNLEGE.verdi,
+                            HelsepersonellKategori.FYSIOTERAPAEUT.verdi))
             }
         }),
 }
