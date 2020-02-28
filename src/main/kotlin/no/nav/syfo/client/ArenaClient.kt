@@ -36,6 +36,15 @@ fun createArenaInfo(
         fnr = fnrbehandler
         tssid = tssId
     }
+    eiaData = ArenaEiaInfo.EiaData().apply {
+        systemSvar.add(
+            ArenaEiaInfo.EiaData.SystemSvar().apply {
+                meldingsPrioritet = 3.toBigInteger()
+                meldingsNr = 245.toBigInteger()
+                meldingsTekst = "Legeerklæring er mottatt."
+            }
+        )
+    }
 }
 
 fun findMappeTypeInLegeerklaering(typeLegeerklaring: BigInteger): String =
