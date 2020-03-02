@@ -59,7 +59,7 @@ spec:
     - name: MQ_APPREC_QUEUE_NAME
       value: QA.Q414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
-      value: P_PALE-2.INPUT_BOQ
+      value: QA.P_PALE_2.INPUT_BOQ
     - name: AKTOR_REGISTER_V1_URL
       value: https://app.adeo.no/aktoerregister/api/v1
     - name: SECURITY_TOKEN_SERVICE_URL
