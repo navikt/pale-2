@@ -42,12 +42,6 @@ val RULE_HIT_STATUS_COUNTER: Counter = Counter.Builder()
         .help("Registers a counter for each rule status")
         .register()
 
-val CASE_CREATED_COUNTER: Counter = Counter.Builder()
-        .namespace(METRICS_NS)
-        .name("case_created")
-        .help("Registers a counter for created cases")
-        .register()
-
 val TEST_FNR_IN_PROD: Counter = Counter.build()
         .namespace(METRICS_NS)
         .name("test_fnr_in_prod")
