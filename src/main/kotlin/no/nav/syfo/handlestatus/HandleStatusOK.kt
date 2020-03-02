@@ -36,7 +36,7 @@ suspend fun handleStatusOK(
         lokaltNavkontor, tssId,
         ediLoggId, healthcareProfessional, personNumberDoctor)
 
-    log.info("Legeerklæring sendt til arena {}", fields(loggingMeta))
+    log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", fields(loggingMeta))
 }
 
 fun sendArenaInfo(
