@@ -58,10 +58,6 @@ spec:
       value: QA.Q414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
       value: Q1_PALE_2.INPUT_BOQ
-    - name: MQ_GATEWAY_NAME
-      value: MQ1LSC04
-    - name: MQ_CHANNEL_NAME
-      value: Q1_SYFOSMMOTTAK
     - name: AKTOR_REGISTER_V1_URL
       value: https://app-q1.adeo.no/aktoerregister/api/v1
     - name: SECURITY_TOKEN_SERVICE_URL
