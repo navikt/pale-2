@@ -1,5 +1,6 @@
 package no.nav.syfo.client
 
+import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.Environment
 import no.nav.syfo.VaultSecrets
 import no.nav.syfo.kafka.loadBaseConfig
@@ -14,4 +15,5 @@ class KafkaClients constructor(env: Environment, credentials: VaultSecrets) {
     private val producerProperties = kafkaBaseConfig.toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
 
     val kafkaProducerLegeerklaeringSak = KafkaProducer<String, LegeerklaeringSak>(producerProperties)
+    val kafkaProducerLegeerklaeringFellesformat = KafkaProducer<String, XMLEIFellesformat>(producerProperties)
 }

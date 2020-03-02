@@ -19,18 +19,17 @@ data class Environment(
     val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api"),
     val securityTokenServiceURL: String = getEnvVar("SECURITY_TOKEN_SERVICE_URL"),
     val legeSuspensjonEndpointURL: String = getEnvVar("LEGE_SUSPENSJON_ENDPOINT_URL", "http://btsys"),
-    val pdfgen: String = getEnvVar("PDF_GEN_URL", "http://syfopdfgen/api/v1/genpdf/pale-2/pale-2"),
     val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak/api/v1/saker"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val personV3EndpointURL: String = getEnvVar("PERSON_V3_ENDPOINT_URL"),
     val norg2V1EndpointURL: String = getEnvVar("NORG2_V1_ENDPOINT_URL"),
-    val dokArkivUrl: String = getEnvVar("DOK_ARKIV_URL"),
     val norskHelsenettEndpointURL: String = getEnvVar("HELSENETT_ENDPOINT_URL", "http://syfohelsenettproxy"),
     val helsenettproxyId: String = getEnvVar("HELSENETTPROXY_ID"),
     val aadAccessTokenUrl: String = getEnvVar("AADACCESSTOKEN_URL"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
     override val kafkaBootstrapServers: String = getEnvVar("KAFKA_BOOTSTRAP_SERVERS_URL"),
-    val pale2SakTopic: String = getEnvVar("KAFKA_PALE_2_SAK_TOPIC", "privat-syfo-pale2-sak-v1")
+    val pale2SakTopic: String = getEnvVar("KAFKA_PALE_2_SAK_TOPIC", "privat-syfo-pale2-sak-v1"),
+    val pale2DumpTopic: String = getEnvVar("KAFKA_PALE_2_DUMP_TOPIC", "privat-syfo-pale2-dump-v1")
 ) : MqConfig, KafkaConfig
 
 data class VaultSecrets(

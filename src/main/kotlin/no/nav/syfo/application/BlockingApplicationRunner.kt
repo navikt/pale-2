@@ -86,7 +86,8 @@ class BlockingApplicationRunner {
         personV3: PersonV3,
         norg2Client: Norg2Client,
         norskHelsenettClient: NorskHelsenettClient,
-        kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>
+        kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -103,6 +104,12 @@ class BlockingApplicationRunner {
                     }
                     val fellesformat =
                         fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+
+                    kafkaProducerLegeerklaeringFellesformat.send(
+                        ProducerRecord(env.pale2DumpTopic, fellesformat)
+                    )
+                    log.info("Melding sendt til kafka topic {}", env.pale2DumpTopic)
+
                     val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
                     val msgHead = fellesformat.get<XMLMsgHead>()
                     val ediLoggId = receiverBlock.ediLoggId

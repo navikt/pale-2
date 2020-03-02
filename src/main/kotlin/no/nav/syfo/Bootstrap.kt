@@ -150,7 +150,8 @@ fun main() {
         applicationState, env, sarClient,
         aktoerIdClient, vaultSecrets,
         legeSuspensjonClient,
-        personV3, norg2Client, norskHelsenettClient, kafkaClients.kafkaProducerLegeerklaeringSak
+        personV3, norg2Client, norskHelsenettClient, kafkaClients.kafkaProducerLegeerklaeringSak,
+        kafkaClients.kafkaProducerLegeerklaeringFellesformat
     )
 }
 
@@ -176,7 +177,8 @@ fun launchListeners(
     personV3: PersonV3,
     norg2Client: Norg2Client,
     norskHelsenettClient: NorskHelsenettClient,
-    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
@@ -194,7 +196,8 @@ fun launchListeners(
                 BlockingApplicationRunner().run(applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
                     kuhrSarClient, aktoerIdClient, secrets, legeSuspensjonClient,
-                    arenaProducer, personV3, norg2Client, norskHelsenettClient, kafkaProducerLegeerklaeringSak
+                    arenaProducer, personV3, norg2Client, norskHelsenettClient, kafkaProducerLegeerklaeringSak,
+                    kafkaProducerLegeerklaeringFellesformat
                 )
             }
         }
