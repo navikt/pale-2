@@ -3,7 +3,7 @@
     {
       "topicName": "privat-syfo-pale2-sak-v1",
       "members": [
-        {"member":"srvpale-2", "role":"PRODUCER"},
+        {"member":"srvpale2", "role":"PRODUCER"},
         {"member":"srvpale2sak", "role":"CONSUMER"},
         {"member":"s151890", "role":"MANAGER"},
         {"member":"k143566", "role":"MANAGER"},
