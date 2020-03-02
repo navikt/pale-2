@@ -42,6 +42,7 @@ fun createArenaInfo(
                 meldingsPrioritet = 4.toBigInteger()
                 meldingsNr = 245.toBigInteger()
                 meldingsTekst = "Legeerklæring er mottatt."
+                meldingsType = "3"
             }
         )
     }
