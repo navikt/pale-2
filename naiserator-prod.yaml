@@ -67,7 +67,7 @@ spec:
     - name: DOK_ARKIV_URL
       value: http://dokarkiv/rest/journalpostapi/v1/journalpost
     - name: ARENA_OUTBOUND_QUEUENAME
-      value: QA.P_414.FS06_ARENA
+      value: QA.P414.FS06_ARENA
     - name: NORG2_V1_ENDPOINT_URL
       value: https://app.adeo.no/norg2/ws/Arbeidsfordeling/v1
     - name: PERSON_V3_ENDPOINT_URL
