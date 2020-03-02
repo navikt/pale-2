@@ -57,7 +57,7 @@ spec:
     - name: MQ_CHANNEL_NAME
       value: P_PALE_2
     - name: MQ_APPREC_QUEUE_NAME
-      value: QA.Q414.IU03_UTSENDING
+      value: QA.P414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
       value: QA.P_PALE_2.INPUT_BOQ
     - name: AKTOR_REGISTER_V1_URL
