@@ -75,8 +75,8 @@ fun main() {
     val env = Environment()
 
     val vaultSecrets = VaultSecrets(
-        serviceuserPassword = getFileAsString("/secrets/default/serviceuserPassword"),
-        serviceuserUsername = getFileAsString("/secrets/default/serviceuserUsername"),
+        serviceuserPassword = getFileAsString("/secrets/serviceuser/password"),
+        serviceuserUsername = getFileAsString("/secrets/serviceuser/username"),
         mqUsername = getFileAsString("/secrets/default/mqUsername"),
         mqPassword = getFileAsString("/secrets/default/mqPassword"),
         clientId = getFileAsString("/secrets/azuread/pale-2/client_id"),

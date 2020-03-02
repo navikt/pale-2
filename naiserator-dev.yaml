@@ -40,6 +40,8 @@ spec:
         mountPath: /secrets/azuread/pale-2
       - kvPath: /kv/preprod/fss/pale-2/default
         mountPath: /secrets/default
+      - kvPath: serviceuser/data/dev/srvpale2
+        mountPath: /secrets/serviceuser
   webproxy: true
   ingresses:
     - "https://pale-2.nais.preprod.local"

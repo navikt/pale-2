@@ -40,6 +40,8 @@ spec:
         mountPath: /secrets/azuread/pale-2
       - kvPath: /kv/prod/fss/pale-2/default
         mountPath: /secrets/default
+      - kvPath: serviceuser/data/prod/srvpale2
+        mountPath: /secrets/serviceuser
   webproxy: true
   ingresses:
     - "https://pale-2.nais.adeo.no"
