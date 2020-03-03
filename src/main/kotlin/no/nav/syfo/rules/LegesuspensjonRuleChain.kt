@@ -9,7 +9,6 @@ enum class LegesuspensjonRuleChain(
     override val messageForSender: String,
     override val predicate: (RuleData<Boolean>) -> Boolean
 ) : Rule<RuleData<Boolean>> {
-    @Description("Behandler er suspendert av NAV på konsultasjonstidspunkt")
     BEHANDLER_SUSPENDERT(
             1414,
             Status.INVALID,

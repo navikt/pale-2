@@ -54,7 +54,7 @@ fun Legeerklaring.toLegeerklaring(
                 hjelpemidlerArbeidsplassen = TypeTiltak.HjelpemidlerArbeidsplass in forslagTiltak.aktueltTiltak,
                 arbeidsavklaringspenger = TypeTiltak.Arbeidsavklaringspenger in forslagTiltak.aktueltTiltak,
                 friskmeldingTilArbeidsformidling = TypeTiltak.FriskemeldingTilArbeidsformidling in forslagTiltak.aktueltTiltak,
-                andreTiltak = forslagTiltak.aktueltTiltak.find { it.typeTiltak == TypeTiltak.AndreTiltak }?.hvilkeAndreTiltak,
+                andreTiltak = forslagTiltak.aktueltTiltak.find { it.typeTiltak == TypeTiltak.AndreTiltak.typeTiltak.toBigInteger() }?.hvilkeAndreTiltak,
                 naermereOpplysninger = forslagTiltak.opplysninger,
                 tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak
         ),

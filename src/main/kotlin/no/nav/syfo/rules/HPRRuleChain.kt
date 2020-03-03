@@ -12,7 +12,6 @@ enum class HPRRuleChain(
     override val predicate: (RuleData<Behandler>) -> Boolean
 ) : Rule<RuleData<Behandler>> {
 
-    @Description("Behandler er ikke gyldig i HPR på konsultasjonstidspunkt")
     BEHANDLER_IKKE_GYLDIG_I_HPR(
         1402,
         Status.INVALID,
@@ -24,7 +23,6 @@ enum class HPRRuleChain(
             }
         }),
 
-    @Description("Behandler har ikke gyldig autorisasjon i HPR")
     BEHANDLER_MANGLER_AUTORISASJON_I_HPR(
         1403,
         Status.INVALID,
@@ -39,7 +37,6 @@ enum class HPRRuleChain(
             }
         }),
 
-    @Description("Behandler finnes i HPR men er ikke lege, kiropraktor, manuellterapeut eller tannlege")
     BEHANDLER_IKKE_LE_KI_MT_TL_FT_I_HPR(
         1407,
         Status.INVALID,

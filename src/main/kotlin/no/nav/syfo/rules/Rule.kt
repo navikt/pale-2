@@ -22,6 +22,3 @@ inline fun <reified T, reified R : Rule<RuleData<T>>> List<R>.executeFlow(legeer
         .onEach { RULE_HIT_COUNTER.labels(it.name).inc() }
 
 inline fun <reified T, reified R : Rule<RuleData<T>>> Array<R>.executeFlow(legeerklaring: Legeerklaering, value: T): List<Rule<Any>> = toList().executeFlow(legeerklaring, value)
-
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Description(val description: String)

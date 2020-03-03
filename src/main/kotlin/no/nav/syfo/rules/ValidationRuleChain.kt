@@ -14,7 +14,6 @@ enum class ValidationRuleChain(
     override val predicate: (RuleData<RuleMetadata>) -> Boolean
 ) : Rule<RuleData<RuleMetadata>> {
 
-    @Description("Pasienten sitt fødselsnummer eller D-nummer er ikke 11 tegn.")
     UGYLDIG_FNR_LENGDE_PASIENT(
             1002,
             Status.INVALID,
@@ -23,7 +22,6 @@ enum class ValidationRuleChain(
         !validatePersonAndDNumber11Digits(metadata.patientPersonNumber)
     }),
 
-    @Description("Fødselsnummer/D-nummer kan passerer ikke modulus 11")
     UGYLDIG_FNR_PASIENT(
             1006,
             Status.INVALID,
@@ -32,7 +30,6 @@ enum class ValidationRuleChain(
         !validatePersonAndDNumber(metadata.patientPersonNumber)
     }),
 
-    @Description("Hele sykmeldingsperioden er før bruker har fylt 13 år. Pensjonsopptjening kan starte fra 13 år.")
     PASIENT_YNGRE_ENN_13(
             1101,
             Status.INVALID,
@@ -41,7 +38,6 @@ enum class ValidationRuleChain(
             metadata.signatureDate.toLocalDate() < extractBornDate(metadata.patientPersonNumber).plusYears(13)
     }),
 
-    @Description("Organisasjonsnummeret som er oppgitt er ikke 9 tegn.")
     UGYLDIG_ORGNR_LENGDE(
             9999,
             Status.INVALID,
@@ -50,7 +46,6 @@ enum class ValidationRuleChain(
         metadata.legekontorOrgnr != null && metadata.legekontorOrgnr.length != 9
     }),
 
-    @Description("Avsender fødselsnummer/D-nummer kan passerer ikke modulus 11")
     UGYLDIG_FNR_AVSENDER(
         1006,
         Status.INVALID,
@@ -59,7 +54,6 @@ enum class ValidationRuleChain(
             !validatePersonAndDNumber(metadata.avsenderfnr)
         }),
 
-    @Description("Avsender fødselsnummer/D-numme er det samme som pasient fnr")
     AVSENDER_FNR_ER_SAMME_SOM_PASIENT_FNR(
         9999,
         Status.INVALID,

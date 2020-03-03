@@ -30,7 +30,6 @@ import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
 import no.nav.syfo.handlestatus.handlePatientNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleStatusINVALID
-import no.nav.syfo.handlestatus.handleStatusMANUALPROCESSING
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.log
@@ -44,7 +43,6 @@ import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.rules.HPRRuleChain
 import no.nav.syfo.rules.LegesuspensjonRuleChain
-import no.nav.syfo.rules.PostDiskresjonskodeRuleChain
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.services.FindNAVKontorService
@@ -240,7 +238,6 @@ class BlockingApplicationRunner {
                                 avsenderfnr = personNumberDoctor
                             )
                         ),
-                        PostDiskresjonskodeRuleChain.values().executeFlow(legeerklaring, patientDiskresjonsKode),
                         HPRRuleChain.values().executeFlow(legeerklaring, avsenderBehandler),
                         LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
                     ).flatten()
@@ -278,13 +275,6 @@ class BlockingApplicationRunner {
                             ediLoggId,
                             personNumberDoctor,
                             legeerklaring,
-                            loggingMeta
-                        )
-
-                        Status.MANUAL_PROCESSING -> handleStatusMANUALPROCESSING(
-                            session,
-                            receiptProducer,
-                            fellesformat,
                             loggingMeta
                         )
 

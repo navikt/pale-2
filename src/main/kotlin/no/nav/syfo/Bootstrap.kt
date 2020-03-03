@@ -239,7 +239,6 @@ fun validationResult(results: List<Rule<Any>>): ValidationResult = ValidationRes
     status = results
         .map { status -> status.status }.let {
             it.firstOrNull { status -> status == Status.INVALID }
-                ?: it.firstOrNull { status -> status == Status.MANUAL_PROCESSING }
                 ?: Status.OK
         },
     ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForSender!!, rule.messageForUser!!, rule.status) }
