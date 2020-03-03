@@ -122,8 +122,6 @@ class BlockingApplicationRunner {
                     val personNumberDoctor = receiverBlock.avsenderFnrFraDigSignatur
                     val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
                     val legekontorReshId = extractOrganisationRashNumberFromSender(fellesformat)?.id
-                    val healthcareProfessional =
-                        fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
 
                     INCOMING_MESSAGE_COUNTER.inc()
                     val requestLatency = REQUEST_TIME.startTimer()
@@ -279,7 +277,7 @@ class BlockingApplicationRunner {
                             samhandlerPraksis?.tss_ident,
                             ediLoggId,
                             personNumberDoctor,
-                            healthcareProfessional,
+                            legeerklaring,
                             loggingMeta
                         )
 

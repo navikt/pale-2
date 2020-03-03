@@ -5,10 +5,10 @@ import javax.jms.MessageProducer
 import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
+import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.sendReceipt
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.toString
@@ -25,16 +25,16 @@ suspend fun handleStatusOK(
     tssId: String?,
     ediLoggId: String,
     personNumberDoctor: String,
-    healthcareProfessional: XMLHealthcareProfessional?,
+    legeerklaring: Legeerklaering,
     loggingMeta: LoggingMeta
 ) {
     val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
 
-    sendArenaInfo(arenaProducer, session, fellesformat,
-        lokaltNavkontor, tssId,
-        ediLoggId, healthcareProfessional, personNumberDoctor)
+    sendArenaInfo(arenaProducer, session,
+        lokaltNavkontor, tssId, ediLoggId,
+        personNumberDoctor, legeerklaring)
 
     log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", fields(loggingMeta))
 }
@@ -42,13 +42,12 @@ suspend fun handleStatusOK(
 fun sendArenaInfo(
     producer: MessageProducer,
     session: Session,
-    fellesformat: XMLEIFellesformat,
     lokaltNavkontor: String,
     tssId: String?,
     mottakid: String,
-    healthcareProfessional: XMLHealthcareProfessional?,
-    fnrbehandler: String
+    fnrbehandler: String,
+    legeerklaring: Legeerklaering
 ) = producer.send(session.createTextMessage().apply {
-    val info = createArenaInfo(fellesformat, tssId, lokaltNavkontor, mottakid, healthcareProfessional, fnrbehandler)
+    val info = createArenaInfo(tssId, lokaltNavkontor, mottakid, fnrbehandler, legeerklaring)
     text = arenaMarshaller.toString(info)
 })

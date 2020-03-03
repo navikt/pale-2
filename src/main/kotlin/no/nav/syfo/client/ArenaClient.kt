@@ -1,38 +1,28 @@
 package no.nav.syfo.client
 
-import java.math.BigInteger
 import no.nav.helse.arenainfo.ArenaEiaInfo
-import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.helse.msgHead.XMLHealthcareProfessional
-import no.nav.syfo.formatName
+import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.PaleConstant
-import no.nav.syfo.util.extractLegeerklaering
+import no.nav.syfo.model.Pasient
 
 fun createArenaInfo(
-    fellesformat: XMLEIFellesformat,
     tssId: String?,
     navkontor: String?,
     mottakid: String,
-    healthcareProfessional: XMLHealthcareProfessional?,
-    fnrbehandler: String
+    fnrbehandler: String,
+    legeerklaering: Legeerklaering
 ): ArenaEiaInfo = ArenaEiaInfo().apply {
-    val legeerklaering = extractLegeerklaering(fellesformat)
-    val hcp = healthcareProfessional
     ediloggId = mottakid
     hendelseStatus = PaleConstant.tilvurdering.string
     version = PaleConstant.versjon2_0.string
     skjemaType = "LE"
-    mappeType = findMappeTypeInLegeerklaering(legeerklaering.legeerklaringGjelder.first().typeLegeerklaring)
+    mappeType = findMappeTypeInLegeerklaering(legeerklaering)
     pasientData = ArenaEiaInfo.PasientData().apply {
-        fnr = legeerklaering.pasientopplysninger.pasient.fodselsnummer
-        isSperret = when (legeerklaering.forbeholdLegeerklaring?.tilbakeholdInnhold?.toInt()) {
-            2 -> true
-            else -> false
-        }
+        fnr = legeerklaering.pasient.fnr
         tkNummer = navkontor
     }
     legeData = ArenaEiaInfo.LegeData().apply {
-        navn = hcp?.formatName() ?: ""
+        navn = legeerklaering.pasient.formatName()
         fnr = fnrbehandler
         tssid = tssId
     }
@@ -48,10 +38,20 @@ fun createArenaInfo(
     }
 }
 
-fun findMappeTypeInLegeerklaering(typeLegeerklaring: BigInteger): String =
-    when (typeLegeerklaring) {
-        4.toBigInteger() -> PaleConstant.mappetypeUP.string
-        3.toBigInteger() -> PaleConstant.mappetypeYA.string
-        2.toBigInteger() -> PaleConstant.mappetypeRP.string
-        else -> { PaleConstant.mappetypeSP.string }
+fun Pasient.formatName(): String =
+    if (mellomnavn == null) {
+        "$etternavn $fornavn"
+    } else {
+        "$etternavn $fornavn $mellomnavn"
+    }
+
+fun findMappeTypeInLegeerklaering(legeerklaering: Legeerklaering): String =
+    if (legeerklaering.uforepensjon) {
+        PaleConstant.mappetypeUP.string
+    } else if (legeerklaering.yrkesrettetAttforing) {
+        PaleConstant.mappetypeYA.string
+    } else if (legeerklaering.arbeidsavklaringspenger) {
+        PaleConstant.mappetypeRP.string
+    } else {
+        PaleConstant.mappetypeSP.string
     }

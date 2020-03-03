@@ -93,6 +93,10 @@ fun Legeerklaring.toLegeerklaring(
                 kontakteAnnenInstans = kontakt.find { it.kontakt?.toInt() == KontaktType.AnnenInstans.type }?.annenInstans,
                 onskesKopiAvVedtak = andreOpplysninger?.onskesKopi?.let { it.toInt() == 1 } ?: false
         ),
+        tilbakeholdInnhold = when (forbeholdLegeerklaring?.tilbakeholdInnhold?.toInt()) {
+                2 -> true
+                else -> false
+        },
         pasientenBurdeIkkeVite = forbeholdLegeerklaring.borTilbakeholdes,
         signatur = Signatur(
                 dato = ZonedDateTime.now(),
