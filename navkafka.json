@@ -22,7 +22,7 @@
       "topicName": "privat-syfo-pale2-dump-v1",
       "members": [
         {"member":"srvpale2", "role":"PRODUCER"},
-        {"member":"srvpale2sak", "role":"CONSUMER"},
+        {"member":"srvpale2", "role":"CONSUMER"},
         {"member":"s151890", "role":"MANAGER"},
         {"member":"k143566", "role":"MANAGER"},
         {"member":"f133008", "role":"MANAGER"},
