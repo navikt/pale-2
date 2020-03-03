@@ -83,12 +83,6 @@ Creating a docker image should be as simple as `docker build -t pale-2 .`
    - Search for user with fnr
 3. Verify that there is a legeerklæring task under tasks overview and 
    that this is the legeerklæring you submitted
-4. Click on the "Start buttom" for that task.   
-5. You may need to login, with the Login User, the mail adress follows this pattern:
-    F_ZXXXXXX.E_ZXXXXXX@trygdeetaten.no, where you change F_ZXXXXXX to F_Z992389 and E_ZXXXXXX to E_Z992389
-    Use the same passord that you used to login in gosys.
-    Username and password for testing can be found here(NAV-internal sites):
-    https://confluence.adeo.no/pages/viewpage.action?pageId=358567826
 
 ### Verification in Gosys:
 
