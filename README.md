@@ -3,9 +3,16 @@
 # Prosessering av legeerklæringer (PALE)
 Repository for Pale. Application written in Kotlin used to receive legeerklæringer from external systems, doing some validation, then pushing it to our internal systems.
 
+
+<img src="./src/svg/flytdiagram.svg" alt="Image of the flow of the pale-2 application">
+
 ## Technologies used
 * Kotlin
+* Ktor
 * Gradle
+* JDK 12
+* Spek
+* Jackson
 
 #### Requirements
 
@@ -22,7 +29,7 @@ repositories {
             username = githubUser
             password = githubPassword
         }
-        setUrl("https://maven.pkg.github.com/navikt/helse-sykepenger-beregning")
+        setUrl("https://maven.pkg.github.com/navikt/pale-2-common)
     }
 }
 ```
