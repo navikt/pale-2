@@ -64,6 +64,40 @@ Creating a docker image should be as simple as `docker build -t pale-2 .`
 #### Running a docker image
 `docker run --rm -it -p 8080:8080 pale-2`
 
+
+## Testing the whole flow for handling manual legeerklæring in preprod
+### Submitting legeerklæring:
+1. Send inn a legeerklæring xml file, on the queue
+2. Note the number below Msgid
+
+### Verification in the legeerklæring applications:
+1. Log in at https://logs.adeo.no and use the following search string: x_msgId: $ yourMsgId, ex: x_msgId: 58e1d88d-36fa-4756-a06a-32c384ba885f
+2. Verify that what you expect to happen with a sykmelding actually happens. It should then be Ok | Manual processing | rejected
+   What you look for are items: status = OK, status = MANUAL_PROCESSING or status = INVALID
+   
+### Verification in Gosys:
+1. Login User (Case managers / supervisors):
+   Z992389
+2. Check that the legeerklæring is placed in gosys:
+   - Log in at https://gosys-nais-q1.nais.preprod.local/gosys
+   - Search for user with fnr
+3. Verify that there is a legeerklæring task under tasks overview and 
+   that this is the legeerklæring you submitted
+4. Click on the "Start buttom" for that task.   
+5. You may need to login, with the Login User, the mail adress follows this pattern:
+    F_ZXXXXXX.E_ZXXXXXX@trygdeetaten.no, where you change F_ZXXXXXX to F_Z992389 and E_ZXXXXXX to E_Z992389
+    Use the same passord that you used to login in gosys.
+    Username and password for testing can be found here(NAV-internal sites):
+    https://confluence.adeo.no/pages/viewpage.action?pageId=358567826
+
+### Verification in Gosys:
+
+1. Open this link(NAV-internal sites): http://confluence.adeo.no/download/attachments/98337004/NAV%20Skrivebord%20Stack_Q1b.ica?version=1&modificationDate=1432891072000&api=v2
+2. Inside navskrivebord q1, open internett explorer and write the following adress: http://arena-q1.adeo.no/forms/frmservlet?config=areq01
+3. Logg on with your arena id, ask eks Bente Gåserud if you dont have a arena user.
+4. Search then the patient with based on the fnr
+5. Choose then helserelaterte hendelser and see that the legeerklæring is there.
+
 ## Contact us
 ### Code/project related questions can be sent to
 * Joakim Kartveit, `joakim.kartveit@nav.no`
