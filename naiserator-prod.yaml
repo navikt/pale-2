@@ -64,8 +64,6 @@ spec:
       value: https://app.adeo.no/aktoerregister/api/v1
     - name: SECURITY_TOKEN_SERVICE_URL
       value: https://sts.adeo.no/SecurityTokenServiceProvider/
-    - name: DOK_ARKIV_URL
-      value: http://dokarkiv/rest/journalpostapi/v1/journalpost
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.P414.FS06_ARENA
     - name: NORG2_V1_ENDPOINT_URL

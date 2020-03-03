@@ -61,13 +61,6 @@ repositories {
     maven(url= "https://packages.confluent.io/maven/")
     maven(url= "https://kotlin.bintray.com/kotlinx")
     maven {
-        url = uri("https://maven.pkg.github.com/navikt/syfosm-common")
-        credentials {
-            username = githubUser
-            password = githubPassword
-        }
-    }
-    maven {
         url = uri("https://maven.pkg.github.com/navikt/pale-2-common")
         credentials {
             username = githubUser
@@ -167,5 +160,4 @@ tasks {
             showStandardStreams = true
         }
     }
-
 }

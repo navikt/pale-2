@@ -64,8 +64,6 @@ spec:
       value: https://app-q1.adeo.no/aktoerregister/api/v1
     - name: SECURITY_TOKEN_SERVICE_URL
       value: https://sts-q1.preprod.local/SecurityTokenServiceProvider/
-    - name: DOK_ARKIV_URL
-      value: https://dokarkiv-q1.nais.preprod.local/rest/journalpostapi/v1/journalpost
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.Q1_414.FS06_ARENA
     - name: NORG2_V1_ENDPOINT_URL
