@@ -67,8 +67,10 @@ Creating a docker image should be as simple as `docker build -t pale-2 .`
 
 ## Testing the whole flow for handling manual legeerklæring in preprod
 ### Submitting legeerklæring:
-1. Send inn a legeerklæring xml file, on the queue
-2. Note the number below Msgid
+1. Navigate to syfomock: https://syfomock.dev-sbs.nais.io/opprett_legeerklearing
+2. Note the number below Msgid (this changes with each submission)
+3. Fill in the content you want in the Legeerklæring
+4. Submit the Legeerklæring
 
 ### Verification in the legeerklæring applications:
 1. Log in at https://logs.adeo.no and use the following search string: x_msgId: $ yourMsgId, ex: x_msgId: 58e1d88d-36fa-4756-a06a-32c384ba885f
