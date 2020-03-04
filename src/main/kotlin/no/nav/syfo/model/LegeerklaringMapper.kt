@@ -119,8 +119,8 @@ fun Pasientopplysninger.toPasient(): Pasient {
                 etternavn = patient.navn.etternavn,
                 fnr = patient.fodselsnummer,
                 navKontor = patient.trygdekontor,
-                adresse = patient.personAdr[0].postalAddress[0].streetAddress,
-                postnummer = patient.personAdr[0].postalAddress[0].postalCode.let {
+                adresse = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.streetAddress,
+                postnummer = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.postalCode.let {
                         if (it == null || it.isEmpty()) null else it.toInt()
                 },
                 poststed = patient.personAdr[0].postalAddress[0].city,
