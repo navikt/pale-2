@@ -123,7 +123,7 @@ fun Pasientopplysninger.toPasient(): Pasient {
                 postnummer = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.postalCode.let {
                         if (it == null || it.isEmpty()) null else it.toInt()
                 },
-                poststed = patient.personAdr[0].postalAddress[0].city,
+                poststed = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.city,
                 yrke = patient.arbeidsforhold?.yrkesbetegnelse,
                 arbeidsgiver = Arbeidsgiver(
                         navn = patient.arbeidsforhold?.virksomhet?.virksomhetsBetegnelse,
