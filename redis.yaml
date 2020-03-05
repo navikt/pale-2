@@ -6,8 +6,10 @@ metadata:
   name: pale-2-redis
   namespace: default
 spec:
-  image: redis:5-alpine
+  image: navikt/secure-redis:5.0.3-alpine-2
   port: 6379
+  vault:
+    enabled: true
   replicas:
     min: 1
     max: 4

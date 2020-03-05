@@ -80,7 +80,8 @@ fun main() {
         mqUsername = getFileAsString("/secrets/default/mqUsername"),
         mqPassword = getFileAsString("/secrets/default/mqPassword"),
         clientId = getFileAsString("/secrets/azuread/pale-2/client_id"),
-        clientsecret = getFileAsString("/secrets/azuread/pale-2/client_secret")
+        clientsecret = getFileAsString("/secrets/azuread/pale-2/client_secret"),
+        redisSecret = getFileAsString("/secrets/default/redisSecret")
     )
 
     val applicationState = ApplicationState()
@@ -192,6 +193,8 @@ fun launchListeners(
                 val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
                 applicationState.ready = true
+
+                jedis.auth(secrets.redisSecret)
 
                 BlockingApplicationRunner().run(applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,

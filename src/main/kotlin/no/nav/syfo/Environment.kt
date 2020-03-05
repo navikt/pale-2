@@ -38,7 +38,8 @@ data class VaultSecrets(
     val mqUsername: String,
     val mqPassword: String,
     val clientId: String,
-    val clientsecret: String
+    val clientsecret: String,
+    val redisSecret: String
 ) : KafkaCredentials {
     override val kafkaUsername: String = serviceuserUsername
     override val kafkaPassword: String = serviceuserPassword
