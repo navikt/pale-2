@@ -29,7 +29,8 @@ data class Environment(
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
     override val kafkaBootstrapServers: String = getEnvVar("KAFKA_BOOTSTRAP_SERVERS_URL"),
     val pale2SakTopic: String = getEnvVar("KAFKA_PALE_2_SAK_TOPIC", "privat-syfo-pale2-sak-v1"),
-    val pale2DumpTopic: String = getEnvVar("KAFKA_PALE_2_DUMP_TOPIC", "privat-syfo-pale2-dump-v1")
+    val pale2DumpTopic: String = getEnvVar("KAFKA_PALE_2_DUMP_TOPIC", "privat-syfo-pale2-dump-v1"),
+    val subscriptionEndpointURL: String = getEnvVar("SUBSCRIPTION_ENDPOINT_URL")
 ) : MqConfig, KafkaConfig
 
 data class VaultSecrets(

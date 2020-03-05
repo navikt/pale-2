@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.apprecV1.XMLCV as AppRecCV
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
@@ -55,6 +56,7 @@ import no.nav.syfo.util.apprecMarshaller
 import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
+import org.apache.cxf.ws.addressing.WSAddressingFeature
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
@@ -141,6 +143,11 @@ fun main() {
         }
     }
 
+    val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
+        proxy { features.add(WSAddressingFeature()) }
+        port { withBasicAuth(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword) }
+    }
+
     val accessTokenClient = AccessTokenClient(env.aadAccessTokenUrl, vaultSecrets.clientId, vaultSecrets.clientsecret, httpClientWithProxy)
 
     val norskHelsenettClient = NorskHelsenettClient(env.norskHelsenettEndpointURL, accessTokenClient, env.helsenettproxyId, httpClient)
@@ -152,7 +159,7 @@ fun main() {
         aktoerIdClient, vaultSecrets,
         legeSuspensjonClient,
         personV3, norg2Client, norskHelsenettClient, kafkaClients.kafkaProducerLegeerklaeringSak,
-        kafkaClients.kafkaProducerLegeerklaeringFellesformat
+        kafkaClients.kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak
     )
 }
 
@@ -179,7 +186,8 @@ fun launchListeners(
     norg2Client: Norg2Client,
     norskHelsenettClient: NorskHelsenettClient,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-    kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>
+    kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
+    subscriptionEmottak: SubscriptionPort
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
@@ -200,7 +208,7 @@ fun launchListeners(
                     jedis, session, env, receiptProducer, backoutProducer,
                     kuhrSarClient, aktoerIdClient, secrets, legeSuspensjonClient,
                     arenaProducer, personV3, norg2Client, norskHelsenettClient, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat
+                    kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak
                 )
             }
         }

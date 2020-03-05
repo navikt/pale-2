@@ -11,6 +11,7 @@ import javax.jms.Session
 import javax.jms.TextMessage
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
+import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
@@ -47,7 +48,9 @@ import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.fetchDiskresjonsKode
+import no.nav.syfo.services.samhandlerParksisisLegevakt
 import no.nav.syfo.services.sha256hashstring
+import no.nav.syfo.services.startSubscription
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
@@ -85,7 +88,8 @@ class BlockingApplicationRunner {
         norg2Client: Norg2Client,
         norskHelsenettClient: NorskHelsenettClient,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>
+        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
+        subscriptionEmottak: SubscriptionPort
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -138,12 +142,29 @@ class BlockingApplicationRunner {
                     )
 
                     val samhandlerInfo = kuhrSarClient.getSamhandler(personNumberDoctor)
-                    val samhandlerPraksis = findBestSamhandlerPraksis(
+                    val samhandlerPraksisMatch = findBestSamhandlerPraksis(
                         samhandlerInfo,
                         legekontorOrgName,
                         legekontorHerId,
                         loggingMeta
-                    )?.samhandlerPraksis
+                    )
+
+                    val samhandlerPraksis = samhandlerPraksisMatch?.samhandlerPraksis
+
+                    if (samhandlerPraksisMatch?.percentageMatch != null && samhandlerPraksisMatch.percentageMatch == 999.0) {
+                        log.info("SamhandlerPraksis is found, subscription_emottak is not created, {}", StructuredArguments.fields(loggingMeta))
+                    } else {
+                        when (samhandlerPraksis) {
+                            null -> log.info("SamhandlerPraksis is Not found, {}", StructuredArguments.fields(loggingMeta))
+                            else -> if (!samhandlerParksisisLegevakt(samhandlerPraksis) &&
+                                !receiverBlock.partnerReferanse.isNullOrEmpty() &&
+                                receiverBlock.partnerReferanse.isNotBlank()) {
+                                startSubscription(subscriptionEmottak, samhandlerPraksis, msgHead, receiverBlock, loggingMeta)
+                            } else {
+                                log.info("SamhandlerPraksis is Legevakt or partnerReferanse is empty or blank, subscription_emottak is not created, {}", StructuredArguments.fields(loggingMeta))
+                            }
+                        }
+                    }
 
                     val redisSha256String = jedis.get(sha256String)
                     val redisEdiloggid = jedis.get(ediLoggId)

@@ -1,5 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
+import no.nils.wsdl2java.Wsdl2JavaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "no.nav.syfo"
@@ -34,6 +35,8 @@ val kafkaVersion = "2.4.0"
 val mockkVersion = "1.9.3"
 
 plugins {
+    java
+    id("no.nils.wsdl2java") version "0.10"
     kotlin("jvm") version "1.3.70"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("com.diffplug.gradle.spotless") version "3.24.0"
@@ -70,6 +73,16 @@ repositories {
 }
 
 dependencies {
+
+    wsdl2java("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
+    wsdl2java("javax.activation:activation:$javaxActivationVersion")
+    wsdl2java("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
+    wsdl2java("javax.xml.bind:jaxb-api:$jaxbApiVersion")
+    wsdl2java ("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
+    wsdl2java ("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
+        exclude(group = "com.sun.xml.ws", module = "policy")
+    }
+
     implementation(kotlin("stdlib"))
 
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
@@ -139,6 +152,19 @@ tasks {
         doLast {
             println(project.version)
         }
+    }
+
+    withType<KotlinCompile> {
+        dependsOn("wsdl2java")
+
+        kotlinOptions.jvmTarget = "12"
+    }
+
+    withType<Wsdl2JavaTask> {
+        wsdlDir = file("$projectDir/src/main/resources/wsdl")
+        wsdlsToGenerate = listOf(
+            mutableListOf("-xjc", "-b", "$projectDir/src/main/resources/xjb/binding.xml", "$projectDir/src/main/resources/wsdl/subscription.wsdl")
+        )
     }
 
     withType<KotlinCompile> {
