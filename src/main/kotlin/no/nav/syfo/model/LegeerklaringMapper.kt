@@ -143,7 +143,7 @@ fun mapLegeerklaeringToSykdomDiagnose(diagnose: DiagnoseArbeidsuforhet): Sykdoms
         sykdomshistorie = diagnose.symptomerBehandling,
         statusPresens = diagnose.statusPresens,
         borNavKontoretVurdereOmDetErEnYrkesskade = diagnose.vurderingYrkesskade?.borVurderes?.toInt() == 1,
-        yrkesSkadeDato = diagnose.vurderingYrkesskade.skadeDato
+        yrkesSkadeDato = diagnose.vurderingYrkesskade.skadeDato?.toGregorianCalendar()?.toZonedDateTime()
 )
 
 fun mapEnkeltDiagnoseToDiagnose(enkeltdiagnose: Enkeltdiagnose?): Diagnose =
