@@ -9,11 +9,14 @@ import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
+import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
 import no.nav.syfo.util.toString
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
 
 @KtorExperimentalAPI
 suspend fun handleStatusOK(
@@ -26,7 +29,10 @@ suspend fun handleStatusOK(
     ediLoggId: String,
     personNumberDoctor: String,
     legeerklaring: Legeerklaering,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    pale2OkTopic: String,
+    legeerklaeringSak: LegeerklaeringSak
 ) {
     val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
@@ -37,6 +43,11 @@ suspend fun handleStatusOK(
         personNumberDoctor, legeerklaring)
 
     log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", fields(loggingMeta))
+
+    kafkaProducerLegeerklaeringSak.send(
+        ProducerRecord(pale2OkTopic, legeerklaeringSak)
+    )
+    log.info("Melding sendt til kafka topic {}", pale2OkTopic)
 }
 
 fun sendArenaInfo(

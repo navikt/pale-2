@@ -13,10 +13,13 @@ import no.nav.syfo.log
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.TEST_FNR_IN_PROD
 import no.nav.syfo.model.IdentInfoResult
+import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
 
 fun handleStatusINVALID(
@@ -24,11 +27,19 @@ fun handleStatusINVALID(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    pale2AvvistTopic: String,
+    legeerklaeringSak: LegeerklaeringSak
 ) {
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist,
         validationResult.ruleHits.map { it.toApprecCV() })
     log.info("Apprec sendt til emmottak {}", fields(loggingMeta))
+
+    kafkaProducerLegeerklaeringSak.send(
+        ProducerRecord(pale2AvvistTopic, legeerklaeringSak)
+    )
+    log.info("Melding sendt til kafka topic {}", pale2AvvistTopic)
 }
 
 fun handleDuplicateSM2013Content(

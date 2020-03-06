@@ -298,7 +298,10 @@ class BlockingApplicationRunner {
                             ediLoggId,
                             personNumberDoctor,
                             legeerklaring,
-                            loggingMeta
+                            loggingMeta,
+                            kafkaProducerLegeerklaeringSak,
+                            env.pale2OkTopic,
+                            legeerklaeringSak
                         )
 
                         Status.INVALID -> handleStatusINVALID(
@@ -306,7 +309,10 @@ class BlockingApplicationRunner {
                             session,
                             receiptProducer,
                             fellesformat,
-                            loggingMeta
+                            loggingMeta,
+                            kafkaProducerLegeerklaeringSak,
+                            env.pale2AvvistTopic,
+                            legeerklaeringSak
                         )
                     }
 
