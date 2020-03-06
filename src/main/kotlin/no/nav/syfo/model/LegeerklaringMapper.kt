@@ -9,9 +9,9 @@ import no.nav.helse.legeerklaering.DiagnoseArbeidsuforhet
 import no.nav.helse.legeerklaering.Enkeltdiagnose
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.legeerklaering.Pasientopplysninger
+import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.formatName
-import no.nav.syfo.get
+import no.nav.syfo.util.get
 
 fun Legeerklaring.toLegeerklaring(
     legeerklaringId: String,
@@ -192,3 +192,9 @@ operator fun Iterable<AktueltTiltak>.contains(typeTiltak: TypeTiltak) =
 
 operator fun Iterable<no.nav.helse.legeerklaering.Kontakt>.contains(kontaktType: KontaktType): Boolean =
         any { it.kontakt.toInt() == kontaktType.type }
+
+fun XMLHealthcareProfessional.formatName(): String = if (middleName == null) {
+        "${familyName.toUpperCase()} ${givenName.toUpperCase()}"
+} else {
+        "${familyName.toUpperCase()} ${givenName.toUpperCase()} ${middleName.toUpperCase()}"
+}

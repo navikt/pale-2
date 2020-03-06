@@ -23,8 +23,6 @@ import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
-import no.nav.syfo.extractPersonIdent
-import no.nav.syfo.get
 import no.nav.syfo.handlestatus.avsenderNotinHPR
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
@@ -39,11 +37,14 @@ import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ReceivedLegeerklaering
+import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.model.Status
+import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.rules.HPRRuleChain
 import no.nav.syfo.rules.LegesuspensjonRuleChain
+import no.nav.syfo.rules.Rule
 import no.nav.syfo.rules.ValidationRuleChain
 import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.services.FindNAVKontorService
@@ -58,10 +59,11 @@ import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.extractOrganisationHerNumberFromSender
 import no.nav.syfo.util.extractOrganisationNumberFromSender
 import no.nav.syfo.util.extractOrganisationRashNumberFromSender
+import no.nav.syfo.util.extractPersonIdent
 import no.nav.syfo.util.extractSenderOrganisationName
 import no.nav.syfo.util.fellesformatUnmarshaller
+import no.nav.syfo.util.get
 import no.nav.syfo.util.wrapExceptions
-import no.nav.syfo.validationResult
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -334,4 +336,13 @@ class BlockingApplicationRunner {
             }
         }
     }
+
+    fun validationResult(results: List<Rule<Any>>): ValidationResult = ValidationResult(
+        status = results
+            .map { status -> status.status }.let {
+                it.firstOrNull { status -> status == Status.INVALID }
+                    ?: Status.OK
+            },
+        ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForSender!!, rule.messageForUser!!, rule.status) }
+    )
 }

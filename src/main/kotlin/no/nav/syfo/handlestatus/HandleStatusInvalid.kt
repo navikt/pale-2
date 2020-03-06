@@ -14,7 +14,7 @@ import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.TEST_FNR_IN_PROD
 import no.nav.syfo.model.IdentInfoResult
 import no.nav.syfo.model.ValidationResult
-import no.nav.syfo.sendReceipt
+import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import redis.clients.jedis.Jedis

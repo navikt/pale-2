@@ -9,11 +9,11 @@ import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
-import no.nav.syfo.sendReceipt
 import no.nav.syfo.services.FindNAVKontorService
-import no.nav.syfo.toString
+import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
+import no.nav.syfo.util.toString
 
 @KtorExperimentalAPI
 suspend fun handleStatusOK(

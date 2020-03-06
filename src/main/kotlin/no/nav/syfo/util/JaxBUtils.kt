@@ -2,6 +2,7 @@ package no.nav.syfo.util
 
 import com.migesok.jaxb.adapter.javatime.LocalDateTimeXmlAdapter
 import com.migesok.jaxb.adapter.javatime.LocalDateXmlAdapter
+import java.io.StringWriter
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
 import javax.xml.bind.Marshaller.JAXB_ENCODING
@@ -30,3 +31,8 @@ val arenaMarshaller: Marshaller = arenaEiaInfoJaxBContext.createMarshaller()
 
 val senderMarshaller: Marshaller = JAXBContext.newInstance(XMLSender::class.java).createMarshaller()
     .apply { setProperty(JAXB_ENCODING, "ISO-8859-1") }
+
+fun Marshaller.toString(input: Any): String = StringWriter().use {
+    marshal(input, it)
+    it.toString()
+}

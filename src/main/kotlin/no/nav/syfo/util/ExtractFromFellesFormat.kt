@@ -4,7 +4,6 @@ import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.msgHead.XMLIdent
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.get
 
 fun extractOrganisationNumberFromSender(fellesformat: XMLEIFellesformat): XMLIdent? =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.ident.find {
@@ -26,3 +25,8 @@ fun extractLegeerklaering(fellesformat: XMLEIFellesformat): Legeerklaring =
 
 fun extractSenderOrganisationName(fellesformat: XMLEIFellesformat): String =
     fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.organisationName ?: ""
+
+inline fun <reified T> XMLEIFellesformat.get() = this.any.find { it is T } as T
+
+fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
+    legeerklaering.pasientopplysninger.pasient.fodselsnummer

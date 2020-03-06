@@ -13,27 +13,18 @@ import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
-import java.io.StringWriter
 import java.net.ProxySelector
-import javax.jms.MessageProducer
 import javax.jms.Session
-import javax.xml.bind.Marshaller
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import no.nav.emottak.subscription.SubscriptionPort
-import no.nav.helse.apprecV1.XMLAppRec
-import no.nav.helse.apprecV1.XMLCV as AppRecCV
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.helse.legeerklaering.Legeerklaring
-import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
-import no.nav.syfo.apprec.ApprecStatus
-import no.nav.syfo.apprec.createApprec
 import no.nav.syfo.client.AccessTokenClient
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.KafkaClients
@@ -42,17 +33,11 @@ import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
-import no.nav.syfo.metrics.APPREC_COUNTER
 import no.nav.syfo.model.LegeerklaeringSak
-import no.nav.syfo.model.RuleInfo
-import no.nav.syfo.model.Status
-import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
-import no.nav.syfo.rules.Rule
 import no.nav.syfo.util.TrackableException
-import no.nav.syfo.util.apprecMarshaller
 import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
@@ -214,43 +199,3 @@ fun launchListeners(
         }
     }
 }
-
-inline fun <reified T> XMLEIFellesformat.get() = this.any.find { it is T } as T
-
-fun sendReceipt(
-    session: Session,
-    receiptProducer: MessageProducer,
-    fellesformat: XMLEIFellesformat,
-    apprecStatus: ApprecStatus,
-    apprecErrors: List<AppRecCV> = listOf()
-) {
-    receiptProducer.send(session.createTextMessage().apply {
-        val apprec = createApprec(fellesformat, apprecStatus)
-        apprec.get<XMLAppRec>().error.addAll(apprecErrors)
-        text = apprecMarshaller.toString(apprec)
-    })
-    APPREC_COUNTER.inc()
-}
-
-fun Marshaller.toString(input: Any): String = StringWriter().use {
-    marshal(input, it)
-    it.toString()
-}
-
-fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
-    legeerklaering.pasientopplysninger.pasient.fodselsnummer
-
-fun XMLHealthcareProfessional.formatName(): String = if (middleName == null) {
-    "${familyName.toUpperCase()} ${givenName.toUpperCase()}"
-} else {
-    "${familyName.toUpperCase()} ${givenName.toUpperCase()} ${middleName.toUpperCase()}"
-}
-
-fun validationResult(results: List<Rule<Any>>): ValidationResult = ValidationResult(
-    status = results
-        .map { status -> status.status }.let {
-            it.firstOrNull { status -> status == Status.INVALID }
-                ?: Status.OK
-        },
-    ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForSender!!, rule.messageForUser!!, rule.status) }
-)
