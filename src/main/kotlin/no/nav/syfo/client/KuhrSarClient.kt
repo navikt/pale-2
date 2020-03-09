@@ -186,7 +186,7 @@ fun filtererBortSamhanlderPraksiserPaaProsentMatch(
                 "Tssid: ${samhandlerPraksis.samhandlerPraksis.tss_ident} " +
                 "Adresselinje1: ${samhandlerPraksis.samhandlerPraksis.arbeids_adresse_linje_1} " +
                 "Samhandler praksis type: ${samhandlerPraksis.samhandlerPraksis.samh_praksis_type_kode} " +
-                "Prosent match:${samhandlerPraksis.percentageMatch} %, basert på sykmeldingens organisjons navn: $orgName " +
+                "Prosent match:${samhandlerPraksis.percentageMatch} %, basert på legeerklæringens organisjons navn: $orgName " +
                 "{}", StructuredArguments.fields(loggingMeta)
         )
         samhandlerPraksis

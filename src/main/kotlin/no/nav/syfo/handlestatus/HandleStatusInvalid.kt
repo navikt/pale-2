@@ -57,7 +57,7 @@ fun handleDuplicateSM2013Content(
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
             createApprecError(
-                "Duplikat! - Denne sykmeldingen er mottatt tidligere. " +
+                "Duplikat! - Denne legeerklæringen er mottatt tidligere. " +
                         "Skal ikke sendes på nytt."
             )
         )
@@ -81,9 +81,8 @@ fun handleDuplicateEdiloggid(
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
             createApprecError(
-                "Sykmeldingen kan ikke rettes, det må skrives en ny." +
-                        "Pasienten har ikke fått beskjed, men venter på ny sykmelding fra deg. Grunnet følgende:" +
-                        "Denne sykmeldingen har ein identisk identifikator med ein sykmelding som er mottatt tidligere," +
+                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
+                        "Denne legeerklæringen har ein identisk identifikator med ein legeerklæring som er mottatt tidligere," +
                         " og er derfor ein duplikat." +
                         " og skal ikke sendes på nytt. Dersom dette ikke stemmer, kontakt din EPJ-leverandør"
             )
@@ -137,8 +136,7 @@ fun handleDoctorNotFoundInAktorRegister(
 
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-            createApprecError("Sykmeldingen kan ikke rettes, det må skrives en ny." +
-                    " Pasienten har ikke fått beskjed, men venter på ny sykmelding fra deg. Grunnet følgende:" +
+            createApprecError("Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
                     " Behandler er ikkje registrert i folkeregisteret")
         )
     )
@@ -190,9 +188,8 @@ fun handleTestFnrInProd(
 
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-            createApprecError("Sykmeldingen kan ikke rettes, det må skrives en ny." +
-                "Pasienten har ikke fått beskjed, men venter på ny sykmelding fra deg. Grunnet følgende:" +
-                        "AnnenFravers Arsakskode V mangler i sykmeldingen. Kontakt din EPJ-leverandør)"
+            createApprecError("Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
+                        "AnnenFravers Arsakskode V mangler i legeerklæringen. Kontakt din EPJ-leverandør)"
             )
         )
     )

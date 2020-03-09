@@ -74,7 +74,7 @@ Creating a docker image should be as simple as `docker build -t pale-2 .`
 
 ### Verification in the legeerklæring applications:
 1. Log in at https://logs.adeo.no and use the following search string: x_msgId: $ yourMsgId, ex: x_msgId: 58e1d88d-36fa-4756-a06a-32c384ba885f
-2. Verify that what you expect to happen with a sykmelding actually happens. It should then be Ok | Manual processing | rejected
+2. Verify that what you expect to happen with a legeerklæring actually happens. It should then be Ok | Manual processing | rejected
    What you look for are items: status = OK, status = MANUAL_PROCESSING or status = INVALID
    
 ### Verification in Gosys:

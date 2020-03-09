@@ -15,8 +15,8 @@ enum class HPRRuleChain(
     BEHANDLER_IKKE_GYLDIG_I_HPR(
         1402,
         Status.INVALID,
-        "Den som skrev sykmeldingen manglet autorisasjon.",
-        "Sykmeldingen kan ikke rettes, det må skrives en ny. Pasienten har fått beskjed om å vente på ny sykmelding fra deg. Grunnet følgende:" +
+        "Den som skrev legeerklæringen manglet autorisasjon.",
+        "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
                 "Behandler er ikke gyldig i HPR på konsultasjonstidspunkt", { (_, behandler) ->
             !behandler.godkjenninger.any {
                 it.autorisasjon?.aktiv != null && it.autorisasjon.aktiv
@@ -26,7 +26,7 @@ enum class HPRRuleChain(
     BEHANDLER_MANGLER_AUTORISASJON_I_HPR(
         1403,
         Status.INVALID,
-        "Den som skrev sykmeldingen manglet autorisasjon.",
+        "Den som skrev legeerklæringen manglet autorisasjon.",
         "Behandler har ikke til gyldig autorisasjon i HPR", { (_, behandler) ->
             !behandler.godkjenninger.any {
                 it.autorisasjon?.aktiv != null &&
@@ -40,8 +40,8 @@ enum class HPRRuleChain(
     BEHANDLER_IKKE_LE_KI_MT_TL_FT_I_HPR(
         1407,
         Status.INVALID,
-        "Den som skrev sykmeldingen manglet autorisasjon.",
-        "Sykmeldingen kan ikke rettes, det må skrives en ny. Pasienten har fått beskjed om å vente på ny sykmelding fra deg. Grunnet følgende:" +
+        "Den som skrev legeerklæringen manglet autorisasjon.",
+        "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
                 "Behandler finnes i HPR men er ikke lege, kiropraktor, fysioterapeut, manuellterapeut eller tannlege", { (_, behandler) ->
             !behandler.godkjenninger.any {
                 it.helsepersonellkategori?.aktiv != null &&
