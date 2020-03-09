@@ -1,7 +1,6 @@
 package no.nav.syfo.model
 
 import java.time.LocalDateTime
-import java.time.ZonedDateTime
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.AktueltTiltak
 import no.nav.helse.legeerklaering.Arbeidssituasjon
@@ -29,14 +28,14 @@ fun Legeerklaring.toLegeerklaring(
                 utredning = planUtredBehandle?.henvistUtredning?.let {
                         Henvisning(
                                 tekst = it.spesifikasjon,
-                                dato = it.henvistDato.toGregorianCalendar().toZonedDateTime(),
+                                dato = it.henvistDato.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
                                 antattVentetIUker = it.antattVentetid.toInt()
                         )
                 },
                 behandling = planUtredBehandle?.henvistBehandling?.let {
                         Henvisning(
                                 tekst = it.spesifikasjon,
-                                dato = it.henvistDato.toGregorianCalendar().toZonedDateTime(),
+                                dato = it.henvistDato.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
                                 antattVentetIUker = it.antattVentetid.toInt()
                         )
                 },
@@ -99,7 +98,7 @@ fun Legeerklaring.toLegeerklaring(
         },
         pasientenBurdeIkkeVite = forbeholdLegeerklaring.borTilbakeholdes,
         signatur = Signatur(
-                dato = ZonedDateTime.now(),
+                dato = signaturDato,
                 navn = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional?.formatName() ?: "",
                 adresse = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.streetAdr,
                 postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode,
@@ -139,11 +138,11 @@ fun Pasientopplysninger.toPasient(): Pasient {
 fun mapLegeerklaeringToSykdomDiagnose(diagnose: DiagnoseArbeidsuforhet): Sykdomsopplysninger = Sykdomsopplysninger(
         hoveddiagnose = mapEnkeltDiagnoseToDiagnose(diagnose.diagnoseKodesystem.enkeltdiagnose.first()),
         bidiagnose = diagnose.diagnoseKodesystem.enkeltdiagnose.drop(1).map { mapEnkeltDiagnoseToDiagnose(it) },
-        arbeidsuforFra = diagnose.arbeidsuforFra?.toGregorianCalendar()?.toZonedDateTime(),
+        arbeidsuforFra = diagnose.arbeidsuforFra?.toGregorianCalendar()?.toZonedDateTime()?.toLocalDateTime(),
         sykdomshistorie = diagnose.symptomerBehandling,
         statusPresens = diagnose.statusPresens,
         borNavKontoretVurdereOmDetErEnYrkesskade = diagnose.vurderingYrkesskade?.borVurderes?.toInt() == 1,
-        yrkesSkadeDato = diagnose.vurderingYrkesskade.skadeDato?.toGregorianCalendar()?.toZonedDateTime()
+        yrkesSkadeDato = diagnose.vurderingYrkesskade.skadeDato?.toGregorianCalendar()?.toZonedDateTime()?.toLocalDateTime()
 )
 
 fun mapEnkeltDiagnoseToDiagnose(enkeltdiagnose: Enkeltdiagnose?): Diagnose =
