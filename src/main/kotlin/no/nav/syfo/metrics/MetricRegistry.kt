@@ -3,7 +3,7 @@ package no.nav.syfo.metrics
 import io.prometheus.client.Counter
 import io.prometheus.client.Summary
 
-const val METRICS_NS = "pale_2"
+const val METRICS_NS = "pale2"
 
 val REQUEST_TIME: Summary = Summary.build()
         .namespace(METRICS_NS)
