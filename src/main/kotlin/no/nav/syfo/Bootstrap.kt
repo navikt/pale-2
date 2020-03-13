@@ -13,7 +13,6 @@ import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
-import java.net.ProxySelector
 import javax.jms.Session
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
@@ -25,12 +24,9 @@ import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
-import no.nav.syfo.client.AccessTokenClient
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.KafkaClients
-import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
-import no.nav.syfo.client.NorskHelsenettClient
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
@@ -43,7 +39,6 @@ import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
 import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
 import org.apache.cxf.ws.addressing.WSAddressingFeature
-import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -95,16 +90,6 @@ fun main() {
         expectSuccess = false
     }
 
-    val proxyConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
-        config()
-        engine {
-            customizeClient {
-                setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
-            }
-        }
-    }
-
-    val httpClientWithProxy = HttpClient(Apache, proxyConfig)
     val httpClient = HttpClient(Apache, config)
 
     val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword)
@@ -112,12 +97,6 @@ fun main() {
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
     val norg2Client = Norg2Client(env.norg2V1EndpointURL, httpClient)
-    val legeSuspensjonClient = LegeSuspensjonClient(
-        env.legeSuspensjonEndpointURL,
-        vaultSecrets,
-        oidcClient,
-        httpClient
-    )
 
     val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
         port {
@@ -134,10 +113,6 @@ fun main() {
         port { withBasicAuth(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword) }
     }
 
-    val accessTokenClient = AccessTokenClient(env.aadAccessTokenUrl, vaultSecrets.clientId, vaultSecrets.clientsecret, httpClientWithProxy)
-
-    val norskHelsenettClient = NorskHelsenettClient(env.norskHelsenettEndpointURL, accessTokenClient, env.helsenettproxyId, httpClient)
-
     val kafkaClients = KafkaClients(env, vaultSecrets)
 
     val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
@@ -145,8 +120,7 @@ fun main() {
     launchListeners(
         applicationState, env, sarClient,
         aktoerIdClient, vaultSecrets,
-        legeSuspensjonClient,
-        personV3, norg2Client, norskHelsenettClient, kafkaClients.kafkaProducerLegeerklaeringSak,
+        personV3, norg2Client, kafkaClients.kafkaProducerLegeerklaeringSak,
         kafkaClients.kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
     )
 }
@@ -169,10 +143,8 @@ fun launchListeners(
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
     secrets: VaultSecrets,
-    legeSuspensjonClient: LegeSuspensjonClient,
     personV3: PersonV3,
     norg2Client: Norg2Client,
-    norskHelsenettClient: NorskHelsenettClient,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
     subscriptionEmottak: SubscriptionPort,
@@ -193,10 +165,11 @@ fun launchListeners(
 
                 jedis.auth(secrets.redisSecret)
 
-                BlockingApplicationRunner().run(applicationState, inputconsumer,
+                BlockingApplicationRunner().run(
+                    applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
-                    kuhrSarClient, aktoerIdClient, secrets, legeSuspensjonClient,
-                    arenaProducer, personV3, norg2Client, norskHelsenettClient, kafkaProducerLegeerklaeringSak,
+                    kuhrSarClient, aktoerIdClient, secrets,
+                    arenaProducer, personV3, norg2Client, kafkaProducerLegeerklaeringSak,
                     kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
                 )
             }

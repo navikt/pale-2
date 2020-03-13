@@ -3,7 +3,6 @@ package no.nav.syfo.application
 import io.ktor.util.KtorExperimentalAPI
 import java.io.StringReader
 import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
@@ -18,13 +17,10 @@ import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.Environment
 import no.nav.syfo.VaultSecrets
 import no.nav.syfo.client.AktoerIdClient
-import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
-import no.nav.syfo.client.NorskHelsenettClient
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
-import no.nav.syfo.handlestatus.avsenderNotinHPR
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
@@ -35,19 +31,10 @@ import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.REQUEST_TIME
-import no.nav.syfo.metrics.RULE_HIT_STATUS_COUNTER
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ReceivedLegeerklaering
-import no.nav.syfo.model.RuleInfo
-import no.nav.syfo.model.RuleMetadata
 import no.nav.syfo.model.Status
-import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.toLegeerklaring
-import no.nav.syfo.rules.HPRRuleChain
-import no.nav.syfo.rules.LegesuspensjonRuleChain
-import no.nav.syfo.rules.Rule
-import no.nav.syfo.rules.ValidationRuleChain
-import no.nav.syfo.rules.executeFlow
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.fetchDiskresjonsKode
 import no.nav.syfo.services.samhandlerParksisisLegevakt
@@ -85,11 +72,9 @@ class BlockingApplicationRunner {
         kuhrSarClient: SarClient,
         aktoerIdClient: AktoerIdClient,
         secrets: VaultSecrets,
-        legeSuspensjonClient: LegeSuspensjonClient,
         arenaProducer: MessageProducer,
         personV3: PersonV3,
         norg2Client: Norg2Client,
-        norskHelsenettClient: NorskHelsenettClient,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
         kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
         subscriptionEmottak: SubscriptionPort,
@@ -257,64 +242,9 @@ class BlockingApplicationRunner {
                         fellesformat = inputMessageText,
                         tssid = samhandlerPraksis?.tss_ident ?: ""
                     )
-
                     val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
-                    val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
-                    val doctorSuspend =
-                        legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
-
-                    val avsenderBehandler = norskHelsenettClient.finnBehandler(
-                        behandlerFnr = personNumberDoctor,
-                        msgId = msgId,
-                        loggingMeta = loggingMeta
-                    )
-
-                    if (avsenderBehandler == null) {
-                        avsenderNotinHPR(
-                            session, receiptProducer, fellesformat,
-                            ediLoggId, jedis, redisSha256String, env, loggingMeta
-                        )
-                        continue@loop
-                    }
-
-                    log.info(
-                        "Avsender behandler har hprnummer: ${avsenderBehandler.hprNummer}, {}",
-                        StructuredArguments.fields(loggingMeta)
-                    )
-
-                    try {
-                        val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
-                        log.info(
-                            "Pale-2-regler sendte status {}, {}",
-                            validationResult.status,
-                            StructuredArguments.fields(loggingMeta)
-                        )
-                    } catch (e: Exception) {
-                        log.error("Exception caught while handling message, sending to backout, {}", e)
-                        backoutProducer.send(message)
-                    }
-
-                    val results = listOf(
-                        ValidationRuleChain.values().executeFlow(
-                            legeerklaring, RuleMetadata(
-                                receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
-                                    .toLocalDateTime(),
-                                signatureDate = msgHead.msgInfo.genDate,
-                                patientPersonNumber = personNumberPatient,
-                                legekontorOrgnr = legekontorOrgNr,
-                                tssid = samhandlerPraksis?.tss_ident,
-                                avsenderfnr = personNumberDoctor
-                            )
-                        ),
-                        HPRRuleChain.values().executeFlow(legeerklaring, avsenderBehandler),
-                        LegesuspensjonRuleChain.values().executeFlow(legeerklaring, doctorSuspend)
-                    ).flatten()
-
-                    log.info("Rules hit {}, {}", results.map { it.name }, StructuredArguments.fields(loggingMeta))
-
-                    val validationResult = validationResult(results)
-                    RULE_HIT_STATUS_COUNTER.labels(validationResult.status.name).inc()
+                    val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
 
                     val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult)
 
@@ -389,20 +319,4 @@ class BlockingApplicationRunner {
             }
         }
     }
-
-    fun validationResult(results: List<Rule<Any>>): ValidationResult = ValidationResult(
-        status = results
-            .map { status -> status.status }.let {
-                it.firstOrNull { status -> status == Status.INVALID }
-                    ?: Status.OK
-            },
-        ruleHits = results.map { rule ->
-            RuleInfo(
-                rule.name,
-                rule.messageForSender!!,
-                rule.messageForUser!!,
-                rule.status
-            )
-        }
-    )
 }
