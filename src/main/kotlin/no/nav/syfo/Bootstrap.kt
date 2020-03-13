@@ -31,6 +31,7 @@ import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
+import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.StsOidcClient
 import no.nav.syfo.model.LegeerklaeringSak
@@ -139,12 +140,14 @@ fun main() {
 
     val kafkaClients = KafkaClients(env, vaultSecrets)
 
+    val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
+
     launchListeners(
         applicationState, env, sarClient,
         aktoerIdClient, vaultSecrets,
         legeSuspensjonClient,
         personV3, norg2Client, norskHelsenettClient, kafkaClients.kafkaProducerLegeerklaeringSak,
-        kafkaClients.kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak
+        kafkaClients.kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
     )
 }
 
@@ -172,7 +175,8 @@ fun launchListeners(
     norskHelsenettClient: NorskHelsenettClient,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
-    subscriptionEmottak: SubscriptionPort
+    subscriptionEmottak: SubscriptionPort,
+    pale2ReglerClient: Pale2ReglerClient
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
@@ -193,7 +197,7 @@ fun launchListeners(
                     jedis, session, env, receiptProducer, backoutProducer,
                     kuhrSarClient, aktoerIdClient, secrets, legeSuspensjonClient,
                     arenaProducer, personV3, norg2Client, norskHelsenettClient, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak
+                    kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
                 )
             }
         }

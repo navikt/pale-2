@@ -21,6 +21,7 @@ import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.LegeSuspensjonClient
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.NorskHelsenettClient
+import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.handlestatus.avsenderNotinHPR
@@ -91,7 +92,8 @@ class BlockingApplicationRunner {
         norskHelsenettClient: NorskHelsenettClient,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
         kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
-        subscriptionEmottak: SubscriptionPort
+        subscriptionEmottak: SubscriptionPort,
+        pale2ReglerClient: Pale2ReglerClient
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -154,16 +156,32 @@ class BlockingApplicationRunner {
                     val samhandlerPraksis = samhandlerPraksisMatch?.samhandlerPraksis
 
                     if (samhandlerPraksisMatch?.percentageMatch != null && samhandlerPraksisMatch.percentageMatch == 999.0) {
-                        log.info("SamhandlerPraksis is found but is FALE or FALO, subscription_emottak is not created, {}", StructuredArguments.fields(loggingMeta))
+                        log.info(
+                            "SamhandlerPraksis is found but is FALE or FALO, subscription_emottak is not created, {}",
+                            StructuredArguments.fields(loggingMeta)
+                        )
                     } else {
                         when (samhandlerPraksis) {
-                            null -> log.info("SamhandlerPraksis is Not found, {}", StructuredArguments.fields(loggingMeta))
+                            null -> log.info(
+                                "SamhandlerPraksis is Not found, {}",
+                                StructuredArguments.fields(loggingMeta)
+                            )
                             else -> if (!samhandlerParksisisLegevakt(samhandlerPraksis) &&
                                 !receiverBlock.partnerReferanse.isNullOrEmpty() &&
-                                receiverBlock.partnerReferanse.isNotBlank()) {
-                                startSubscription(subscriptionEmottak, samhandlerPraksis, msgHead, receiverBlock, loggingMeta)
+                                receiverBlock.partnerReferanse.isNotBlank()
+                            ) {
+                                startSubscription(
+                                    subscriptionEmottak,
+                                    samhandlerPraksis,
+                                    msgHead,
+                                    receiverBlock,
+                                    loggingMeta
+                                )
                             } else {
-                                log.info("SamhandlerPraksis is Legevakt or partnerReferanse is empty or blank, subscription_emottak is not created, {}", StructuredArguments.fields(loggingMeta))
+                                log.info(
+                                    "SamhandlerPraksis is Legevakt or partnerReferanse is empty or blank, subscription_emottak is not created, {}",
+                                    StructuredArguments.fields(loggingMeta)
+                                )
                             }
                         }
                     }
@@ -172,12 +190,16 @@ class BlockingApplicationRunner {
                     val redisEdiloggid = jedis.get(ediLoggId)
 
                     if (redisSha256String != null) {
-                        handleDuplicateSM2013Content(session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisSha256String)
+                        handleDuplicateSM2013Content(
+                            session, receiptProducer,
+                            fellesformat, loggingMeta, env, redisSha256String
+                        )
                         continue@loop
                     } else if (redisEdiloggid != null) {
-                        handleDuplicateEdiloggid(session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisEdiloggid)
+                        handleDuplicateEdiloggid(
+                            session, receiptProducer,
+                            fellesformat, loggingMeta, env, redisEdiloggid
+                        )
                         continue@loop
                     } else {
                         updateRedis(jedis, ediLoggId, sha256String)
@@ -189,18 +211,24 @@ class BlockingApplicationRunner {
                     log.info("Hentet ut aktorider, {}", StructuredArguments.fields(loggingMeta))
 
                     if (patientIdents == null || patientIdents.feilmelding != null) {
-                        handlePatientNotFoundInAktorRegister(patientIdents, session,
-                            receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta)
+                        handlePatientNotFoundInAktorRegister(
+                            patientIdents, session,
+                            receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta
+                        )
                         continue@loop
                     }
                     if (doctorIdents == null || doctorIdents.feilmelding != null) {
-                        handleDoctorNotFoundInAktorRegister(doctorIdents, session,
-                            receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta)
+                        handleDoctorNotFoundInAktorRegister(
+                            doctorIdents, session,
+                            receiptProducer, fellesformat, ediLoggId, jedis, redisSha256String, env, loggingMeta
+                        )
                         continue@loop
                     }
                     if (erTestFnr(personNumberPatient) && env.cluster == "prod-fss") {
-                        handleTestFnrInProd(session, receiptProducer, fellesformat,
-                            ediLoggId, jedis, redisSha256String, env, loggingMeta)
+                        handleTestFnrInProd(
+                            session, receiptProducer, fellesformat,
+                            ediLoggId, jedis, redisSha256String, env, loggingMeta
+                        )
                         continue@loop
                     }
 
@@ -222,8 +250,10 @@ class BlockingApplicationRunner {
                         legekontorOrgName = legekontorOrgName,
                         legekontorHerId = legekontorHerId,
                         legekontorReshId = legekontorReshId,
-                        mottattDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().withZoneSameInstant(
-                            ZoneOffset.UTC).toLocalDateTime(),
+                        mottattDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
+                            .withZoneSameInstant(
+                                ZoneOffset.UTC
+                            ).toLocalDateTime(),
                         fellesformat = inputMessageText,
                         tssid = samhandlerPraksis?.tss_ident ?: ""
                     )
@@ -231,7 +261,8 @@ class BlockingApplicationRunner {
                     val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
                     val signaturDatoString = DateTimeFormatter.ISO_DATE.format(msgHead.msgInfo.genDate)
-                    val doctorSuspend = legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
+                    val doctorSuspend =
+                        legeSuspensjonClient.checkTherapist(personNumberDoctor, msgId, signaturDatoString).suspendert
 
                     val avsenderBehandler = norskHelsenettClient.finnBehandler(
                         behandlerFnr = personNumberDoctor,
@@ -240,8 +271,10 @@ class BlockingApplicationRunner {
                     )
 
                     if (avsenderBehandler == null) {
-                        avsenderNotinHPR(session, receiptProducer, fellesformat,
-                            ediLoggId, jedis, redisSha256String, env, loggingMeta)
+                        avsenderNotinHPR(
+                            session, receiptProducer, fellesformat,
+                            ediLoggId, jedis, redisSha256String, env, loggingMeta
+                        )
                         continue@loop
                     }
 
@@ -250,10 +283,23 @@ class BlockingApplicationRunner {
                         StructuredArguments.fields(loggingMeta)
                     )
 
+                    try {
+                        val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
+                        log.info(
+                            "Pale-2-regler sendte status {}, {}",
+                            validationResult.status,
+                            StructuredArguments.fields(loggingMeta)
+                        )
+                    } catch (e: Exception) {
+                        log.error("Exception caught while handling message, sending to backout, {}", e)
+                        backoutProducer.send(message)
+                    }
+
                     val results = listOf(
                         ValidationRuleChain.values().executeFlow(
                             legeerklaring, RuleMetadata(
-                                receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
+                                receivedDate = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
+                                    .toLocalDateTime(),
                                 signatureDate = msgHead.msgInfo.genDate,
                                 patientPersonNumber = personNumberPatient,
                                 legekontorOrgnr = legekontorOrgNr,
@@ -275,7 +321,8 @@ class BlockingApplicationRunner {
                     kafkaProducerLegeerklaeringSak.send(
                         ProducerRecord(env.pale2SakTopic, legeerklaring.id, legeerklaeringSak)
                     )
-                    log.info("Melding sendt til kafka topic {}, {}", env.pale2SakTopic,
+                    log.info(
+                        "Melding sendt til kafka topic {}, {}", env.pale2SakTopic,
                         StructuredArguments.fields(loggingMeta)
                     )
 
@@ -349,6 +396,13 @@ class BlockingApplicationRunner {
                 it.firstOrNull { status -> status == Status.INVALID }
                     ?: Status.OK
             },
-        ruleHits = results.map { rule -> RuleInfo(rule.name, rule.messageForSender!!, rule.messageForUser!!, rule.status) }
+        ruleHits = results.map { rule ->
+            RuleInfo(
+                rule.name,
+                rule.messageForSender!!,
+                rule.messageForUser!!,
+                rule.status
+            )
+        }
     )
 }
