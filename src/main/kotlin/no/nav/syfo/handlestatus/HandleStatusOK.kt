@@ -32,11 +32,13 @@ suspend fun handleStatusOK(
     loggingMeta: LoggingMeta,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     pale2OkTopic: String,
-    legeerklaeringSak: LegeerklaeringSak
+    legeerklaeringSak: LegeerklaeringSak,
+    apprecQueueName: String
 ) {
     val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
 
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
+    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
     sendArenaInfo(arenaProducer, session,
         lokaltNavkontor, tssId, ediLoggId,

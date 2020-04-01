@@ -275,7 +275,8 @@ class BlockingApplicationRunner {
                             loggingMeta,
                             kafkaProducerLegeerklaeringSak,
                             env.pale2OkTopic,
-                            legeerklaeringSak
+                            legeerklaeringSak,
+                            env.apprecQueueName
                         )
 
                         Status.INVALID -> handleStatusINVALID(
@@ -286,7 +287,8 @@ class BlockingApplicationRunner {
                             loggingMeta,
                             kafkaProducerLegeerklaeringSak,
                             env.pale2AvvistTopic,
-                            legeerklaeringSak
+                            legeerklaeringSak,
+                            env.apprecQueueName
                         )
                     }
 

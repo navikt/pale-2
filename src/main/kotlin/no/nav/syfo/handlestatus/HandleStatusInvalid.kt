@@ -30,7 +30,8 @@ fun handleStatusINVALID(
     loggingMeta: LoggingMeta,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     pale2AvvistTopic: String,
-    legeerklaeringSak: LegeerklaeringSak
+    legeerklaeringSak: LegeerklaeringSak,
+    apprecQueueName: String
 ) {
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist,
         validationResult.ruleHits.map { it.toApprecCV() })
