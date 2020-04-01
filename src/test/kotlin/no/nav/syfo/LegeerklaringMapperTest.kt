@@ -9,6 +9,7 @@ import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.getFileAsString
 import org.amshove.kluent.shouldBeEqualTo
+import org.amshove.kluent.shouldEqual
 import org.amshove.kluent.shouldEqualTo
 import org.junit.Test
 
@@ -40,5 +41,29 @@ internal class LegeerklaringMapperTest {
         legeerklaering.pasient.postnummer?.shouldEqualTo(1234)
         legeerklaering.pasient.yrke?.shouldBeEqualTo("Dokumentforfalsker")
         legeerklaering.pasient.arbeidsgiver.navn?.shouldBeEqualTo("NAV IKT")
+        legeerklaering.pasient.arbeidsgiver.adresse?.shouldBeEqualTo("Oppdiktet gate 32")
+        legeerklaering.pasient.arbeidsgiver.postnummer?.shouldEqualTo(1234)
+        legeerklaering.pasient.arbeidsgiver.poststed?.shouldBeEqualTo("Ukjentby")
+        legeerklaering.sykdomsopplysninger.hoveddiagnose?.kode?.shouldBeEqualTo("K74")
+        legeerklaering.sykdomsopplysninger.hoveddiagnose?.tekst?.shouldBeEqualTo("82-01-Le")
+        legeerklaering.sykdomsopplysninger.bidiagnose.firstOrNull()?.kode?.shouldBeEqualTo("U99")
+        legeerklaering.sykdomsopplysninger.bidiagnose.firstOrNull()?.tekst?.shouldBeEqualTo("Nyresvikt kronisk")
+        legeerklaering.sykdomsopplysninger.arbeidsuforFra shouldEqual LocalDateTime.of(2017, 11, 5, 0, 0, 0)
+        legeerklaering.sykdomsopplysninger.sykdomshistorie.shouldBeEqualTo("vethellerikkehvasomskalhit")
+        legeerklaering.sykdomsopplysninger.statusPresens.shouldBeEqualTo("vetikkehvasomskalhit")
+        legeerklaering.sykdomsopplysninger.borNavKontoretVurdereOmDetErEnYrkesskade shouldEqualTo false
+        legeerklaering.sykdomsopplysninger.yrkesSkadeDato shouldEqual LocalDateTime.of(2017, 10, 14, 0, 0, 0)
+        legeerklaering.plan?.utredning?.tekst?.shouldBeEqualTo("Dra p� fisketur med en guide")
+        legeerklaering.plan?.utredning?.dato shouldEqual LocalDateTime.of(2017, 11, 5, 0, 0, 0)
+        legeerklaering.plan?.utredning?.antattVentetIUker?.shouldEqualTo(3)
+        legeerklaering.plan?.behandling?.tekst?.shouldBeEqualTo("Dra p� fisketur med en guide")
+        legeerklaering.plan?.behandling?.dato shouldEqual null
+        legeerklaering.plan?.behandling?.antattVentetIUker?.shouldEqualTo(3)
+        legeerklaering.plan?.utredningsplan?.shouldBeEqualTo("Burde dra ut p� fisketur for � slappe av")
+        legeerklaering.plan?.behandlingsplan?.shouldBeEqualTo("Trenger � slappe av med litt fisking")
+        legeerklaering.plan?.vurderingAvTidligerePlan?.shouldBeEqualTo("Trenger ikke ny vurdering")
+        legeerklaering.plan?.narSporreOmNyeLegeopplysninger?.shouldBeEqualTo("Den gamle planen fungerte ikke")
+        legeerklaering.plan?.videreBehandlingIkkeAktueltGrunn?.shouldBeEqualTo("Trenger � slappe av med litt fisking")
+        legeerklaering.forslagTilTiltak.behov shouldEqualTo false
     }
 }
