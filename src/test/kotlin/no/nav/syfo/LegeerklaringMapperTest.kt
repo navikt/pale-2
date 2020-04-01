@@ -9,13 +9,12 @@ import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.getFileAsString
 import org.amshove.kluent.shouldEqualTo
-import org.spekframework.spek2.Spek
-import org.spekframework.spek2.style.specification.describe
+import org.junit.Test
 
-object LegeerklaringMapperSpek : Spek({
+internal class LegeerklaringMapperTest {
 
-    describe("Tester mappingen fra legeerklæring xml") {
-        it("Tester mapping fra fellesformat til Legeerklaring format") {
+    @Test
+    internal fun `Tester mapping fra fellesformat til Legeerklaring format`() {
             val felleformatLe = fellesformatUnmarshaller.unmarshal(
                 StringReader(getFileAsString("src/test/resources/fellesformat_le.xml"))) as XMLEIFellesformat
             val legeerklaringxml = extractLegeerklaering(felleformatLe)
@@ -28,5 +27,4 @@ object LegeerklaringMapperSpek : Spek({
 
             legeerklaering.arbeidsavklaringspenger shouldEqualTo true
         }
-    }
-})
+}

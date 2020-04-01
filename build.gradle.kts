@@ -8,7 +8,7 @@ version = "1.0.0"
 
 val ktorVersion = "1.3.2"
 val prometheusVersion = "0.6.0"
-val spekVersion = "2.0.9"
+val junitJupiterVersion = "5.6.0"
 val kluentVersion = "1.39"
 val logbackVersion = "1.2.3"
 val logstashEncoderVersion = "5.1"
@@ -60,9 +60,7 @@ val githubPassword: String by project
 repositories {
     mavenCentral()
     jcenter()
-    maven(url= "https://dl.bintray.com/spekframework/spek-dev")
     maven(url= "https://packages.confluent.io/maven/")
-    maven(url= "https://kotlin.bintray.com/kotlinx")
     maven {
         url = uri("https://maven.pkg.github.com/navikt/pale-2-common")
         credentials {
@@ -133,12 +131,9 @@ dependencies {
         exclude(group = "org.eclipse.jetty")
     }
     testImplementation("org.amshove.kluent:kluent:$kluentVersion")
-    testImplementation("org.spekframework.spek2:spek-dsl-jvm:$spekVersion") {
-        exclude(group = "org.jetbrains.kotlin")
-    }
-    testRuntimeOnly ("org.spekframework.spek2:spek-runner-junit5:$spekVersion") {
-        exclude(group = "org.jetbrains.kotlin")
-    }
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
     testImplementation("com.devskiller:jfairy:$jfairyVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
 }
@@ -179,9 +174,7 @@ tasks {
     }
 
     withType<Test> {
-        useJUnitPlatform {
-            includeEngines("spek2")
-        }
+        useJUnit()
         testLogging {
             showStandardStreams = true
         }
