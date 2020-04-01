@@ -58,7 +58,7 @@ fun Legeerklaring.toLegeerklaring(
                 tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak
         ),
         funksjonsOgArbeidsevne = FunksjonsOgArbeidsevne(
-                vurderingFunksjonsevne = vurderingFunksjonsevne.funksjonsevne,
+                vurderingFunksjonsevne = vurderingFunksjonsevne?.funksjonsevne ?: "",
                 inntektsgivendeArbeid = ArbeidssituasjonType.InntektsgivendeArbeid in vurderingFunksjonsevne.arbeidssituasjon,
                 hjemmearbeidende = ArbeidssituasjonType.Hjemmearbeidende in vurderingFunksjonsevne.arbeidssituasjon,
                 student = ArbeidssituasjonType.Student in vurderingFunksjonsevne.arbeidssituasjon,
