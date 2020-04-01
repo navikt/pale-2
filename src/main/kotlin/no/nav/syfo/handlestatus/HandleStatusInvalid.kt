@@ -35,7 +35,7 @@ fun handleStatusINVALID(
 ) {
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist,
         validationResult.ruleHits.map { it.toApprecCV() })
-    log.info("Apprec sendt til emmottak {}", fields(loggingMeta))
+    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
     kafkaProducerLegeerklaeringSak.send(
         ProducerRecord(pale2AvvistTopic, legeerklaeringSak)
