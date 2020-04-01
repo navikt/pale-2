@@ -99,7 +99,7 @@ class BlockingApplicationRunner {
                     kafkaProducerLegeerklaeringFellesformat.send(
                         ProducerRecord(env.pale2DumpTopic, fellesformat)
                     )
-                    log.info("Melding sendt til kafka topic {}", env.pale2DumpTopic)
+                    log.info("Melding sendt til kafka dump topic {}", env.pale2DumpTopic)
 
                     val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
                     val msgHead = fellesformat.get<XMLMsgHead>()
