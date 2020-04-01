@@ -36,7 +36,6 @@ import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.services.FindNAVKontorService
-import no.nav.syfo.services.fetchDiskresjonsKode
 import no.nav.syfo.services.samhandlerParksisisLegevakt
 import no.nav.syfo.services.sha256hashstring
 import no.nav.syfo.services.startSubscription
@@ -242,7 +241,6 @@ class BlockingApplicationRunner {
                         fellesformat = inputMessageText,
                         tssid = samhandlerPraksis?.tss_ident ?: ""
                     )
-                    val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, personNumberPatient)
 
                     val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
 
@@ -260,7 +258,6 @@ class BlockingApplicationRunner {
                         personNumberPatient,
                         personV3,
                         norg2Client,
-                        patientDiskresjonsKode,
                         loggingMeta
                     )
 
