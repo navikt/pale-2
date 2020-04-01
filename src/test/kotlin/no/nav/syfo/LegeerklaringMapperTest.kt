@@ -65,5 +65,19 @@ internal class LegeerklaringMapperTest {
         legeerklaering.plan?.narSporreOmNyeLegeopplysninger?.shouldBeEqualTo("Den gamle planen fungerte ikke")
         legeerklaering.plan?.videreBehandlingIkkeAktueltGrunn?.shouldBeEqualTo("Trenger � slappe av med litt fisking")
         legeerklaering.forslagTilTiltak.behov shouldEqualTo false
+        legeerklaering.forslagTilTiltak.kjopAvHelsetjenester shouldEqualTo true
+        legeerklaering.forslagTilTiltak.reisetilskudd shouldEqualTo false
+        legeerklaering.forslagTilTiltak.aktivSykmelding shouldEqualTo false
+        legeerklaering.forslagTilTiltak.hjelpemidlerArbeidsplassen shouldEqualTo false
+        legeerklaering.forslagTilTiltak.arbeidsavklaringspenger shouldEqualTo false
+        legeerklaering.forslagTilTiltak.friskmeldingTilArbeidsformidling shouldEqualTo false
+        legeerklaering.forslagTilTiltak.andreTiltak?.shouldBeEqualTo("Den gamle planen fungerte ikke")
+        legeerklaering.forslagTilTiltak.naermereOpplysninger.shouldBeEqualTo("")
+        legeerklaering.forslagTilTiltak.tekst.shouldBeEqualTo("Trenger lettere arbeid")
+        legeerklaering.funksjonsOgArbeidsevne?.vurderingFunksjonsevne?.shouldBeEqualTo("Kan ikke lengre danse")
+        legeerklaering.funksjonsOgArbeidsevne.inntektsgivendeArbeid shouldEqualTo false
+        legeerklaering.funksjonsOgArbeidsevne.hjemmearbeidende shouldEqualTo false
+        legeerklaering.funksjonsOgArbeidsevne.student shouldEqualTo false
+        legeerklaering.funksjonsOgArbeidsevne.annetArbeid?.shouldBeEqualTo("")
     }
 }
