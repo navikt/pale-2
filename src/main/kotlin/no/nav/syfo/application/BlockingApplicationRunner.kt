@@ -113,7 +113,6 @@ class BlockingApplicationRunner {
                     val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
                     val legekontorReshId = extractOrganisationRashNumberFromSender(fellesformat)?.id
 
-                    INCOMING_MESSAGE_COUNTER.inc()
                     val requestLatency = REQUEST_TIME.startTimer()
 
                     val loggingMeta = LoggingMeta(
@@ -123,6 +122,8 @@ class BlockingApplicationRunner {
                     )
 
                     log.info("Received message, {}", StructuredArguments.fields(loggingMeta))
+
+                    INCOMING_MESSAGE_COUNTER.inc()
 
                     val aktoerIds = aktoerIdClient.getAktoerIds(
                         listOf(personNumberDoctor, personNumberPatient),
@@ -191,8 +192,6 @@ class BlockingApplicationRunner {
 
                     val patientIdents = aktoerIds[personNumberPatient]
                     val doctorIdents = aktoerIds[personNumberDoctor]
-
-                    log.info("Hentet ut aktorider, {}", StructuredArguments.fields(loggingMeta))
 
                     if (patientIdents == null || patientIdents.feilmelding != null) {
                         handlePatientNotFoundInAktorRegister(
@@ -295,7 +294,7 @@ class BlockingApplicationRunner {
                     val currentRequestLatency = requestLatency.observeDuration()
 
                     log.info(
-                        "Message got outcome {}, {}, processing took {}s",
+                        "Finished message got outcome {}, {}, processing took {}s",
                         StructuredArguments.keyValue("status", validationResult.status),
                         StructuredArguments.keyValue(
                             "ruleHits",

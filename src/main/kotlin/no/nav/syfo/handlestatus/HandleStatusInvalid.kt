@@ -148,30 +148,6 @@ fun handleDoctorNotFoundInAktorRegister(
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
-fun avsenderNotinHPR(
-    session: Session,
-    receiptProducer: MessageProducer,
-    fellesformat: XMLEIFellesformat,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
-    env: Environment,
-    loggingMeta: LoggingMeta
-) {
-    log.warn("Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR), {}",
-        fields(loggingMeta))
-
-    sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-            createApprecError("Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR)")
-        )
-    )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-
-    INVALID_MESSAGE_NO_NOTICE.inc()
-    updateRedis(jedis, ediLoggId, sha256String)
-}
-
 fun handleTestFnrInProd(
     session: Session,
     receiptProducer: MessageProducer,
