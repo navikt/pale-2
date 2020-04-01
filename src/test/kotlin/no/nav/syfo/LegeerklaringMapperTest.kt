@@ -25,7 +25,7 @@ internal class LegeerklaringMapperTest {
         val legeerklaering = legeerklaringxml.toLegeerklaring(
             legeerklaringId = UUID.randomUUID().toString(),
             fellesformat = felleformatLe,
-            signaturDato = LocalDateTime.now()
+            signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0)
         )
 
         legeerklaering.arbeidsvurderingVedSykefravaer shouldEqualTo false
@@ -79,5 +79,35 @@ internal class LegeerklaringMapperTest {
         legeerklaering.funksjonsOgArbeidsevne.hjemmearbeidende shouldEqualTo false
         legeerklaering.funksjonsOgArbeidsevne.student shouldEqualTo false
         legeerklaering.funksjonsOgArbeidsevne.annetArbeid?.shouldBeEqualTo("")
+        legeerklaering.funksjonsOgArbeidsevne?.kravTilArbeid?.shouldBeEqualTo("Ingen dans")
+        legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeid shouldEqualTo false
+        legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeidNa shouldEqualTo true
+        legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeidEtterBehandling shouldEqualTo false
+        legeerklaering.funksjonsOgArbeidsevne?.kanIkkeGjenopptaNaverendeArbeid?.shouldBeEqualTo("Ikke tunge l�ft")
+        legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeid shouldEqualTo true
+        legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeidNa shouldEqualTo true
+        legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeidEtterBehandling shouldEqualTo false
+        legeerklaering.funksjonsOgArbeidsevne?.kanIkkeTaAnnetArbeid?.shouldBeEqualTo("Ingen dans")
+        legeerklaering.prognose.vilForbedreArbeidsevne shouldEqualTo false
+        legeerklaering.prognose?.anslattVarighetSykdom?.shouldBeEqualTo("Ikke varig.")
+        legeerklaering.prognose?.anslattVarighetFunksjonsnedsetting?.shouldBeEqualTo("Ikke varig.")
+        legeerklaering.prognose?.anslattVarighetNedsattArbeidsevne?.shouldBeEqualTo("Ikke varig.")
+        legeerklaering?.arsakssammenheng?.shouldBeEqualTo("Sikker.")
+        legeerklaering?.andreOpplysninger?.shouldBeEqualTo("Andre opplysninger")
+        legeerklaering.kontakt.skalKontakteBehandlendeLege shouldEqualTo false
+        legeerklaering.kontakt.skalKontakteArbeidsgiver shouldEqualTo false
+        legeerklaering.kontakt.skalKontakteBasisgruppe shouldEqualTo false
+        legeerklaering.kontakt?.kontakteAnnenInstans?.shouldBeEqualTo("Andre opplysninger")
+        legeerklaering.kontakt.onskesKopiAvVedtak shouldEqualTo true
+        legeerklaering?.pasientenBurdeIkkeVite?.shouldEqualTo("")
+        legeerklaering.tilbakeholdInnhold shouldEqualTo true
+        legeerklaering.signatur.dato shouldEqual LocalDateTime.of(2017, 11, 5, 0, 0, 0)
+        legeerklaering.signatur?.navn?.shouldBeEqualTo("VALDA INGA FOS")
+        legeerklaering.signatur?.adresse?.shouldBeEqualTo("Oppdiktet gate 203")
+        legeerklaering.signatur?.postnummer?.shouldBeEqualTo("1234")
+        legeerklaering.signatur?.poststed?.shouldBeEqualTo("Oslo")
+        legeerklaering.signatur?.signatur?.shouldBeEqualTo("")
+        legeerklaering.signatur?.tlfNummer?.shouldBeEqualTo("98765432")
+        legeerklaering.signaturDato shouldEqual LocalDateTime.of(2017, 11, 5, 0, 0, 0)
     }
 }
