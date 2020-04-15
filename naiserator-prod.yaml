@@ -47,7 +47,7 @@ spec:
     - "https://pale-2.nais.adeo.no"
   env:
     - name: MQ_INPUT_QUEUE_NAME
-      value: P_PALE_2.TEMP_ROUTED_INPUT
+      value: QA.P_PALE.INPUT
     - name: MQ_HOST_NAME
       value: a01apvl064.adeo.no
     - name: MQ_PORT
