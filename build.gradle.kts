@@ -37,7 +37,7 @@ val mockkVersion = "1.9.3"
 plugins {
     java
     id("no.nils.wsdl2java") version "0.10"
-    kotlin("jvm") version "1.3.71"
+    kotlin("jvm") version "1.3.72"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("com.diffplug.gradle.spotless") version "3.24.0"
     id("org.jmailen.kotlinter") version "2.2.0"
