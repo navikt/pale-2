@@ -64,7 +64,7 @@ internal class LegeerklaringMapperTest {
         legeerklaering.plan?.vurderingAvTidligerePlan?.shouldBeEqualTo("Trenger ikke ny vurdering")
         legeerklaering.plan?.narSporreOmNyeLegeopplysninger?.shouldBeEqualTo("Den gamle planen fungerte ikke")
         legeerklaering.plan?.videreBehandlingIkkeAktueltGrunn?.shouldBeEqualTo("Trenger � slappe av med litt fisking")
-        legeerklaering.forslagTilTiltak.behov shouldEqualTo false
+        legeerklaering.forslagTilTiltak.behov shouldEqualTo true
         legeerklaering.forslagTilTiltak.kjopAvHelsetjenester shouldEqualTo true
         legeerklaering.forslagTilTiltak.reisetilskudd shouldEqualTo false
         legeerklaering.forslagTilTiltak.aktivSykmelding shouldEqualTo false

@@ -46,7 +46,7 @@ fun Legeerklaring.toLegeerklaring(
                 videreBehandlingIkkeAktueltGrunn = planUtredBehandle?.ikkeVidereBehandling
         ),
         forslagTilTiltak = ForslagTilTiltak(
-                behov = forslagTiltak.aktueltTiltak.isEmpty(),
+                behov = forslagTiltak.aktueltTiltak.isNotEmpty(),
                 kjopAvHelsetjenester = TypeTiltak.KjoepHelsetjenester in forslagTiltak.aktueltTiltak,
                 reisetilskudd = TypeTiltak.Reisetilskudd in forslagTiltak.aktueltTiltak,
                 aktivSykmelding = TypeTiltak.AktivSykemelding in forslagTiltak.aktueltTiltak,
