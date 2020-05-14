@@ -120,7 +120,11 @@ fun Pasientopplysninger.toPasient(): Pasient {
                 navKontor = patient.trygdekontor,
                 adresse = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.streetAddress,
                 postnummer = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.postalCode.let {
-                        if (it == null || it.isEmpty()) null else it.trim().toInt()
+                        if (it == null || it.isEmpty()) null else try {
+                                it.trim().toInt()
+                        } catch (e: Exception) {
+                                null
+                        }
                 },
                 poststed = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.city,
                 yrke = patient.arbeidsforhold?.yrkesbetegnelse,
@@ -128,7 +132,11 @@ fun Pasientopplysninger.toPasient(): Pasient {
                         navn = patient.arbeidsforhold?.virksomhet?.virksomhetsBetegnelse,
                         adresse = postalAddress?.streetAddress,
                         postnummer = postalAddress?.postalCode.let {
-                                if (it == null || it.isEmpty()) null else it.trim().toInt()
+                                if (it == null || it.isEmpty()) null else try {
+                                        it.trim().toInt()
+                                } catch (e: Exception) {
+                                        null
+                                }
                         },
                         poststed = postalAddress?.city
                 )
