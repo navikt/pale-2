@@ -200,19 +200,15 @@ class BlockingApplicationRunner {
                     )
 
                     val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
-
                     val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult)
 
-                    try {
-                        kafkaProducerLegeerklaeringSak.send(ProducerRecord(env.pale2SakTopic, legeerklaring.id, legeerklaeringSak)).get()
-                        log.info(
-                            "Melding sendt til kafka topic {}, {}", env.pale2SakTopic,
-                            fields(loggingMeta)
-                        )
-                    } catch (e: Exception) {
-                        log.error("Kunne ikke skrive til sak-topic: {}, {}", e.message, fields(loggingMeta))
-                        throw e
-                    }
+                    skrivTilSakTopic(
+                        kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
+                        pale2SakTopic = env.pale2SakTopic,
+                        legeerklaringId = legeerklaring.id,
+                        legeerklaeringSak = legeerklaeringSak,
+                        loggingMeta = loggingMeta
+                    )
 
                     when (validationResult.status) {
                         Status.OK -> handleStatusOK(
@@ -287,6 +283,25 @@ class BlockingApplicationRunner {
             log.info("Melding sendt til kafka dump topic {}", pale2DumpTopic)
         } catch (e: Exception) {
             log.error("Noe gikk galt ved skriving til topic $pale2DumpTopic: ${e.message}")
+            throw e
+        }
+    }
+
+    fun skrivTilSakTopic(
+        kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+        pale2SakTopic: String,
+        legeerklaringId: String,
+        legeerklaeringSak: LegeerklaeringSak,
+        loggingMeta: LoggingMeta
+    ) {
+        try {
+            kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2SakTopic, legeerklaringId, legeerklaeringSak)).get()
+            log.info(
+                "Melding sendt til kafka topic {}, {}", pale2SakTopic,
+                fields(loggingMeta)
+            )
+        } catch (e: Exception) {
+            log.error("Kunne ikke skrive til sak-topic: {}, {}", e.message, fields(loggingMeta))
             throw e
         }
     }
