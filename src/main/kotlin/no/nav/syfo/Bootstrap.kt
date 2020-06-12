@@ -155,7 +155,7 @@ fun launchListeners(
         connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
             Jedis(env.redishost, 6379).use { jedis ->
                 connection.start()
-                val session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
+                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
                 val inputconsumer = session.consumerForQueue(env.inputQueueName)
                 val receiptProducer = session.producerForQueue(env.apprecQueueName)

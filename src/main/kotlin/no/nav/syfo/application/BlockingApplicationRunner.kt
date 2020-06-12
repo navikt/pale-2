@@ -314,6 +314,8 @@ class BlockingApplicationRunner {
                     log.error("Exception caught while handling message, sending to backout, {}", e)
                     backoutProducer.send(message)
                     MELDING_FEILET.inc()
+                } finally {
+                    message.acknowledge()
                 }
             }
         }
