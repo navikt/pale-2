@@ -37,8 +37,17 @@ fun handleStatusINVALID(
         validationResult.ruleHits.map { it.toApprecCV() })
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
+    sendTilAvvistTopic(kafkaProducerLegeerklaeringSak, pale2AvvistTopic, legeerklaeringSak, loggingMeta)
+}
+
+fun sendTilAvvistTopic(
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    pale2AvvistTopic: String,
+    legeerklaeringSak: LegeerklaeringSak,
+    loggingMeta: LoggingMeta
+) {
     try {
-        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2AvvistTopic, legeerklaeringSak))
+        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2AvvistTopic, legeerklaeringSak)).get()
         log.info("Melding sendt til kafka topic {}", pale2AvvistTopic)
     } catch (e: Exception) {
         log.error("Noe gikk galt ved sending til avvist-topic {}, {}", e.message, fields(loggingMeta))

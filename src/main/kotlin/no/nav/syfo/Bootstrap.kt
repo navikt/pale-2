@@ -35,6 +35,7 @@ import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.services.FindNAVKontorService
+import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
@@ -115,15 +116,17 @@ fun main() {
         port { withBasicAuth(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword) }
     }
 
+    val samhandlerService = SamhandlerService(sarClient, subscriptionEmottak)
+
     val kafkaClients = KafkaClients(env, vaultSecrets)
 
     val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
 
     launchListeners(
-        applicationState, env, sarClient,
+        applicationState, env, samhandlerService,
         aktoerIdClient, vaultSecrets,
         findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
-        kafkaClients.kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
+        kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient
     )
 }
 
@@ -142,13 +145,12 @@ fun createListener(applicationState: ApplicationState, action: suspend Coroutine
 fun launchListeners(
     applicationState: ApplicationState,
     env: Environment,
-    kuhrSarClient: SarClient,
+    samhandlerService: SamhandlerService,
     aktoerIdClient: AktoerIdClient,
     secrets: VaultSecrets,
     findNAVKontorService: FindNAVKontorService,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
-    subscriptionEmottak: SubscriptionPort,
     pale2ReglerClient: Pale2ReglerClient
 ) {
     createListener(applicationState) {
@@ -169,9 +171,9 @@ fun launchListeners(
                 BlockingApplicationRunner().run(
                     applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
-                    kuhrSarClient, aktoerIdClient, secrets,
+                    samhandlerService, aktoerIdClient, secrets,
                     arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
+                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient
                 )
             }
         }

@@ -11,7 +11,6 @@ import javax.jms.TextMessage
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.fields
-import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
@@ -19,8 +18,6 @@ import no.nav.syfo.Environment
 import no.nav.syfo.VaultSecrets
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.Pale2ReglerClient
-import no.nav.syfo.client.SarClient
-import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
@@ -37,9 +34,8 @@ import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.services.FindNAVKontorService
-import no.nav.syfo.services.samhandlerPraksisErLegevakt
+import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.sha256hashstring
-import no.nav.syfo.services.startSubscription
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
@@ -68,14 +64,13 @@ class BlockingApplicationRunner {
         env: Environment,
         receiptProducer: MessageProducer,
         backoutProducer: MessageProducer,
-        kuhrSarClient: SarClient,
+        samhandlerService: SamhandlerService,
         aktoerIdClient: AktoerIdClient,
         secrets: VaultSecrets,
         arenaProducer: MessageProducer,
         findNAVKontorService: FindNAVKontorService,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
         kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
-        subscriptionEmottak: SubscriptionPort,
         pale2ReglerClient: Pale2ReglerClient
     ) {
         wrapExceptions {
@@ -91,16 +86,9 @@ class BlockingApplicationRunner {
                         is TextMessage -> message.text
                         else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
                     }
-                    val fellesformat =
-                        fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+                    val fellesformat = fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
 
-                    try {
-                        kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(env.pale2DumpTopic, fellesformat)).get()
-                        log.info("Melding sendt til kafka dump topic {}", env.pale2DumpTopic)
-                    } catch (e: Exception) {
-                        log.error("Noe gikk galt ved skriving til topic ${env.pale2DumpTopic}: ${e.message}")
-                        throw e
-                    }
+                    dumpTilTopic(kafkaProducerLegeerklaeringFellesformat, env.pale2DumpTopic, fellesformat)
 
                     val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
                     val msgHead = fellesformat.get<XMLMsgHead>()
@@ -132,46 +120,14 @@ class BlockingApplicationRunner {
                         secrets.serviceuserUsername, loggingMeta
                     )
 
-                    val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege)
-                    val samhandlerPraksisMatch = findBestSamhandlerPraksis(
-                        samhandlerInfo,
-                        legekontorOrgName,
-                        legekontorHerId,
-                        loggingMeta
+                    val tssIdent = samhandlerService.finnTssIdentOgStartSubscription(
+                        fnrLege = fnrLege,
+                        legekontorOrgName = legekontorOrgName,
+                        legekontorHerId = legekontorHerId,
+                        receiverBlock = receiverBlock,
+                        msgHead = msgHead,
+                        loggingMeta = loggingMeta
                     )
-
-                    val samhandlerPraksis = samhandlerPraksisMatch?.samhandlerPraksis
-
-                    if (samhandlerPraksisMatch?.percentageMatch != null && samhandlerPraksisMatch.percentageMatch == 999.0) {
-                        log.info(
-                            "SamhandlerPraksis is found but is FALE or FALO, subscription_emottak is not created, {}",
-                            fields(loggingMeta)
-                        )
-                    } else {
-                        when (samhandlerPraksis) {
-                            null -> log.info(
-                                "SamhandlerPraksis is Not found, {}",
-                                fields(loggingMeta)
-                            )
-                            else -> if (!samhandlerPraksisErLegevakt(samhandlerPraksis) &&
-                                !receiverBlock.partnerReferanse.isNullOrEmpty() &&
-                                receiverBlock.partnerReferanse.isNotBlank()
-                            ) {
-                                startSubscription(
-                                    subscriptionEmottak,
-                                    samhandlerPraksis,
-                                    msgHead,
-                                    receiverBlock,
-                                    loggingMeta
-                                )
-                            } else {
-                                log.info(
-                                    "SamhandlerPraksis is Legevakt or partnerReferanse is empty or blank, subscription_emottak is not created, {}",
-                                    fields(loggingMeta)
-                                )
-                            }
-                        }
-                    }
 
                     val redisSha256String = jedis.get(sha256String)
                     val redisEdiloggid = jedis.get(ediLoggId)
@@ -240,7 +196,7 @@ class BlockingApplicationRunner {
                                 ZoneOffset.UTC
                             ).toLocalDateTime(),
                         fellesformat = inputMessageText,
-                        tssid = samhandlerPraksis?.tss_ident ?: ""
+                        tssid = tssIdent
                     )
 
                     val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
@@ -266,7 +222,7 @@ class BlockingApplicationRunner {
                             arenaProducer,
                             findNAVKontorService,
                             fnrPasient,
-                            samhandlerPraksis?.tss_ident,
+                            tssIdent,
                             ediLoggId,
                             fnrLege,
                             legeerklaring,
@@ -318,6 +274,20 @@ class BlockingApplicationRunner {
                     message.acknowledge()
                 }
             }
+        }
+    }
+
+    fun dumpTilTopic(
+        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
+        pale2DumpTopic: String,
+        fellesformat: XMLEIFellesformat
+    ) {
+        try {
+            kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(pale2DumpTopic, fellesformat)).get()
+            log.info("Melding sendt til kafka dump topic {}", pale2DumpTopic)
+        } catch (e: Exception) {
+            log.error("Noe gikk galt ved skriving til topic $pale2DumpTopic: ${e.message}")
+            throw e
         }
     }
 }

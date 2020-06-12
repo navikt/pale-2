@@ -44,16 +44,9 @@ suspend fun handleStatusOK(
     sendArenaInfo(arenaProducer, session,
         lokaltNavkontor, tssId, ediLoggId,
         fnrLege, legeerklaring)
-
     log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", fields(loggingMeta))
 
-    try {
-        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2OkTopic, legeerklaeringSak)).get()
-        log.info("Melding sendt til kafka topic {}", pale2OkTopic)
-    } catch (e: Exception) {
-        log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))
-        throw e
-    }
+    sendTilOKTopic(kafkaProducerLegeerklaeringSak, pale2OkTopic, legeerklaeringSak, loggingMeta)
 }
 
 fun sendArenaInfo(
@@ -68,3 +61,18 @@ fun sendArenaInfo(
     val info = createArenaInfo(tssId, lokaltNavkontor, mottakid, fnrbehandler, legeerklaring)
     text = arenaMarshaller.toString(info)
 })
+
+fun sendTilOKTopic(
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    pale2OkTopic: String,
+    legeerklaeringSak: LegeerklaeringSak,
+    loggingMeta: LoggingMeta
+) {
+    try {
+        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2OkTopic, legeerklaeringSak)).get()
+        log.info("Melding sendt til kafka topic {}", pale2OkTopic)
+    } catch (e: Exception) {
+        log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))
+        throw e
+    }
+}
