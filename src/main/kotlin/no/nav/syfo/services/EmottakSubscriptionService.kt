@@ -35,7 +35,7 @@ suspend fun startSubscription(
     }
 }
 
-fun samhandlerParksisisLegevakt(samhandlerPraksis: SamhandlerPraksis): Boolean =
+fun samhandlerPraksisErLegevakt(samhandlerPraksis: SamhandlerPraksis): Boolean =
         !samhandlerPraksis.samh_praksis_type_kode.isNullOrEmpty() && (samhandlerPraksis.samh_praksis_type_kode == "LEVA" ||
                 samhandlerPraksis.samh_praksis_type_kode == "LEKO")
 

@@ -34,6 +34,7 @@ import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
+import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
@@ -108,6 +109,7 @@ fun main() {
         }
     }
 
+    val findNAVKontorService = FindNAVKontorService(personV3, norg2Client)
     val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
         proxy { features.add(WSAddressingFeature()) }
         port { withBasicAuth(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword) }
@@ -120,7 +122,7 @@ fun main() {
     launchListeners(
         applicationState, env, sarClient,
         aktoerIdClient, vaultSecrets,
-        personV3, norg2Client, kafkaClients.kafkaProducerLegeerklaeringSak,
+        findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
         kafkaClients.kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
     )
 }
@@ -143,8 +145,7 @@ fun launchListeners(
     kuhrSarClient: SarClient,
     aktoerIdClient: AktoerIdClient,
     secrets: VaultSecrets,
-    personV3: PersonV3,
-    norg2Client: Norg2Client,
+    findNAVKontorService: FindNAVKontorService,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
     subscriptionEmottak: SubscriptionPort,
@@ -169,7 +170,7 @@ fun launchListeners(
                     applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
                     kuhrSarClient, aktoerIdClient, secrets,
-                    arenaProducer, personV3, norg2Client, kafkaProducerLegeerklaeringSak,
+                    arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
                     kafkaProducerLegeerklaeringFellesformat, subscriptionEmottak, pale2ReglerClient
                 )
             }
