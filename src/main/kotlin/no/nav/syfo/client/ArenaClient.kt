@@ -46,12 +46,17 @@ fun Pasient.formatName(): String =
     }
 
 fun findMappeTypeInLegeerklaering(legeerklaering: Legeerklaering): String =
-    if (legeerklaering.uforepensjon) {
-        PaleConstant.mappetypeUP.string
-    } else if (legeerklaering.yrkesrettetAttforing) {
-        PaleConstant.mappetypeYA.string
-    } else if (legeerklaering.arbeidsavklaringspenger) {
-        PaleConstant.mappetypeRP.string
-    } else {
-        PaleConstant.mappetypeSP.string
+    when {
+        legeerklaering.uforepensjon -> {
+            PaleConstant.mappetypeUP.string
+        }
+        legeerklaering.yrkesrettetAttforing -> {
+            PaleConstant.mappetypeYA.string
+        }
+        legeerklaering.arbeidsavklaringspenger -> {
+            PaleConstant.mappetypeRP.string
+        }
+        else -> {
+            PaleConstant.mappetypeSP.string
+        }
     }

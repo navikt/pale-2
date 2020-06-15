@@ -37,10 +37,22 @@ fun handleStatusINVALID(
         validationResult.ruleHits.map { it.toApprecCV() })
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
-    kafkaProducerLegeerklaeringSak.send(
-        ProducerRecord(pale2AvvistTopic, legeerklaeringSak)
-    )
-    log.info("Melding sendt til kafka topic {}", pale2AvvistTopic)
+    sendTilAvvistTopic(kafkaProducerLegeerklaeringSak, pale2AvvistTopic, legeerklaeringSak, loggingMeta)
+}
+
+fun sendTilAvvistTopic(
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    pale2AvvistTopic: String,
+    legeerklaeringSak: LegeerklaeringSak,
+    loggingMeta: LoggingMeta
+) {
+    try {
+        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2AvvistTopic, legeerklaeringSak)).get()
+        log.info("Melding sendt til kafka topic {}", pale2AvvistTopic)
+    } catch (e: Exception) {
+        log.error("Noe gikk galt ved sending til avvist-topic {}, {}", e.message, fields(loggingMeta))
+        throw e
+    }
 }
 
 fun handleDuplicateSM2013Content(
@@ -166,7 +178,7 @@ fun handleTestFnrInProd(
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
             createApprecError("Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                        "AnnenFravers Arsakskode V mangler i legeerklæringen. Kontakt din EPJ-leverandør)"
+                        "Dettte fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
             )
         )
     )

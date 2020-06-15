@@ -21,7 +21,7 @@ import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.util.get
 
 fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): XMLEIFellesformat {
-    val fellesformatApprec = XMLEIFellesformat().apply {
+    return XMLEIFellesformat().apply {
         any.add(XMLMottakenhetBlokk().apply {
             ediLoggId = fellesformat.get<XMLMottakenhetBlokk>().ediLoggId
             ebRole = PaleConstant.ebRoleNav.string
@@ -61,8 +61,6 @@ fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): X
         }
         )
     }
-
-    return fellesformatApprec
 }
 
 fun XMLHealthcareProfessional.intoHCPerson(): XMLHCPerson = XMLHCPerson().apply {

@@ -25,9 +25,10 @@ suspend fun handleStatusOK(
     fellesformat: XMLEIFellesformat,
     arenaProducer: MessageProducer,
     findNAVKontorService: FindNAVKontorService,
+    fnrPasient: String,
     tssId: String?,
     ediLoggId: String,
-    personNumberDoctor: String,
+    fnrLege: String,
     legeerklaring: Legeerklaering,
     loggingMeta: LoggingMeta,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
@@ -35,21 +36,17 @@ suspend fun handleStatusOK(
     legeerklaeringSak: LegeerklaeringSak,
     apprecQueueName: String
 ) {
-    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor()
+    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor(fnrPasient, loggingMeta)
 
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
     sendArenaInfo(arenaProducer, session,
         lokaltNavkontor, tssId, ediLoggId,
-        personNumberDoctor, legeerklaring)
-
+        fnrLege, legeerklaring)
     log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", fields(loggingMeta))
 
-    kafkaProducerLegeerklaeringSak.send(
-        ProducerRecord(pale2OkTopic, legeerklaeringSak)
-    )
-    log.info("Melding sendt til kafka topic {}", pale2OkTopic)
+    sendTilOKTopic(kafkaProducerLegeerklaeringSak, pale2OkTopic, legeerklaeringSak, loggingMeta)
 }
 
 fun sendArenaInfo(
@@ -64,3 +61,18 @@ fun sendArenaInfo(
     val info = createArenaInfo(tssId, lokaltNavkontor, mottakid, fnrbehandler, legeerklaring)
     text = arenaMarshaller.toString(info)
 })
+
+fun sendTilOKTopic(
+    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
+    pale2OkTopic: String,
+    legeerklaeringSak: LegeerklaeringSak,
+    loggingMeta: LoggingMeta
+) {
+    try {
+        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2OkTopic, legeerklaeringSak)).get()
+        log.info("Melding sendt til kafka topic {}", pale2OkTopic)
+    } catch (e: Exception) {
+        log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))
+        throw e
+    }
+}

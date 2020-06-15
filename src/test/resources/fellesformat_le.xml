@@ -10,7 +10,7 @@
                 <Organisation>
                     <OrganisationName>Kule helsetjenester AS</OrganisationName>
                     <Ident>
-                        <Id>223456789</Id>
+                        <Id>222222222</Id>
                         <TypeId DN="Organisasjonsnummeret i Enhetsregister (Brønnøysund)" S="1.16.578.1.12.3.1.1.9051" V="ENH" />
                     </Ident>
                     <Ident>
@@ -24,9 +24,9 @@
                     </Address>
                     <Organisation/>
                     <HealthcareProfessional>
-                        <FamilyName>Valda</FamilyName>
-                        <MiddleName>Fos</MiddleName>
-                        <GivenName>Inga</GivenName>
+                        <FamilyName>Legesen</FamilyName>
+                        <MiddleName>Lege</MiddleName>
+                        <GivenName>Test</GivenName>
                         <Ident>
                             <Id>1234</Id>
                             <TypeId DN="Identifikator fra Helsetjenesteenhetsregisteret" S="1.16.578.1.12.4.3.1.8116" V="HER" />
@@ -36,11 +36,11 @@
                             <TypeId DN="HPR-nummer" S="1.16.578.1.12.3.1.1.8116" V="HPR" />
                         </Ident>
                         <Ident>
-                            <Id>04030350265</Id>
+                            <Id>12345678910</Id>
                             <TypeId DN="Fødselsnummer" V="FNR" S="6.87.654.3.21.9.8.7.6543.2198" />
                         </Ident>
                         <Ident>
-                            <Id>45069800525</Id>
+                            <Id>98765432100</Id>
                             <TypeId DN="D-nummer" V="DNR" S="6.16.578.1.12.4.1.4.8116" />
                         </Ident>
                         <Address>
@@ -74,10 +74,10 @@
                 </Organisation>
             </Receiver>
             <Patient>
-                <FamilyName>Bergheim</FamilyName>
-                <GivenName>Daniel</GivenName>
+                <FamilyName>Nordmann</FamilyName>
+                <GivenName>Kari</GivenName>
                 <Ident>
-                    <Id>12128913767</Id>
+                    <Id>12349812345</Id>
                     <TypeId DN="FÃ¸dselsnummer" S="2.16.578.1.12.4.1.1.8116" V="FNR" />
                 </Ident>
             </Patient>
@@ -91,9 +91,9 @@
                         <Pasientopplysninger flereArbeidsforhold="2">
                             <Pasient fodselsnummer="12349812345" trygdekontor="NAV Sagene">
                                 <Navn>
-                                    <Etternavn>Bergheim</Etternavn>
-                                    <Fornavn>Daniel</Fornavn>
-                                    <Mellomnavn>Yndesdal</Mellomnavn>
+                                    <Etternavn>Nordmann</Etternavn>
+                                    <Fornavn>Kari</Fornavn>
+                                    <Mellomnavn>Setesdal</Mellomnavn>
                                 </Navn>
                                 <Arbeidsforhold primartArbeidsforhold="1">
                                     <Virksomhet virksomhetsBetegnelse="NAV IKT" organisasjonsnummer="123456789">
@@ -169,5 +169,5 @@
             </RefDoc>
         </Document>
     </MsgHead>
-    <MottakenhetBlokk ediLoggId="FiktivTestdata0001" avsender="04030350265" ebXMLSamtaleId="1234" avsenderRef="00123456789" avsenderFnrFraDigSignatur="04030350265" mottattDatotid="2017-12-29T12:21:35+02:00" ebRole="Lege" ebService="Legemelding" ebAction="Legeerklaring"/>
+    <MottakenhetBlokk ediLoggId="FiktivTestdata0001" avsender="12345678910" ebXMLSamtaleId="1234" avsenderRef="00123456789" avsenderFnrFraDigSignatur="12345678910" mottattDatotid="2017-12-29T12:21:35+02:00" ebRole="Lege" ebService="Legemelding" ebAction="Legeerklaring"/>
 </EI_fellesformat>

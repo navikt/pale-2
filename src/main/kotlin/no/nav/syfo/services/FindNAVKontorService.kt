@@ -4,7 +4,7 @@ import com.ctc.wstx.exc.WstxException
 import io.ktor.util.KtorExperimentalAPI
 import java.io.IOException
 import java.lang.IllegalStateException
-import net.logstash.logback.argument.StructuredArguments
+import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.syfo.NAV_OPPFOLGING_UTLAND_KONTOR_NR
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.helpers.retry
@@ -18,22 +18,20 @@ import no.nav.tjeneste.virksomhet.person.v3.informasjon.Personidenter
 import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningRequest
 import no.nav.tjeneste.virksomhet.person.v3.meldinger.HentGeografiskTilknytningResponse
 
-class FindNAVKontorService @KtorExperimentalAPI constructor(
-    val pasientFNR: String,
-    val personV3: PersonV3,
-    val norg2Client: Norg2Client,
-    val loggingMeta: LoggingMeta
+@KtorExperimentalAPI
+class FindNAVKontorService(
+    private val personV3: PersonV3,
+    private val norg2Client: Norg2Client
 ) {
 
-    @KtorExperimentalAPI
-    suspend fun finnLokaltNavkontor(): String {
-        val geografiskTilknytning = fetchGeografiskTilknytningAsync(personV3, pasientFNR)
-        val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, pasientFNR)
+    suspend fun finnLokaltNavkontor(pasientFNR: String, loggingMeta: LoggingMeta): String {
+        val geografiskTilknytning = fetchGeografiskTilknytningAsync(pasientFNR, loggingMeta)
+        val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, pasientFNR, loggingMeta)
 
         return if (geografiskTilknytning == null || geografiskTilknytning.geografiskTilknytning?.geografiskTilknytning.isNullOrEmpty()) {
             log.warn(
                 "GeografiskTilknytning er tomt eller null, benytter nav oppfolings utland nr:$NAV_OPPFOLGING_UTLAND_KONTOR_NR,  {}",
-                StructuredArguments.fields(loggingMeta)
+                fields(loggingMeta)
             )
             NAV_OPPFOLGING_UTLAND_KONTOR_NR
         } else {
@@ -45,8 +43,8 @@ class FindNAVKontorService @KtorExperimentalAPI constructor(
     }
 
     suspend fun fetchGeografiskTilknytningAsync(
-        personV3: PersonV3,
-        personFNR: String
+        personFNR: String,
+        loggingMeta: LoggingMeta
     ): HentGeografiskTilknytningResponse? =
         try {
             retry(
@@ -65,6 +63,7 @@ class FindNAVKontorService @KtorExperimentalAPI constructor(
                 )
             }
         } catch (hentGeografiskTilknytningPersonIkkeFunnet: HentGeografiskTilknytningPersonIkkeFunnet) {
+            log.error("Fant ikke geografisk tilknytning for bruker, {}", fields(loggingMeta))
             null
         }
 }
