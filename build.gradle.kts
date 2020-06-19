@@ -111,15 +111,10 @@ dependencies {
     }
 
     implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
-    implementation("no.nav.syfo:pale-2-common-rest-sts:$pale2CommonVersion") {
-        exclude(group = "io.ktor")
-    }
-    implementation("no.nav.syfo:pale-2-common-networking:$pale2CommonVersion") {
-        exclude(group = "io.ktor")
-    }
     implementation("no.nav.syfo:pale-2-common-ws:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-metrics:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$fellesformatVersion")
     implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")
