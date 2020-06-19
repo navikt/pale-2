@@ -29,7 +29,7 @@ import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
-import no.nav.syfo.client.StsOidcClient
+import no.nav.syfo.client.sts.StsOidcClient
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue

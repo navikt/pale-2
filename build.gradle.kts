@@ -6,7 +6,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "1.3.2"
+val ktorVersion = "1.2.6"
+val coroutinesVersion = "1.0.1"
 val prometheusVersion = "0.6.0"
 val junitJupiterVersion = "5.6.0"
 val kluentVersion = "1.39"
@@ -83,6 +84,8 @@ dependencies {
 
     implementation(kotlin("stdlib"))
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:$coroutinesVersion")
+
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
 
@@ -108,11 +111,10 @@ dependencies {
     }
 
     implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
-    implementation("no.nav.syfo:pale-2-common-rest-sts:$pale2CommonVersion")
-    implementation("no.nav.syfo:pale-2-common-networking:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-ws:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
+    implementation("no.nav.syfo:pale-2-common-metrics:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$fellesformatVersion")
     implementation("no.nav.helse.xml:kith-hodemelding:$kithHodemeldingVersion")
     implementation("no.nav.helse.xml:kith-apprec:$kithApprecVersion")

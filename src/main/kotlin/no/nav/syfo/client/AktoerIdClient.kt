@@ -7,6 +7,7 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.util.KtorExperimentalAPI
+import no.nav.syfo.client.sts.StsOidcClient
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.model.IdentInfoResult
 import no.nav.syfo.util.LoggingMeta
