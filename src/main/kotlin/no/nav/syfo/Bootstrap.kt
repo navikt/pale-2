@@ -30,6 +30,7 @@ import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.sts.StsOidcClient
+import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
@@ -126,7 +127,8 @@ fun main() {
         applicationState, env, samhandlerService,
         aktoerIdClient, vaultSecrets,
         findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
-        kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient
+        kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient,
+        kafkaClients.kafkaVedleggProducer
     )
 }
 
@@ -151,7 +153,8 @@ fun launchListeners(
     findNAVKontorService: FindNAVKontorService,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
-    pale2ReglerClient: Pale2ReglerClient
+    pale2ReglerClient: Pale2ReglerClient,
+    kafkaVedleggProducer: KafkaVedleggProducer
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
@@ -173,7 +176,7 @@ fun launchListeners(
                     jedis, session, env, receiptProducer, backoutProducer,
                     samhandlerService, aktoerIdClient, secrets,
                     arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient
+                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
                 )
             }
         }

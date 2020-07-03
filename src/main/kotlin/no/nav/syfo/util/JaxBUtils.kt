@@ -23,6 +23,13 @@ val fellesformatUnmarshaller: Unmarshaller = fellesformatJaxBContext.createUnmar
     setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
 }
 
+val fellesformatMarshaller: Marshaller = fellesformatJaxBContext.createMarshaller().apply {
+    setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
+    setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
+    setProperty(JAXB_ENCODING, "UTF-8")
+    setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
+}
+
 val apprecJaxBContext: JAXBContext = JAXBContext.newInstance(XMLEIFellesformat::class.java, XMLAppRec::class.java)
 val apprecMarshaller: Marshaller = apprecJaxBContext.createMarshaller()
 
