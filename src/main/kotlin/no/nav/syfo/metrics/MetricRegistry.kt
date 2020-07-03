@@ -45,4 +45,3 @@ val VEDLEGG_COUNTER: Counter = Counter.build()
     .name("legeerkleringer_med_vedlegg")
     .help("Antall sykmeldinger som inneholder vedlegg")
     .register()
-

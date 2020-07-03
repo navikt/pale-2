@@ -93,7 +93,8 @@ class BlockingApplicationRunner {
                         is TextMessage -> message.text
                         else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
                     }
-                    val fellesformat = fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+                    val fellesformat =
+                        fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
 
                     val vedlegg = getVedlegg(fellesformat)
                     if (vedlegg.isNotEmpty()) {
@@ -259,7 +260,7 @@ class BlockingApplicationRunner {
                         )
                     }
 
-                    if(vedlegg.isNotEmpty()) {
+                    if (vedlegg.isNotEmpty()) {
                         kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, loggingMeta)
                     }
                     val currentRequestLatency = requestLatency.observeDuration()

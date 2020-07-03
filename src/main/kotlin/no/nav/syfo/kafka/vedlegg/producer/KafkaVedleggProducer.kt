@@ -1,14 +1,12 @@
 package no.nav.syfo.kafka.vedlegg.producer
 
 import net.logstash.logback.argument.StructuredArguments.fields
-import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.syfo.Environment
 import no.nav.syfo.kafka.vedlegg.model.BehandlerInfo
 import no.nav.syfo.kafka.vedlegg.model.Vedlegg
 import no.nav.syfo.kafka.vedlegg.model.VedleggKafkaMessage
 import no.nav.syfo.log
 import no.nav.syfo.model.ReceivedLegeerklaering
-import no.nav.syfo.model.ReceivedSykmelding
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
