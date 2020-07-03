@@ -261,7 +261,7 @@ class BlockingApplicationRunner {
                     }
 
                     if (vedlegg.isNotEmpty()) {
-                        kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, loggingMeta)
+                        kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, fellesformat, loggingMeta)
                     }
                     val currentRequestLatency = requestLatency.observeDuration()
 
