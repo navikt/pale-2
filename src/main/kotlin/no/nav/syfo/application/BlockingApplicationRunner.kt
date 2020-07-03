@@ -25,10 +25,12 @@ import no.nav.syfo.handlestatus.handlePatientNotFoundInAktorRegister
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
+import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
+import no.nav.syfo.metrics.VEDLEGG_COUNTER
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
@@ -45,8 +47,12 @@ import no.nav.syfo.util.extractOrganisationNumberFromSender
 import no.nav.syfo.util.extractOrganisationRashNumberFromSender
 import no.nav.syfo.util.extractPersonIdent
 import no.nav.syfo.util.extractSenderOrganisationName
+import no.nav.syfo.util.fellesformatMarshaller
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.get
+import no.nav.syfo.util.getVedlegg
+import no.nav.syfo.util.removeVedleggFromFellesformat
+import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -71,7 +77,8 @@ class BlockingApplicationRunner {
         findNAVKontorService: FindNAVKontorService,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
         kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
-        pale2ReglerClient: Pale2ReglerClient
+        pale2ReglerClient: Pale2ReglerClient,
+        kafkaVedleggProducer: KafkaVedleggProducer
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -86,7 +93,18 @@ class BlockingApplicationRunner {
                         is TextMessage -> message.text
                         else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
                     }
-                    val fellesformat = fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+                    val fellesformat =
+                        fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+
+                    val vedlegg = getVedlegg(fellesformat)
+                    if (vedlegg.isNotEmpty()) {
+                        VEDLEGG_COUNTER.inc()
+                        removeVedleggFromFellesformat(fellesformat)
+                    }
+                    val fellesformatText = when (vedlegg.isNotEmpty()) {
+                        true -> fellesformatMarshaller.toString(fellesformat)
+                        false -> inputMessageText
+                    }
 
                     dumpTilTopic(kafkaProducerLegeerklaeringFellesformat, env.pale2DumpTopic, fellesformat)
 
@@ -195,7 +213,7 @@ class BlockingApplicationRunner {
                             .withZoneSameInstant(
                                 ZoneOffset.UTC
                             ).toLocalDateTime(),
-                        fellesformat = inputMessageText,
+                        fellesformat = fellesformatText,
                         tssid = tssIdent
                     )
 
@@ -242,6 +260,9 @@ class BlockingApplicationRunner {
                         )
                     }
 
+                    if (vedlegg.isNotEmpty()) {
+                        kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, loggingMeta)
+                    }
                     val currentRequestLatency = requestLatency.observeDuration()
 
                     log.info(
