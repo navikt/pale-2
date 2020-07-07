@@ -20,7 +20,7 @@ import no.nav.syfo.VaultSecrets
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.Pale2ReglerClient
-import no.nav.syfo.handlestatus.sendArenaInfo
+import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.handlestatus.sendTilAvvistTopic
 import no.nav.syfo.handlestatus.sendTilOKTopic
 import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
@@ -38,6 +38,7 @@ import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.XMLDateAdapter
 import no.nav.syfo.util.XMLDateTimeAdapter
+import no.nav.syfo.util.arenaEiaInfoJaxBContext
 import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.extractOrganisationHerNumberFromSender
@@ -206,11 +207,11 @@ class RerunService(
                     when (validationResult.status) {
                         Status.OK -> {
                             val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor(fnrPasient, loggingMeta)
-                            sendArenaInfo(
-                                arenaProducer, session,
-                                lokaltNavkontor, tssIdent, ediLoggId,
-                                fnrLege, legeerklaring
-                            )
+                            val rerunArenaMarshaller: Marshaller = arenaEiaInfoJaxBContext.createMarshaller()
+                            arenaProducer.send(session.createTextMessage().apply {
+                                val info = createArenaInfo(tssIdent, lokaltNavkontor, ediLoggId, fnrLege, legeerklaring)
+                                text = rerunArenaMarshaller.toString(info)
+                            })
                             log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", StructuredArguments.fields(loggingMeta))
                             sendTilOKTopic(kafkaProducerLegeerklaeringSak, env.pale2OkTopic, legeerklaeringSak, loggingMeta)
                         }
