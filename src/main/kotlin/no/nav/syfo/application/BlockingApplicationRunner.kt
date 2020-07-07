@@ -163,117 +163,116 @@ class BlockingApplicationRunner {
                         )
                         continue@loop
                     } else {
+                        val patientIdents = aktoerIds[fnrPasient]
+                        val doctorIdents = aktoerIds[fnrLege]
+
+                        if (patientIdents == null || patientIdents.feilmelding != null) {
+                            handlePatientNotFoundInAktorRegister(
+                                patientIdents, session,
+                                receiptProducer, fellesformat, ediLoggId, jedis, sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        }
+                        if (doctorIdents == null || doctorIdents.feilmelding != null) {
+                            handleDoctorNotFoundInAktorRegister(
+                                doctorIdents, session,
+                                receiptProducer, fellesformat, ediLoggId, jedis, sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        }
+                        if (erTestFnr(fnrPasient) && env.cluster == "prod-fss") {
+                            handleTestFnrInProd(
+                                session, receiptProducer, fellesformat,
+                                ediLoggId, jedis, sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        }
+
+                        val legeerklaring = legeerklaringxml.toLegeerklaring(
+                            legeerklaringId = UUID.randomUUID().toString(),
+                            fellesformat = fellesformat,
+                            signaturDato = msgHead.msgInfo.genDate
+                        )
+
+                        val receivedLegeerklaering = ReceivedLegeerklaering(
+                            legeerklaering = legeerklaring,
+                            personNrPasient = fnrPasient,
+                            pasientAktoerId = patientIdents.identer!!.first().ident,
+                            personNrLege = fnrLege,
+                            legeAktoerId = doctorIdents.identer!!.first().ident,
+                            navLogId = ediLoggId,
+                            msgId = msgId,
+                            legekontorOrgNr = legekontorOrgNr,
+                            legekontorOrgName = legekontorOrgName,
+                            legekontorHerId = legekontorHerId,
+                            legekontorReshId = legekontorReshId,
+                            mottattDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
+                                .withZoneSameInstant(
+                                    ZoneOffset.UTC
+                                ).toLocalDateTime(),
+                            fellesformat = fellesformatText,
+                            tssid = tssIdent
+                        )
+
+                        val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
+                        val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult)
+
+                        skrivTilSakTopic(
+                            kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
+                            pale2SakTopic = env.pale2SakTopic,
+                            legeerklaringId = legeerklaring.id,
+                            legeerklaeringSak = legeerklaeringSak,
+                            loggingMeta = loggingMeta
+                        )
+
+                        when (validationResult.status) {
+                            Status.OK -> handleStatusOK(
+                                session,
+                                receiptProducer,
+                                fellesformat,
+                                arenaProducer,
+                                findNAVKontorService,
+                                fnrPasient,
+                                tssIdent,
+                                ediLoggId,
+                                fnrLege,
+                                legeerklaring,
+                                loggingMeta,
+                                kafkaProducerLegeerklaeringSak,
+                                env.pale2OkTopic,
+                                legeerklaeringSak,
+                                env.apprecQueueName
+                            )
+
+                            Status.INVALID -> handleStatusINVALID(
+                                validationResult,
+                                session,
+                                receiptProducer,
+                                fellesformat,
+                                loggingMeta,
+                                kafkaProducerLegeerklaeringSak,
+                                env.pale2AvvistTopic,
+                                legeerklaeringSak,
+                                env.apprecQueueName
+                            )
+                        }
+
+                        if (vedlegg.isNotEmpty()) {
+                            kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, fellesformat, loggingMeta)
+                        }
+                        val currentRequestLatency = requestLatency.observeDuration()
+
+                        log.info(
+                            "Finished message got outcome {}, {}, processing took {}s",
+                            StructuredArguments.keyValue("status", validationResult.status),
+                            StructuredArguments.keyValue(
+                                "ruleHits",
+                                validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName }),
+                            StructuredArguments.keyValue("latency", currentRequestLatency),
+                            fields(loggingMeta)
+                        )
                         updateRedis(jedis, ediLoggId, sha256String)
                     }
-
-                    val patientIdents = aktoerIds[fnrPasient]
-                    val doctorIdents = aktoerIds[fnrLege]
-
-                    if (patientIdents == null || patientIdents.feilmelding != null) {
-                        handlePatientNotFoundInAktorRegister(
-                            patientIdents, session,
-                            receiptProducer, fellesformat, ediLoggId, jedis, sha256String, env, loggingMeta
-                        )
-                        continue@loop
-                    }
-                    if (doctorIdents == null || doctorIdents.feilmelding != null) {
-                        handleDoctorNotFoundInAktorRegister(
-                            doctorIdents, session,
-                            receiptProducer, fellesformat, ediLoggId, jedis, sha256String, env, loggingMeta
-                        )
-                        continue@loop
-                    }
-                    if (erTestFnr(fnrPasient) && env.cluster == "prod-fss") {
-                        handleTestFnrInProd(
-                            session, receiptProducer, fellesformat,
-                            ediLoggId, jedis, sha256String, env, loggingMeta
-                        )
-                        continue@loop
-                    }
-
-                    val legeerklaring = legeerklaringxml.toLegeerklaring(
-                        legeerklaringId = UUID.randomUUID().toString(),
-                        fellesformat = fellesformat,
-                        signaturDato = msgHead.msgInfo.genDate
-                    )
-
-                    val receivedLegeerklaering = ReceivedLegeerklaering(
-                        legeerklaering = legeerklaring,
-                        personNrPasient = fnrPasient,
-                        pasientAktoerId = patientIdents.identer!!.first().ident,
-                        personNrLege = fnrLege,
-                        legeAktoerId = doctorIdents.identer!!.first().ident,
-                        navLogId = ediLoggId,
-                        msgId = msgId,
-                        legekontorOrgNr = legekontorOrgNr,
-                        legekontorOrgName = legekontorOrgName,
-                        legekontorHerId = legekontorHerId,
-                        legekontorReshId = legekontorReshId,
-                        mottattDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
-                            .withZoneSameInstant(
-                                ZoneOffset.UTC
-                            ).toLocalDateTime(),
-                        fellesformat = fellesformatText,
-                        tssid = tssIdent
-                    )
-
-                    val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
-                    val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult)
-
-                    skrivTilSakTopic(
-                        kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
-                        pale2SakTopic = env.pale2SakTopic,
-                        legeerklaringId = legeerklaring.id,
-                        legeerklaeringSak = legeerklaeringSak,
-                        loggingMeta = loggingMeta
-                    )
-
-                    when (validationResult.status) {
-                        Status.OK -> handleStatusOK(
-                            session,
-                            receiptProducer,
-                            fellesformat,
-                            arenaProducer,
-                            findNAVKontorService,
-                            fnrPasient,
-                            tssIdent,
-                            ediLoggId,
-                            fnrLege,
-                            legeerklaring,
-                            loggingMeta,
-                            kafkaProducerLegeerklaeringSak,
-                            env.pale2OkTopic,
-                            legeerklaeringSak,
-                            env.apprecQueueName
-                        )
-
-                        Status.INVALID -> handleStatusINVALID(
-                            validationResult,
-                            session,
-                            receiptProducer,
-                            fellesformat,
-                            loggingMeta,
-                            kafkaProducerLegeerklaeringSak,
-                            env.pale2AvvistTopic,
-                            legeerklaeringSak,
-                            env.apprecQueueName
-                        )
-                    }
-
-                    if (vedlegg.isNotEmpty()) {
-                        kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, fellesformat, loggingMeta)
-                    }
-                    val currentRequestLatency = requestLatency.observeDuration()
-
-                    log.info(
-                        "Finished message got outcome {}, {}, processing took {}s",
-                        StructuredArguments.keyValue("status", validationResult.status),
-                        StructuredArguments.keyValue(
-                            "ruleHits",
-                            validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName }),
-                        StructuredArguments.keyValue("latency", currentRequestLatency),
-                        fields(loggingMeta)
-                    )
                 } catch (jedisException: JedisConnectionException) {
                     log.error(
                         "Exception caught, redis issue while handling message, sending to backout",
