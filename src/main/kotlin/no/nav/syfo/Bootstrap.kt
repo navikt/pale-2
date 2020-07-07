@@ -35,6 +35,9 @@ import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
+import no.nav.syfo.rerun.RerunService
+import no.nav.syfo.rerun.kafka.RerunConsumer
+import no.nav.syfo.rerun.kafka.getKafkaRerunConsumer
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
@@ -156,21 +159,28 @@ fun launchListeners(
     pale2ReglerClient: Pale2ReglerClient,
     kafkaVedleggProducer: KafkaVedleggProducer
 ) {
-    createListener(applicationState) {
-        connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
-            Jedis(env.redishost, 6379).use { jedis ->
-                connection.start()
-                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-                val inputconsumer = session.consumerForQueue(env.inputQueueName)
-                val receiptProducer = session.producerForQueue(env.apprecQueueName)
-                val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-                val arenaProducer = session.producerForQueue(env.arenaQueueName)
+    connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
+        Jedis(env.redishost, 6379).use { jedis ->
+            connection.start()
+            val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-                applicationState.ready = true
+            val inputconsumer = session.consumerForQueue(env.inputQueueName)
+            val receiptProducer = session.producerForQueue(env.apprecQueueName)
+            val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+            val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
-                jedis.auth(secrets.redisSecret)
+            applicationState.ready = true
 
+            jedis.auth(secrets.redisSecret)
+
+            val rerunConsumer = RerunConsumer(getKafkaRerunConsumer(env, secrets))
+            val rerunService = RerunService(applicationState, rerunConsumer,
+                jedis, env, session, samhandlerService, aktoerIdClient, secrets,
+                arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
+                pale2ReglerClient, kafkaVedleggProducer)
+
+            createListener(applicationState) {
                 BlockingApplicationRunner().run(
                     applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer,
@@ -178,6 +188,10 @@ fun launchListeners(
                     arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
                     kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
                 )
+            }
+
+            createListener(applicationState) {
+                rerunService.start()
             }
         }
     }
