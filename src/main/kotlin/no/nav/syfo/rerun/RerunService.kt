@@ -72,7 +72,7 @@ class RerunService(
     private val pale2ReglerClient: Pale2ReglerClient,
     private val kafkaVedleggProducer: KafkaVedleggProducer
 ) {
-    val skalBehandles = listOf("27239233023", "15386833405")
+    val skalBehandles = listOf("5191529755", "31604961665")
 
     suspend fun start() {
         while (applicationState.ready) {
@@ -95,7 +95,7 @@ class RerunService(
         val ediLoggId = receiverBlock.ediLoggId
         val msgId = msgHead.msgInfo.msgId
 
-        if (skalBehandleMelding(msgId)) {
+        if (skalBehandleMelding(ediLoggId)) {
             try {
                 val vedlegg = getVedlegg(fellesformat)
                 if (vedlegg.isNotEmpty()) {
@@ -245,8 +245,8 @@ class RerunService(
         }
     }
 
-    fun skalBehandleMelding(msgId: String): Boolean {
-        return msgId in skalBehandles
+    fun skalBehandleMelding(ediLoggId: String): Boolean {
+        return ediLoggId in skalBehandles
     }
 
     private fun skrivTilSakTopic(
