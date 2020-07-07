@@ -1,9 +1,9 @@
 package no.nav.syfo.rerun
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.migesok.jaxb.adapter.javatime.LocalDateTimeXmlAdapter
 import com.migesok.jaxb.adapter.javatime.LocalDateXmlAdapter
 import io.ktor.util.KtorExperimentalAPI
-import java.io.StringReader
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.jms.MessageProducer
@@ -30,6 +30,7 @@ import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
+import no.nav.syfo.objectMapper
 import no.nav.syfo.rerun.kafka.RerunConsumer
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.SamhandlerService
@@ -89,7 +90,7 @@ class RerunService(
             setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
             setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
         }
-        val fellesformat = rerunFellesformatUnmarshaller.unmarshal(StringReader(meldingSomString)) as XMLEIFellesformat
+        val fellesformat = objectMapper.readValue<XMLEIFellesformat>(meldingSomString)
         val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
         val msgHead = fellesformat.get<XMLMsgHead>()
         val ediLoggId = receiverBlock.ediLoggId
