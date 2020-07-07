@@ -22,7 +22,6 @@ import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
-import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.KafkaClients
@@ -180,6 +179,7 @@ fun launchListeners(
                 arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
                 pale2ReglerClient, kafkaVedleggProducer)
 
+            /*
             createListener(applicationState) {
                 BlockingApplicationRunner().run(
                     applicationState, inputconsumer,
@@ -189,6 +189,7 @@ fun launchListeners(
                     kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
                 )
             }
+            */
 
             createListener(applicationState) {
                 rerunService.start()
