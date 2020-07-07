@@ -3,11 +3,13 @@ package no.nav.syfo.rerun
 import com.migesok.jaxb.adapter.javatime.LocalDateTimeXmlAdapter
 import com.migesok.jaxb.adapter.javatime.LocalDateXmlAdapter
 import io.ktor.util.KtorExperimentalAPI
+import java.io.StringReader
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.xml.bind.Marshaller
+import javax.xml.bind.Unmarshaller
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
@@ -74,15 +76,20 @@ class RerunService(
 
     suspend fun start() {
         while (applicationState.ready) {
-            val rerunMeldinger = rerunConsumer.poll()
-            rerunMeldinger.forEach {
+            val rerunMeldingerSomString = rerunConsumer.poll()
+            rerunMeldingerSomString.forEach {
                 behandleLegeerklaering(it)
             }
             delay(1)
         }
     }
 
-    suspend fun behandleLegeerklaering(fellesformat: XMLEIFellesformat) {
+    suspend fun behandleLegeerklaering(meldingSomString: String) {
+        val rerunFellesformatUnmarshaller: Unmarshaller = fellesformatJaxBContext.createUnmarshaller().apply {
+            setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
+            setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
+        }
+        val fellesformat = rerunFellesformatUnmarshaller.unmarshal(StringReader(meldingSomString)) as XMLEIFellesformat
         val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
         val msgHead = fellesformat.get<XMLMsgHead>()
         val ediLoggId = receiverBlock.ediLoggId
@@ -95,14 +102,18 @@ class RerunService(
                     VEDLEGG_COUNTER.inc()
                     removeVedleggFromFellesformat(fellesformat)
                 }
-                val rerunFellesformatMarshaller: Marshaller = fellesformatJaxBContext.createMarshaller().apply {
-                    setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
-                    setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
-                    setProperty(Marshaller.JAXB_ENCODING, "UTF-8")
-                    setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
+                val fellesformatText = when (vedlegg.isNotEmpty()) {
+                    true -> {
+                        val rerunFellesformatMarshaller: Marshaller = fellesformatJaxBContext.createMarshaller().apply {
+                            setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
+                            setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
+                            setProperty(Marshaller.JAXB_ENCODING, "UTF-8")
+                            setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true)
+                        }
+                        rerunFellesformatMarshaller.toString(fellesformat)
+                    }
+                    false -> meldingSomString
                 }
-                val fellesformatText: String = rerunFellesformatMarshaller.toString(fellesformat)
-
                 val legekontorOrgNr = extractOrganisationNumberFromSender(fellesformat)?.id
                 val legeerklaringxml = extractLegeerklaering(fellesformat)
                 val sha256String = sha256hashstring(legeerklaringxml)
