@@ -9,7 +9,6 @@ import java.util.UUID
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.xml.bind.Marshaller
-import javax.xml.bind.Unmarshaller
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
@@ -48,7 +47,6 @@ import no.nav.syfo.util.extractOrganisationRashNumberFromSender
 import no.nav.syfo.util.extractPersonIdent
 import no.nav.syfo.util.extractSenderOrganisationName
 import no.nav.syfo.util.fellesformatJaxBContext
-import no.nav.syfo.util.get
 import no.nav.syfo.util.getVedlegg
 import no.nav.syfo.util.removeVedleggFromFellesformat
 import no.nav.syfo.util.toString
@@ -86,15 +84,14 @@ class RerunService(
     }
 
     suspend fun behandleLegeerklaering(meldingSomString: String) {
-        val rerunFellesformatUnmarshaller: Unmarshaller = fellesformatJaxBContext.createUnmarshaller().apply {
-            setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())
-            setAdapter(LocalDateXmlAdapter::class.java, XMLDateAdapter())
-        }
-        val fellesformat = objectMapper.readValue<XMLEIFellesformat>(meldingSomString)
-        val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
-        val msgHead = fellesformat.get<XMLMsgHead>()
+        val fellesformatSomListe = objectMapper.readValue<List<Any>>(meldingSomString)
+        val receiverBlock = fellesformatSomListe[1] as XMLMottakenhetBlokk
+        val msgHead = fellesformatSomListe[0] as XMLMsgHead
         val ediLoggId = receiverBlock.ediLoggId
         val msgId = msgHead.msgInfo.msgId
+        val fellesformat = XMLEIFellesformat()
+        fellesformat.any.add(receiverBlock)
+        fellesformat.any.add(msgHead)
 
         if (skalBehandleMelding(ediLoggId)) {
             try {
