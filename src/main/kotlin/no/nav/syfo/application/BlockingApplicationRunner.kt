@@ -54,7 +54,6 @@ import no.nav.syfo.util.getVedlegg
 import no.nav.syfo.util.removeVedleggFromFellesformat
 import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
-import no.nav.syfo.util.xmlObjectWriter
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
@@ -300,14 +299,16 @@ class BlockingApplicationRunner {
         fellesformat: XMLEIFellesformat
     ) {
         try {
-            val fellesformatSomString = xmlObjectWriter.writeValueAsString(fellesformat)
-            kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(pale2DumpTopic, fellesformatSomString)).get()
+            kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(pale2DumpTopic, fellesformatTilString(fellesformat))).get()
             log.info("Melding sendt til kafka dump topic {}", pale2DumpTopic)
         } catch (e: Exception) {
             log.error("Noe gikk galt ved skriving til topic $pale2DumpTopic: ${e.message}")
             throw e
         }
     }
+
+    fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
+        fellesformatMarshaller.toString(fellesformat)
 
     fun skrivTilSakTopic(
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
