@@ -76,7 +76,7 @@ class BlockingApplicationRunner {
         arenaProducer: MessageProducer,
         findNAVKontorService: FindNAVKontorService,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
+        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
         pale2ReglerClient: Pale2ReglerClient,
         kafkaVedleggProducer: KafkaVedleggProducer
     ) {
@@ -294,18 +294,21 @@ class BlockingApplicationRunner {
     }
 
     fun dumpTilTopic(
-        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
+        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
         pale2DumpTopic: String,
         fellesformat: XMLEIFellesformat
     ) {
         try {
-            kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(pale2DumpTopic, fellesformat)).get()
+            kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(pale2DumpTopic, fellesformatTilString(fellesformat))).get()
             log.info("Melding sendt til kafka dump topic {}", pale2DumpTopic)
         } catch (e: Exception) {
             log.error("Noe gikk galt ved skriving til topic $pale2DumpTopic: ${e.message}")
             throw e
         }
     }
+
+    fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
+        fellesformatMarshaller.toString(fellesformat)
 
     fun skrivTilSakTopic(
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
