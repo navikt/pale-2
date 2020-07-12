@@ -19,7 +19,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import no.nav.emottak.subscription.SubscriptionPort
-import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.createApplicationEngine
@@ -154,7 +153,7 @@ fun launchListeners(
     secrets: VaultSecrets,
     findNAVKontorService: FindNAVKontorService,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-    kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, XMLEIFellesformat>,
+    kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
     pale2ReglerClient: Pale2ReglerClient,
     kafkaVedleggProducer: KafkaVedleggProducer
 ) {
