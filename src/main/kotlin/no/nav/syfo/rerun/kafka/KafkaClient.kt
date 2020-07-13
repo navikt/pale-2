@@ -15,6 +15,6 @@ fun getKafkaRerunConsumer(env: Environment, vaultSecrets: VaultSecrets): KafkaCo
     properties.let { it[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = "1" }
 
     val kafkaRerunConsumer = KafkaConsumer<String, String>(properties)
-    kafkaRerunConsumer.subscribe(listOf(env.pale2DumpTopic))
+    kafkaRerunConsumer.subscribe(listOf(env.pale2RerunTopic))
     return kafkaRerunConsumer
 }

@@ -9,4 +9,8 @@ class RerunConsumer(
     fun poll(): List<String> {
         return kafkaRerunConsumer.poll(Duration.ofMillis(0)).map { it.value() }
     }
+
+    fun close() {
+        kafkaRerunConsumer.close()
+    }
 }

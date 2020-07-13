@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
+import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.KafkaClients
@@ -124,13 +125,15 @@ fun main() {
 
     val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
 
-    launchListeners(
-        applicationState, env, samhandlerService,
-        aktoerIdClient, vaultSecrets,
-        findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
-        kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient,
-        kafkaClients.kafkaVedleggProducer
-    )
+    createListener(applicationState) {
+        launchListeners(
+            applicationState, env, samhandlerService,
+            aktoerIdClient, vaultSecrets,
+            findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
+            kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient,
+            kafkaClients.kafkaVedleggProducer
+        )
+    }
 }
 
 fun createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
@@ -145,7 +148,7 @@ fun createListener(applicationState: ApplicationState, action: suspend Coroutine
     }
 
 @KtorExperimentalAPI
-fun launchListeners(
+suspend fun launchListeners(
     applicationState: ApplicationState,
     env: Environment,
     samhandlerService: SamhandlerService,
@@ -173,26 +176,22 @@ fun launchListeners(
             jedis.auth(secrets.redisSecret)
 
             val rerunConsumer = RerunConsumer(getKafkaRerunConsumer(env, secrets))
+
+            log.info("Starting rerun kafka service")
             val rerunService = RerunService(applicationState, rerunConsumer,
                 jedis, env, session, samhandlerService, aktoerIdClient, secrets,
                 arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
-                pale2ReglerClient, kafkaVedleggProducer)
+                pale2ReglerClient)
 
-            /*
-            createListener(applicationState) {
-                BlockingApplicationRunner().run(
-                    applicationState, inputconsumer,
-                    jedis, session, env, receiptProducer, backoutProducer,
-                    samhandlerService, aktoerIdClient, secrets,
-                    arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
-                )
-            }
-            */
-
-            createListener(applicationState) {
-                rerunService.start()
-            }
+            rerunService.start()
+            log.info("Starting MQ consuming")
+            BlockingApplicationRunner().run(
+                applicationState, inputconsumer,
+                jedis, session, env, receiptProducer, backoutProducer,
+                samhandlerService, aktoerIdClient, secrets,
+                arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
+                kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
+            )
         }
     }
 }

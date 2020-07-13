@@ -30,7 +30,8 @@ data class Environment(
     val pale2OkTopic: String = getEnvVar("KAFKA_PALE_2_OK_TOPIC", "privat-syfo-pale2-ok-v1"),
     val pale2AvvistTopic: String = getEnvVar("KAFKA_PALE_2_AVVIST_TOPIC", "privat-syfo-pale2-avvist-v1"),
     val pale2ReglerEndpointURL: String = getEnvVar("PALE_2_REGLER_ENDPOINT_URL", "http://pale-2-regler"),
-    val sm2013VedleggTopic: String = "privat-syfo-vedlegg"
+    val sm2013VedleggTopic: String = "privat-syfo-vedlegg",
+    val pale2RerunTopic: String = "pale-2-rerun-v1"
 ) : MqConfig, KafkaConfig
 
 data class VaultSecrets(
