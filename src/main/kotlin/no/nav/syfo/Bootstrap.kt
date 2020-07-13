@@ -34,9 +34,6 @@ import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
-import no.nav.syfo.rerun.RerunService
-import no.nav.syfo.rerun.kafka.RerunConsumer
-import no.nav.syfo.rerun.kafka.getKafkaRerunConsumer
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
@@ -125,15 +122,13 @@ fun main() {
 
     val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
 
-    createListener(applicationState) {
-        launchListeners(
-            applicationState, env, samhandlerService,
-            aktoerIdClient, vaultSecrets,
-            findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
-            kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient,
-            kafkaClients.kafkaVedleggProducer
-        )
-    }
+    launchListeners(
+        applicationState, env, samhandlerService,
+        aktoerIdClient, vaultSecrets,
+        findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
+        kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient,
+        kafkaClients.kafkaVedleggProducer
+    )
 }
 
 fun createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
@@ -148,7 +143,7 @@ fun createListener(applicationState: ApplicationState, action: suspend Coroutine
     }
 
 @KtorExperimentalAPI
-suspend fun launchListeners(
+fun launchListeners(
     applicationState: ApplicationState,
     env: Environment,
     samhandlerService: SamhandlerService,
@@ -160,38 +155,29 @@ suspend fun launchListeners(
     pale2ReglerClient: Pale2ReglerClient,
     kafkaVedleggProducer: KafkaVedleggProducer
 ) {
+    createListener(applicationState) {
+        connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
+            Jedis(env.redishost, 6379).use { jedis ->
+                connection.start()
+                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-    connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
-        Jedis(env.redishost, 6379).use { jedis ->
-            connection.start()
-            val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
+                val inputconsumer = session.consumerForQueue(env.inputQueueName)
+                val receiptProducer = session.producerForQueue(env.apprecQueueName)
+                val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+                val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
-            val inputconsumer = session.consumerForQueue(env.inputQueueName)
-            val receiptProducer = session.producerForQueue(env.apprecQueueName)
-            val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-            val arenaProducer = session.producerForQueue(env.arenaQueueName)
+                applicationState.ready = true
 
-            applicationState.ready = true
+                jedis.auth(secrets.redisSecret)
 
-            jedis.auth(secrets.redisSecret)
-
-            val rerunConsumer = RerunConsumer(getKafkaRerunConsumer(env, secrets))
-
-            log.info("Starting rerun kafka service")
-            val rerunService = RerunService(applicationState, rerunConsumer,
-                jedis, env, session, samhandlerService, aktoerIdClient, secrets,
-                arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
-                pale2ReglerClient)
-
-            rerunService.start()
-            log.info("Starting MQ consuming")
-            BlockingApplicationRunner().run(
-                applicationState, inputconsumer,
-                jedis, session, env, receiptProducer, backoutProducer,
-                samhandlerService, aktoerIdClient, secrets,
-                arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
-                kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
-            )
+                BlockingApplicationRunner().run(
+                    applicationState, inputconsumer,
+                    jedis, session, env, receiptProducer, backoutProducer,
+                    samhandlerService, aktoerIdClient, secrets,
+                    arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
+                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
+                )
+            }
         }
     }
 }
