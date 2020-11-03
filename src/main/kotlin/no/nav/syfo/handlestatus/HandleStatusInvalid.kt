@@ -12,7 +12,6 @@ import no.nav.syfo.apprec.toApprecCV
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.TEST_FNR_IN_PROD
-import no.nav.syfo.model.IdentInfoResult
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.services.sendReceipt
@@ -105,8 +104,7 @@ fun handleDuplicateEdiloggid(
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
-fun handlePatientNotFoundInAktorRegister(
-    patientIdents: IdentInfoResult?,
+fun handlePatientNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
@@ -116,10 +114,7 @@ fun handlePatientNotFoundInAktorRegister(
     env: Environment,
     loggingMeta: LoggingMeta
 ) {
-    log.warn("Patient not found i aktorRegister error: {}, {}",
-        keyValue("errorMessage", patientIdents?.feilmelding ?: "No response for FNR"),
-        fields(loggingMeta))
-
+    log.warn("Patient not found i PDL error: {}", fields(loggingMeta))
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
             createApprecError("Pasienten er ikkje registrert i folkeregisteret")
@@ -132,8 +127,7 @@ fun handlePatientNotFoundInAktorRegister(
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
-fun handleDoctorNotFoundInAktorRegister(
-    doctorIdents: IdentInfoResult?,
+fun handleDoctorNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
@@ -143,10 +137,7 @@ fun handleDoctorNotFoundInAktorRegister(
     env: Environment,
     loggingMeta: LoggingMeta
 ) {
-    log.warn("Doctor not found i aktorRegister error: {}, {}",
-        keyValue("errorMessage", doctorIdents?.feilmelding ?: "No response for FNR"),
-        fields(loggingMeta))
-
+    log.warn("Doctor not found i PDL error: {}", fields(loggingMeta))
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
             createApprecError("Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +

@@ -25,7 +25,8 @@ internal class LegeerklaringMapperTest {
         val legeerklaering = legeerklaringxml.toLegeerklaring(
             legeerklaringId = UUID.randomUUID().toString(),
             fellesformat = felleformatLe,
-            signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0)
+            signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0),
+            behandlerNavn = "Navn Navnesen"
         )
 
         legeerklaering.arbeidsvurderingVedSykefravaer shouldEqualTo false
@@ -99,7 +100,7 @@ internal class LegeerklaringMapperTest {
         legeerklaering.kontakt.skalKontakteBasisgruppe shouldEqualTo false
         legeerklaering.kontakt.kontakteAnnenInstans?.shouldBeEqualTo("Andre opplysninger")
         legeerklaering.kontakt.onskesKopiAvVedtak shouldEqualTo true
-        legeerklaering.pasientenBurdeIkkeVite?.shouldEqualTo("")
+        legeerklaering.pasientenBurdeIkkeVite?.shouldBeEqualTo("")
         legeerklaering.tilbakeholdInnhold shouldEqualTo true
         legeerklaering.signatur.dato shouldEqual LocalDateTime.of(2017, 11, 5, 0, 0, 0)
         legeerklaering.signatur.navn?.shouldBeEqualTo("LEGESEN TEST LEGE")
@@ -109,5 +110,22 @@ internal class LegeerklaringMapperTest {
         legeerklaering.signatur.signatur?.shouldBeEqualTo("")
         legeerklaering.signatur.tlfNummer?.shouldBeEqualTo("98765432")
         legeerklaering.signaturDato shouldEqual LocalDateTime.of(2017, 11, 5, 0, 0, 0)
+    }
+
+    @Test
+    internal fun `Tester mapping fra fellesformat til Legeerklaring format hvis navn mangler`() {
+        val felleformatLe = fellesformatUnmarshaller.unmarshal(
+            StringReader(getFileAsString("src/test/resources/fellesformat_le_utennavn.xml"))
+        ) as XMLEIFellesformat
+        val legeerklaringxml = extractLegeerklaering(felleformatLe)
+
+        val legeerklaering = legeerklaringxml.toLegeerklaring(
+            legeerklaringId = UUID.randomUUID().toString(),
+            fellesformat = felleformatLe,
+            signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0),
+            behandlerNavn = "Navn Navnesen"
+        )
+
+        legeerklaering.signatur.navn?.shouldBeEqualTo("Navn Navnesen")
     }
 }

@@ -60,8 +60,6 @@ spec:
       value: QA.P414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
       value: QA.P_PALE_2.INPUT_BOQ
-    - name: AKTOR_REGISTER_V1_URL
-      value: https://app.adeo.no/aktoerregister/api/v1
     - name: SECURITY_TOKEN_SERVICE_URL
       value: https://sts.adeo.no/SecurityTokenServiceProvider/
     - name: ARENA_OUTBOUND_QUEUENAME
@@ -74,3 +72,5 @@ spec:
       value: SASL_SSL://a01apvl00145.adeo.no:8443,SASL_SSL://a01apvl00146.adeo.no:8443,SASL_SSL://a01apvl00147.adeo.no:8443,SASL_SSL://a01apvl00149.adeo.no:8443
     - name: SUBSCRIPTION_ENDPOINT_URL
       value: https://wasapp.adeo.no/nav-emottak-eletter-web/services/
+    - name: PDL_GRAPHQL_PATH
+      value: https://pdl-api.nais.adeo.no/graphql
