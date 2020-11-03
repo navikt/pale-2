@@ -5,7 +5,6 @@ import io.ktor.util.KtorExperimentalAPI
 import java.io.IOException
 import java.lang.IllegalStateException
 import net.logstash.logback.argument.StructuredArguments.fields
-import no.nav.syfo.NAV_OPPFOLGING_UTLAND_KONTOR_NR
 import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.helpers.retry
 import no.nav.syfo.log
@@ -27,18 +26,10 @@ class FindNAVKontorService(
     suspend fun finnLokaltNavkontor(pasientFNR: String, diskresjonskode: String?, loggingMeta: LoggingMeta): String {
         val geografiskTilknytning = fetchGeografiskTilknytningAsync(pasientFNR, loggingMeta)
 
-        return if (geografiskTilknytning == null || geografiskTilknytning.geografiskTilknytning?.geografiskTilknytning.isNullOrEmpty()) {
-            log.warn(
-                "GeografiskTilknytning er tomt eller null, benytter NAV Utland:$NAV_OPPFOLGING_UTLAND_KONTOR_NR, {}",
-                fields(loggingMeta)
-            )
-            NAV_OPPFOLGING_UTLAND_KONTOR_NR
-        } else {
-            norg2Client.getLocalNAVOffice(
-                geografiskTilknytning.geografiskTilknytning.geografiskTilknytning,
-                diskresjonskode
-            ).enhetNr
-        }
+        return norg2Client.getLocalNAVOffice(
+            geografiskTilknytning?.geografiskTilknytning?.geografiskTilknytning,
+            diskresjonskode
+        ).enhetNr
     }
 
     private suspend fun fetchGeografiskTilknytningAsync(
