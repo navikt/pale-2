@@ -24,32 +24,31 @@ class FindNAVKontorService(
     private val norg2Client: Norg2Client
 ) {
 
-    suspend fun finnLokaltNavkontor(pasientFNR: String, loggingMeta: LoggingMeta): String {
+    suspend fun finnLokaltNavkontor(pasientFNR: String, diskresjonskode: String?, loggingMeta: LoggingMeta): String {
         val geografiskTilknytning = fetchGeografiskTilknytningAsync(pasientFNR, loggingMeta)
-        val patientDiskresjonsKode = fetchDiskresjonsKode(personV3, pasientFNR, loggingMeta)
 
         return if (geografiskTilknytning == null || geografiskTilknytning.geografiskTilknytning?.geografiskTilknytning.isNullOrEmpty()) {
             log.warn(
-                "GeografiskTilknytning er tomt eller null, benytter nav oppfolings utland nr:$NAV_OPPFOLGING_UTLAND_KONTOR_NR,  {}",
+                "GeografiskTilknytning er tomt eller null, benytter NAV Utland:$NAV_OPPFOLGING_UTLAND_KONTOR_NR, {}",
                 fields(loggingMeta)
             )
             NAV_OPPFOLGING_UTLAND_KONTOR_NR
         } else {
             norg2Client.getLocalNAVOffice(
                 geografiskTilknytning.geografiskTilknytning.geografiskTilknytning,
-                patientDiskresjonsKode
+                diskresjonskode
             ).enhetNr
         }
     }
 
-    suspend fun fetchGeografiskTilknytningAsync(
+    private suspend fun fetchGeografiskTilknytningAsync(
         personFNR: String,
         loggingMeta: LoggingMeta
     ): HentGeografiskTilknytningResponse? =
         try {
             retry(
                 callName = "tps_hent_geografisktilknytning",
-                retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
+                retryIntervals = arrayOf(500L, 1000L),
                 legalExceptions = *arrayOf(IOException::class, WstxException::class, IllegalStateException::class)
             ) {
                 personV3.hentGeografiskTilknytning(

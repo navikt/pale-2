@@ -15,7 +15,8 @@ import no.nav.syfo.util.get
 fun Legeerklaring.toLegeerklaring(
     legeerklaringId: String,
     fellesformat: XMLEIFellesformat,
-    signaturDato: LocalDateTime
+    signaturDato: LocalDateTime,
+    behandlerNavn: String
 ) = Legeerklaering(
         id = legeerklaringId,
         arbeidsvurderingVedSykefravaer = legeerklaringGjelder[0].typeLegeerklaring.toInt() == LegeerklaeringType.Arbeidsevnevurdering.type,
@@ -99,7 +100,7 @@ fun Legeerklaring.toLegeerklaring(
         pasientenBurdeIkkeVite = forbeholdLegeerklaring.borTilbakeholdes,
         signatur = Signatur(
                 dato = signaturDato,
-                navn = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional?.formatName() ?: "",
+                navn = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional?.formatName() ?: behandlerNavn,
                 adresse = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.streetAdr,
                 postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode,
                 poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,

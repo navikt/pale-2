@@ -15,13 +15,11 @@ import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.Environment
-import no.nav.syfo.VaultSecrets
-import no.nav.syfo.client.AktoerIdClient
 import no.nav.syfo.client.Pale2ReglerClient
-import no.nav.syfo.handlestatus.handleDoctorNotFoundInAktorRegister
+import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
-import no.nav.syfo.handlestatus.handlePatientNotFoundInAktorRegister
+import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
@@ -35,6 +33,9 @@ import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
+import no.nav.syfo.pdl.model.format
+import no.nav.syfo.pdl.model.getDiskresjonskode
+import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.sha256hashstring
@@ -71,8 +72,7 @@ class BlockingApplicationRunner {
         receiptProducer: MessageProducer,
         backoutProducer: MessageProducer,
         samhandlerService: SamhandlerService,
-        aktoerIdClient: AktoerIdClient,
-        secrets: VaultSecrets,
+        pdlPersonService: PdlPersonService,
         arenaProducer: MessageProducer,
         findNAVKontorService: FindNAVKontorService,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
@@ -133,11 +133,6 @@ class BlockingApplicationRunner {
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
-                    val aktoerIds = aktoerIdClient.getAktoerIds(
-                        listOf(fnrLege, fnrPasient),
-                        secrets.serviceuserUsername, loggingMeta
-                    )
-
                     val tssIdent = samhandlerService.finnTssIdentOgStartSubscription(
                         fnrLege = fnrLege,
                         legekontorOrgName = legekontorOrgName,
@@ -163,20 +158,22 @@ class BlockingApplicationRunner {
                         )
                         continue@loop
                     } else {
-                        val patientIdents = aktoerIds[fnrPasient]
-                        val doctorIdents = aktoerIds[fnrLege]
+                        log.info("Slår opp behandler i PDL {}", fields(loggingMeta))
+                        val behandler = pdlPersonService.getPdlPerson(fnrLege, loggingMeta)
+                        log.info("Slår opp pasient i PDL {}", fields(loggingMeta))
+                        val pasient = pdlPersonService.getPdlPerson(fnrPasient, loggingMeta)
 
-                        if (patientIdents == null || patientIdents.feilmelding != null) {
-                            handlePatientNotFoundInAktorRegister(
-                                patientIdents, session,
-                                receiptProducer, fellesformat, ediLoggId, jedis, sha256String, env, loggingMeta
+                        if (pasient?.aktorId == null) {
+                            handlePatientNotFoundInPDL(
+                                session, receiptProducer, fellesformat, ediLoggId, jedis,
+                                sha256String, env, loggingMeta
                             )
                             continue@loop
                         }
-                        if (doctorIdents == null || doctorIdents.feilmelding != null) {
-                            handleDoctorNotFoundInAktorRegister(
-                                doctorIdents, session,
-                                receiptProducer, fellesformat, ediLoggId, jedis, sha256String, env, loggingMeta
+                        if (behandler?.aktorId == null) {
+                            handleDoctorNotFoundInPDL(
+                                session, receiptProducer, fellesformat, ediLoggId, jedis,
+                                sha256String, env, loggingMeta
                             )
                             continue@loop
                         }
@@ -191,15 +188,16 @@ class BlockingApplicationRunner {
                         val legeerklaring = legeerklaringxml.toLegeerklaring(
                             legeerklaringId = UUID.randomUUID().toString(),
                             fellesformat = fellesformat,
-                            signaturDato = msgHead.msgInfo.genDate
+                            signaturDato = msgHead.msgInfo.genDate,
+                            behandlerNavn = behandler.navn.format()
                         )
 
                         val receivedLegeerklaering = ReceivedLegeerklaering(
                             legeerklaering = legeerklaring,
                             personNrPasient = fnrPasient,
-                            pasientAktoerId = patientIdents.identer!!.first().ident,
+                            pasientAktoerId = pasient.aktorId,
                             personNrLege = fnrLege,
-                            legeAktoerId = doctorIdents.identer!!.first().ident,
+                            legeAktoerId = behandler.aktorId,
                             navLogId = ediLoggId,
                             msgId = msgId,
                             legekontorOrgNr = legekontorOrgNr,
@@ -227,33 +225,34 @@ class BlockingApplicationRunner {
 
                         when (validationResult.status) {
                             Status.OK -> handleStatusOK(
-                                session,
-                                receiptProducer,
-                                fellesformat,
-                                arenaProducer,
-                                findNAVKontorService,
-                                fnrPasient,
-                                tssIdent,
-                                ediLoggId,
-                                fnrLege,
-                                legeerklaring,
-                                loggingMeta,
-                                kafkaProducerLegeerklaeringSak,
-                                env.pale2OkTopic,
-                                legeerklaeringSak,
-                                env.apprecQueueName
+                                session = session,
+                                receiptProducer = receiptProducer,
+                                fellesformat = fellesformat,
+                                arenaProducer = arenaProducer,
+                                findNAVKontorService = findNAVKontorService,
+                                fnrPasient = fnrPasient,
+                                diskresjonskode = pasient.getDiskresjonskode(),
+                                tssId = tssIdent,
+                                ediLoggId = ediLoggId,
+                                fnrLege = fnrLege,
+                                legeerklaring = legeerklaring,
+                                loggingMeta = loggingMeta,
+                                kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
+                                pale2OkTopic = env.pale2OkTopic,
+                                legeerklaeringSak = legeerklaeringSak,
+                                apprecQueueName = env.apprecQueueName
                             )
 
                             Status.INVALID -> handleStatusINVALID(
-                                validationResult,
-                                session,
-                                receiptProducer,
-                                fellesformat,
-                                loggingMeta,
-                                kafkaProducerLegeerklaeringSak,
-                                env.pale2AvvistTopic,
-                                legeerklaeringSak,
-                                env.apprecQueueName
+                                validationResult = validationResult,
+                                session = session,
+                                receiptProducer = receiptProducer,
+                                fellesformat = fellesformat,
+                                loggingMeta = loggingMeta,
+                                kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
+                                pale2AvvistTopic = env.pale2AvvistTopic,
+                                legeerklaeringSak = legeerklaeringSak,
+                                apprecQueueName = env.apprecQueueName
                             )
                         }
 

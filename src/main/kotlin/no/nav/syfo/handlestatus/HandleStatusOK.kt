@@ -26,6 +26,7 @@ suspend fun handleStatusOK(
     arenaProducer: MessageProducer,
     findNAVKontorService: FindNAVKontorService,
     fnrPasient: String,
+    diskresjonskode: String?,
     tssId: String?,
     ediLoggId: String,
     fnrLege: String,
@@ -36,7 +37,7 @@ suspend fun handleStatusOK(
     legeerklaeringSak: LegeerklaeringSak,
     apprecQueueName: String
 ) {
-    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor(fnrPasient, loggingMeta)
+    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor(fnrPasient, diskresjonskode, loggingMeta)
 
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
