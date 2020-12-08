@@ -201,13 +201,8 @@ operator fun Iterable<AktueltTiltak>.contains(typeTiltak: TypeTiltak) =
 operator fun Iterable<no.nav.helse.legeerklaering.Kontakt>.contains(kontaktType: KontaktType): Boolean =
         any { it.kontakt.toInt() == kontaktType.type }
 
-fun XMLHealthcareProfessional.formatName(): String? {
-        if (familyName.isNullOrEmpty() && givenName.isNullOrEmpty()) {
-                return null
-        }
-        return if (middleName == null) {
-                "${familyName?.toUpperCase()} ${givenName?.toUpperCase()}"
-        } else {
-                "${familyName?.toUpperCase()} ${givenName?.toUpperCase()} ${middleName.toUpperCase()}"
-        }
+fun XMLHealthcareProfessional.formatName(): String = if (middleName == null) {
+        "${familyName.toUpperCase()} ${givenName.toUpperCase()}"
+} else {
+        "${familyName.toUpperCase()} ${givenName.toUpperCase()} ${middleName.toUpperCase()}"
 }
