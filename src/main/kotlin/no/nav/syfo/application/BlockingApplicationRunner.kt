@@ -16,6 +16,8 @@ import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.Environment
 import no.nav.syfo.client.Pale2ReglerClient
+import no.nav.syfo.handlestatus.handleAvsenderFnrMangler
+import no.nav.syfo.handlestatus.handleAvsenderFnrMismatch
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
@@ -42,6 +44,7 @@ import no.nav.syfo.services.sha256hashstring
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
+import no.nav.syfo.util.extractAvsenderFnrFromSender
 import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.extractOrganisationHerNumberFromSender
 import no.nav.syfo.util.extractOrganisationNumberFromSender
@@ -158,6 +161,20 @@ class BlockingApplicationRunner {
                         )
                         continue@loop
                     } else {
+                        val avsenderFnr = extractAvsenderFnrFromSender(fellesformat)?.id
+                        if (avsenderFnr.isNullOrEmpty()) {
+                            handleAvsenderFnrMangler(
+                                session, receiptProducer, fellesformat, ediLoggId, jedis,
+                                sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        } else if (avsenderFnr != fnrLege) {
+                            handleAvsenderFnrMismatch(
+                                session, receiptProducer, fellesformat, ediLoggId, jedis,
+                                sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        }
                         log.info("Slår opp behandler i PDL {}", fields(loggingMeta))
                         val behandler = pdlPersonService.getPdlPerson(fnrLege, loggingMeta)
                         log.info("Slår opp pasient i PDL {}", fields(loggingMeta))
