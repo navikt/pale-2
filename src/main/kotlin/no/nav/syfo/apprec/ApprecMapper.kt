@@ -65,8 +65,8 @@ fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): X
 
 fun XMLHealthcareProfessional.intoHCPerson(): XMLHCPerson = XMLHCPerson().apply {
     name = if (middleName == null) "$familyName $givenName" else "$familyName $givenName $middleName"
-    id = ident.first().id
-    typeId = ident.first().typeId.intoCS()
+    id = ident.firstOrNull()?.id
+    typeId = ident.firstOrNull()?.typeId?.intoCS()
     additionalId += ident.drop(1)
 }
 

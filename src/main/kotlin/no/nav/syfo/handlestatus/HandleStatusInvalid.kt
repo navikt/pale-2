@@ -104,6 +104,52 @@ fun handleDuplicateEdiloggid(
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
+fun handleAvsenderFnrMangler(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
+    env: Environment,
+    loggingMeta: LoggingMeta
+) {
+    log.warn("Legeerklæring mangler avsender-fnr i healthcareprofessional-blokk: {}", fields(loggingMeta))
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+            createApprecError("Legeerklæringen mangler ditt fnr i avsenderinformasjon. Kontakt din EPJ-leverandør.")
+        )
+    )
+
+    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+
+    INVALID_MESSAGE_NO_NOTICE.inc()
+    updateRedis(jedis, ediLoggId, sha256String)
+}
+
+fun handleAvsenderFnrMismatch(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
+    env: Environment,
+    loggingMeta: LoggingMeta
+) {
+    log.warn("Avsender-fnr i healthcareprofessional-blokk er ulikt fnr fra signatur: {}", fields(loggingMeta))
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+            createApprecError("Legeerklæring er signert av annet fnr enn fnr registrert i avsenderinformasjon.")
+        )
+    )
+
+    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+
+    INVALID_MESSAGE_NO_NOTICE.inc()
+    updateRedis(jedis, ediLoggId, sha256String)
+}
+
 fun handlePatientNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,

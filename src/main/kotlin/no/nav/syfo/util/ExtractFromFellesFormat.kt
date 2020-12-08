@@ -20,6 +20,11 @@ fun extractOrganisationRashNumberFromSender(fellesformat: XMLEIFellesformat): XM
         it.typeId.v == "RSH"
     }
 
+fun extractAvsenderFnrFromSender(fellesformat: XMLEIFellesformat): XMLIdent? =
+    fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.healthcareProfessional.ident.find {
+        it.typeId.v == "FNR"
+    }
+
 fun extractLegeerklaering(fellesformat: XMLEIFellesformat): Legeerklaring =
     fellesformat.get<XMLMsgHead>().document[0].refDoc.content.any[0] as Legeerklaring
 
