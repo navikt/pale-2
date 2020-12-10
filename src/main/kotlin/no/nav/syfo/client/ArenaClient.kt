@@ -7,7 +7,6 @@ import no.nav.syfo.model.Pasient
 
 fun createArenaInfo(
     tssId: String?,
-    navkontor: String?,
     mottakid: String,
     fnrbehandler: String,
     legeerklaering: Legeerklaering

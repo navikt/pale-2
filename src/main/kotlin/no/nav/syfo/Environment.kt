@@ -19,8 +19,6 @@ data class Environment(
     val securityTokenServiceURL: String = getEnvVar("SECURITY_TOKEN_SERVICE_URL"),
     val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak/api/v1/saker"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
-    val personV3EndpointURL: String = getEnvVar("PERSON_V3_ENDPOINT_URL"),
-    val norg2V1EndpointURL: String = getEnvVar("NORG2_V1_ENDPOINT_URL"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
     override val kafkaBootstrapServers: String = getEnvVar("KAFKA_BOOTSTRAP_SERVERS_URL"),
     val pale2SakTopic: String = getEnvVar("KAFKA_PALE_2_SAK_TOPIC", "privat-syfo-pale2-sak-v1"),
