@@ -1,6 +1,5 @@
 package no.nav.syfo.handlestatus
 
-import io.ktor.util.KtorExperimentalAPI
 import javax.jms.MessageProducer
 import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
@@ -10,7 +9,6 @@ import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.LegeerklaeringSak
-import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
@@ -18,15 +16,11 @@ import no.nav.syfo.util.toString
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 
-@KtorExperimentalAPI
-suspend fun handleStatusOK(
+fun handleStatusOK(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
     arenaProducer: MessageProducer,
-    findNAVKontorService: FindNAVKontorService,
-    fnrPasient: String,
-    diskresjonskode: String?,
     tssId: String?,
     ediLoggId: String,
     fnrLege: String,
@@ -37,15 +31,12 @@ suspend fun handleStatusOK(
     legeerklaeringSak: LegeerklaeringSak,
     apprecQueueName: String
 ) {
-    val lokaltNavkontor = findNAVKontorService.finnLokaltNavkontor(fnrPasient, diskresjonskode, loggingMeta)
-
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
     sendArenaInfo(arenaProducer, session,
-        lokaltNavkontor, tssId, ediLoggId,
-        fnrLege, legeerklaring)
-    log.info("Legeerklæring sendt til arena, til lokal kontornr: $lokaltNavkontor, {}", fields(loggingMeta))
+        tssId, ediLoggId, fnrLege, legeerklaring)
+    log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
     sendTilOKTopic(kafkaProducerLegeerklaeringSak, pale2OkTopic, legeerklaeringSak, loggingMeta)
 }
@@ -53,13 +44,12 @@ suspend fun handleStatusOK(
 fun sendArenaInfo(
     producer: MessageProducer,
     session: Session,
-    lokaltNavkontor: String,
     tssId: String?,
     mottakid: String,
     fnrbehandler: String,
     legeerklaring: Legeerklaering
 ) = producer.send(session.createTextMessage().apply {
-    val info = createArenaInfo(tssId, lokaltNavkontor, mottakid, fnrbehandler, legeerklaring)
+    val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring)
     text = arenaMarshaller.toString(info)
 })
 

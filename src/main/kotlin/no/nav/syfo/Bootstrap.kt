@@ -24,7 +24,6 @@ import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.client.KafkaClients
-import no.nav.syfo.client.Norg2Client
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.sts.StsOidcClient
@@ -35,12 +34,10 @@ import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
-import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
-import no.nav.tjeneste.virksomhet.person.v3.binding.PersonV3
 import org.apache.cxf.ws.addressing.WSAddressingFeature
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
@@ -98,20 +95,8 @@ fun main() {
     val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword)
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
-    val norg2Client = Norg2Client(env.norg2V1EndpointURL, httpClient)
     val pdlPersonService = PdlFactory.getPdlService(env, oidcClient, httpClient)
 
-    val personV3 = createPort<PersonV3>(env.personV3EndpointURL) {
-        port {
-            withSTS(
-                vaultSecrets.serviceuserUsername,
-                vaultSecrets.serviceuserPassword,
-                env.securityTokenServiceURL
-            )
-        }
-    }
-
-    val findNAVKontorService = FindNAVKontorService(personV3, norg2Client)
     val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
         proxy { features.add(WSAddressingFeature()) }
         port { withBasicAuth(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword) }
@@ -125,9 +110,8 @@ fun main() {
 
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, vaultSecrets,
-        findNAVKontorService, kafkaClients.kafkaProducerLegeerklaeringSak,
-        kafkaClients.kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient,
-        kafkaClients.kafkaVedleggProducer
+        kafkaClients.kafkaProducerLegeerklaeringSak, kafkaClients.kafkaProducerLegeerklaeringFellesformat,
+        pale2ReglerClient, kafkaClients.kafkaVedleggProducer
     )
 }
 
@@ -149,7 +133,6 @@ fun launchListeners(
     samhandlerService: SamhandlerService,
     pdlPersonService: PdlPersonService,
     secrets: VaultSecrets,
-    findNAVKontorService: FindNAVKontorService,
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
     pale2ReglerClient: Pale2ReglerClient,
@@ -173,7 +156,7 @@ fun launchListeners(
                 BlockingApplicationRunner().run(
                     applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer, samhandlerService, pdlPersonService,
-                    arenaProducer, findNAVKontorService, kafkaProducerLegeerklaeringSak,
+                    arenaProducer, kafkaProducerLegeerklaeringSak,
                     kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
                 )
             }

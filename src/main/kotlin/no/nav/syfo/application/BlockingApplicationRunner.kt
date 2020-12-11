@@ -34,9 +34,7 @@ import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
-import no.nav.syfo.pdl.model.getDiskresjonskode
 import no.nav.syfo.pdl.service.PdlPersonService
-import no.nav.syfo.services.FindNAVKontorService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.sha256hashstring
 import no.nav.syfo.services.updateRedis
@@ -74,7 +72,6 @@ class BlockingApplicationRunner {
         samhandlerService: SamhandlerService,
         pdlPersonService: PdlPersonService,
         arenaProducer: MessageProducer,
-        findNAVKontorService: FindNAVKontorService,
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
         kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
         pale2ReglerClient: Pale2ReglerClient,
@@ -229,9 +226,6 @@ class BlockingApplicationRunner {
                                 receiptProducer = receiptProducer,
                                 fellesformat = fellesformat,
                                 arenaProducer = arenaProducer,
-                                findNAVKontorService = findNAVKontorService,
-                                fnrPasient = fnrPasient,
-                                diskresjonskode = pasient.getDiskresjonskode(),
                                 tssId = tssIdent,
                                 ediLoggId = ediLoggId,
                                 fnrLege = fnrLege,

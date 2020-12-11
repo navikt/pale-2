@@ -7,7 +7,6 @@ import no.nav.syfo.model.Pasient
 
 fun createArenaInfo(
     tssId: String?,
-    navkontor: String?,
     mottakid: String,
     fnrbehandler: String,
     legeerklaering: Legeerklaering
@@ -19,7 +18,7 @@ fun createArenaInfo(
     mappeType = findMappeTypeInLegeerklaering(legeerklaering)
     pasientData = ArenaEiaInfo.PasientData().apply {
         fnr = legeerklaering.pasient.fnr
-        tkNummer = navkontor
+        tkNummer = ""
     }
     legeData = ArenaEiaInfo.LegeData().apply {
         navn = legeerklaering.pasient.formatName()
