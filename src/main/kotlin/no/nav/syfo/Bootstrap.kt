@@ -60,8 +60,6 @@ fun main() {
     val vaultSecrets = VaultSecrets(
         serviceuserPassword = getFileAsString("/secrets/serviceuser/password"),
         serviceuserUsername = getFileAsString("/secrets/serviceuser/username"),
-        mqUsername = getFileAsString("/secrets/default/mqUsername"),
-        mqPassword = getFileAsString("/secrets/default/mqPassword"),
         clientId = getFileAsString("/secrets/azuread/pale-2/client_id"),
         clientsecret = getFileAsString("/secrets/azuread/pale-2/client_secret"),
         redisSecret = getFileAsString("/secrets/default/redisSecret")
@@ -139,7 +137,7 @@ fun launchListeners(
     kafkaVedleggProducer: KafkaVedleggProducer
 ) {
     createListener(applicationState) {
-        connectionFactory(env).createConnection(secrets.mqUsername, secrets.mqPassword).use { connection ->
+        connectionFactory(env).createConnection(secrets.serviceuserUsername, secrets.serviceuserPassword).use { connection ->
             Jedis(env.redishost, 6379).use { jedis ->
                 connection.start()
                 val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)

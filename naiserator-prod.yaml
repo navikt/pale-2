@@ -49,11 +49,11 @@ spec:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.P_PALE.INPUT
     - name: MQ_HOST_NAME
-      value: a01apvl064.adeo.no
+      value: a01apvl271.adeo.no
     - name: MQ_PORT
       value: '1414'
     - name: MQ_GATEWAY_NAME
-      value: MPLSC04
+      value: MPLS04
     - name: MQ_CHANNEL_NAME
       value: P_PALE_2
     - name: MQ_APPREC_QUEUE_NAME

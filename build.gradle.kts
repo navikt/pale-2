@@ -30,7 +30,7 @@ val javaxJaxwsApiVersion = "2.2.1"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jfairyVersion = "0.6.2"
-val pale2CommonVersion = "1.773adee"
+val pale2CommonVersion = "1.78df897-SNAPSHOT"
 val kafkaVersion = "2.4.0"
 val mockkVersion = "1.9.3"
 
