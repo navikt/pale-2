@@ -36,7 +36,6 @@ import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
-import no.nav.syfo.util.getFileAsString
 import no.nav.syfo.ws.createPort
 import org.apache.cxf.ws.addressing.WSAddressingFeature
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -57,13 +56,7 @@ const val NAV_OPPFOLGING_UTLAND_KONTOR_NR = "0393"
 fun main() {
     val env = Environment()
 
-    val vaultSecrets = VaultSecrets(
-        serviceuserPassword = getFileAsString("/secrets/serviceuser/password"),
-        serviceuserUsername = getFileAsString("/secrets/serviceuser/username"),
-        clientId = getFileAsString("/secrets/azuread/pale-2/client_id"),
-        clientsecret = getFileAsString("/secrets/azuread/pale-2/client_secret"),
-        redisSecret = getFileAsString("/secrets/default/redisSecret")
-    )
+    val vaultSecrets = VaultSecrets()
 
     val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(
@@ -90,7 +83,7 @@ fun main() {
 
     val httpClient = HttpClient(Apache, config)
 
-    val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword)
+    val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword, env.securityTokenServiceURL)
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
     val pdlPersonService = PdlFactory.getPdlService(env, oidcClient, httpClient)

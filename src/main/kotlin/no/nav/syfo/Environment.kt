@@ -3,6 +3,7 @@ package no.nav.syfo
 import no.nav.syfo.kafka.KafkaConfig
 import no.nav.syfo.kafka.KafkaCredentials
 import no.nav.syfo.mq.MqConfig
+import no.nav.syfo.util.getFileAsString
 
 data class Environment(
     val applicationName: String = getEnvVar("NAIS_APP_NAME", "pale-2"),
@@ -13,11 +14,11 @@ data class Environment(
     override val mqChannelName: String = getEnvVar("MQ_CHANNEL_NAME"),
     val inputQueueName: String = getEnvVar("MQ_INPUT_QUEUE_NAME"),
     val apprecQueueName: String = getEnvVar("MQ_APPREC_QUEUE_NAME"),
-    val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.default.svc.nais.local"),
+    val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.teamsykmelding.svc.nais.local"),
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
     val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api.teamkuhr.svc.nais.local"),
-    val securityTokenServiceURL: String = getEnvVar("SECURITY_TOKEN_SERVICE_URL"),
-    val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak/api/v1/saker"),
+    val securityTokenServiceURL: String = getEnvVar("SECURITY_TOKEN_SERVICE_URL", "http://security-token-service.default/rest/v1/sts/token"),
+    val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak.default/api/v1/saker"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
     override val kafkaBootstrapServers: String = getEnvVar("KAFKA_BOOTSTRAP_SERVERS_URL"),
@@ -26,17 +27,17 @@ data class Environment(
     val subscriptionEndpointURL: String = getEnvVar("SUBSCRIPTION_ENDPOINT_URL"),
     val pale2OkTopic: String = getEnvVar("KAFKA_PALE_2_OK_TOPIC", "privat-syfo-pale2-ok-v1"),
     val pale2AvvistTopic: String = getEnvVar("KAFKA_PALE_2_AVVIST_TOPIC", "privat-syfo-pale2-avvist-v1"),
-    val pale2ReglerEndpointURL: String = getEnvVar("PALE_2_REGLER_ENDPOINT_URL", "http://pale-2-regler"),
+    val pale2ReglerEndpointURL: String = getEnvVar("PALE_2_REGLER_ENDPOINT_URL"),
     val sm2013VedleggTopic: String = "privat-syfo-vedlegg",
     val pdlGraphqlPath: String = getEnvVar("PDL_GRAPHQL_PATH")
 ) : MqConfig, KafkaConfig
 
 data class VaultSecrets(
-    val serviceuserUsername: String,
-    val serviceuserPassword: String,
-    val clientId: String,
-    val clientsecret: String,
-    val redisSecret: String
+    val serviceuserUsername: String = getFileAsString("/secrets/serviceuser/username"),
+    val serviceuserPassword: String = getFileAsString("/secrets/serviceuser/password"),
+    val clientId: String = getFileAsString("/secrets/azuread/pale-2/client_id"),
+    val clientsecret: String = getFileAsString("/secrets/azuread/pale-2/client_secret"),
+    val redisSecret: String = getEnvVar("REDIS_PASSWORD")
 ) : KafkaCredentials {
     override val kafkaUsername: String = serviceuserUsername
     override val kafkaPassword: String = serviceuserPassword

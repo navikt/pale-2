@@ -2,9 +2,9 @@ apiVersion: "nais.io/v1alpha1"
 kind: "Application"
 metadata:
   name: pale-2
-  namespace: default
+  namespace: teamsykmelding
   labels:
-    team: teamsykefravr
+    team: teamsykmelding
 spec:
   image: {{ image }}
   replicas:
@@ -22,7 +22,7 @@ spec:
     path: /is_ready
     initialDelay: 30
     periodSeconds: 5
-    timeout: 5
+    timeout: 1
   prometheus:
     enabled: true
     path: /prometheus
@@ -38,11 +38,11 @@ spec:
     paths:
       - kvPath: /azuread/data/dev/creds/pale-2
         mountPath: /secrets/azuread/pale-2
-      - kvPath: /kv/preprod/fss/pale-2/default
-        mountPath: /secrets/default
       - kvPath: serviceuser/data/dev/srvpale2
         mountPath: /secrets/serviceuser
   webproxy: true
+  envFrom:
+    - secret: pale-2-redis-password
   ingresses:
     - "https://pale-2.nais.preprod.local"
   env:
@@ -60,8 +60,6 @@ spec:
       value: QA.Q414.IU03_UTSENDING
     - name: MQ_INPUT_BOQ_QUEUE_NAME
       value: Q1_PALE_2.INPUT_BOQ
-    - name: SECURITY_TOKEN_SERVICE_URL
-      value: https://sts-q1.preprod.local/SecurityTokenServiceProvider/
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.Q1_414.FS06_ARENA
     - name: KAFKA_BOOTSTRAP_SERVERS_URL
@@ -70,3 +68,5 @@ spec:
       value: https://wasapp-q1.adeo.no/nav-emottak-eletter-web/services/
     - name: PDL_GRAPHQL_PATH
       value: https://pdl-api.nais.preprod.local/graphql
+    - name: PALE_2_REGLER_ENDPOINT_URL
+      value: https://pale-2-regler.nais.preprod.local
