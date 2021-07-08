@@ -1,7 +1,5 @@
 package no.nav.syfo.handlestatus
 
-import javax.jms.MessageProducer
-import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.apprecV1.XMLCV
@@ -20,6 +18,8 @@ import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
+import javax.jms.MessageProducer
+import javax.jms.Session
 
 fun handleStatusINVALID(
     validationResult: ValidationResult,
@@ -32,8 +32,10 @@ fun handleStatusINVALID(
     legeerklaeringSak: LegeerklaeringSak,
     apprecQueueName: String
 ) {
-    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.avvist,
-        validationResult.ruleHits.map { it.toApprecCV() })
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        validationResult.ruleHits.map { it.toApprecCV() }
+    )
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
     sendTilAvvistTopic(kafkaProducerLegeerklaeringSak, pale2AvvistTopic, legeerklaeringSak, loggingMeta)
@@ -63,14 +65,17 @@ fun handleDuplicateSM2013Content(
     redisSha256String: String
 ) {
 
-    log.warn("Message with {} marked as duplicate, has same redisSha256String {}",
-        keyValue("originalEdiLoggId", redisSha256String), fields(loggingMeta))
+    log.warn(
+        "Message with {} marked as duplicate, has same redisSha256String {}",
+        keyValue("originalEdiLoggId", redisSha256String), fields(loggingMeta)
+    )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
             createApprecError(
                 "Duplikat! - Denne legeerklæringen er mottatt tidligere. " +
-                        "Skal ikke sendes på nytt."
+                    "Skal ikke sendes på nytt."
             )
         )
     )
@@ -87,16 +92,19 @@ fun handleDuplicateEdiloggid(
     redisEdiloggid: String
 ) {
 
-    log.warn("Message with {} marked as duplicate, has same redisEdiloggid {}",
-        keyValue("originalEdiLoggId", redisEdiloggid), fields(loggingMeta))
+    log.warn(
+        "Message with {} marked as duplicate, has same redisEdiloggid {}",
+        keyValue("originalEdiLoggId", redisEdiloggid), fields(loggingMeta)
+    )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
             createApprecError(
                 "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                        "Denne legeerklæringen har ein identisk identifikator med ein legeerklæring som er mottatt tidligere," +
-                        " og er derfor ein duplikat." +
-                        " og skal ikke sendes på nytt. Dersom dette ikke stemmer, kontakt din EPJ-leverandør"
+                    "Denne legeerklæringen har ein identisk identifikator med ein legeerklæring som er mottatt tidligere," +
+                    " og er derfor ein duplikat." +
+                    " og skal ikke sendes på nytt. Dersom dette ikke stemmer, kontakt din EPJ-leverandør"
             )
         )
     )
@@ -116,7 +124,8 @@ fun handlePatientNotFoundInPDL(
 ) {
     log.warn("Patient not found i PDL error: {}", fields(loggingMeta))
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
             createApprecError("Pasienten er ikkje registrert i folkeregisteret")
         )
     )
@@ -139,9 +148,12 @@ fun handleDoctorNotFoundInPDL(
 ) {
     log.warn("Doctor not found i PDL error: {}", fields(loggingMeta))
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-            createApprecError("Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                    " Behandler er ikkje registrert i folkeregisteret")
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
+            createApprecError(
+                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
+                    " Behandler er ikkje registrert i folkeregisteret"
+            )
         )
     )
 
@@ -163,13 +175,17 @@ fun handleTestFnrInProd(
 ) {
     log.warn("Test fødselsnummer er kommet inn i produksjon {}", fields(loggingMeta))
 
-    log.warn("Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR), {}",
-        fields(loggingMeta))
+    log.warn(
+        "Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR), {}",
+        fields(loggingMeta)
+    )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist, listOf(
-            createApprecError("Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                        "Dettte fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
+            createApprecError(
+                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
+                    "Dettte fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
             )
         )
     )

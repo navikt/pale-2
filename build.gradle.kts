@@ -6,15 +6,15 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "1.2.6"
-val coroutinesVersion = "1.0.1"
-val prometheusVersion = "0.6.0"
+val ktorVersion = "1.5.1"
+val coroutinesVersion = "1.4.2"
+val prometheusVersion = "0.9.0"
 val junitJupiterVersion = "5.6.0"
-val kluentVersion = "1.39"
+val kluentVersion = "1.65"
 val logbackVersion = "1.2.3"
-val logstashEncoderVersion = "5.1"
-val jacksonVersion = "2.9.7"
-val jedisVersion = "2.9.0"
+val logstashEncoderVersion = "6.5"
+val jacksonVersion = "2.12.3"
+val jedisVersion = "3.1.0"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
@@ -37,10 +37,10 @@ val mockkVersion = "1.9.3"
 plugins {
     java
     id("no.nils.wsdl2java") version "0.10"
-    kotlin("jvm") version "1.3.72"
-    id("com.github.johnrengelman.shadow") version "5.2.0"
-    id("com.diffplug.gradle.spotless") version "3.24.0"
-    id("org.jmailen.kotlinter") version "2.2.0"
+    kotlin("jvm") version "1.4.21"
+    id("com.github.johnrengelman.shadow") version "6.1.0"
+    id("com.diffplug.spotless") version "5.8.2"
+    id("org.jmailen.kotlinter") version "3.3.0"
 }
 
 buildscript {

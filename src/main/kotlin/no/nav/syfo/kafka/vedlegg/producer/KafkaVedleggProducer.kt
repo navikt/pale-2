@@ -31,11 +31,11 @@ class KafkaVedleggProducer(private val environment: Environment, private val kaf
         xmleiFellesformat: XMLEIFellesformat
     ): VedleggKafkaMessage {
         return VedleggKafkaMessage(
-                vedlegg = vedlegg,
-                msgId = legeerklaering.msgId,
-                pasientFnr = legeerklaering.personNrPasient,
-                behandler = xmleiFellesformat.getBehandlerInfo(legeerklaering.personNrLege),
-                pasientAktorId = legeerklaering.pasientAktoerId
+            vedlegg = vedlegg,
+            msgId = legeerklaering.msgId,
+            pasientFnr = legeerklaering.personNrPasient,
+            behandler = xmleiFellesformat.getBehandlerInfo(legeerklaering.personNrLege),
+            pasientAktorId = legeerklaering.pasientAktoerId
         )
     }
 }

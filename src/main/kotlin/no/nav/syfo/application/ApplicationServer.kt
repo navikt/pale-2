@@ -9,10 +9,12 @@ class ApplicationServer(
 ) {
 
     init {
-        Runtime.getRuntime().addShutdownHook(Thread {
-            this.applicationState.ready = false
-            this.applicationServer.stop(10, 10, TimeUnit.SECONDS)
-        })
+        Runtime.getRuntime().addShutdownHook(
+            Thread {
+                this.applicationState.ready = false
+                this.applicationServer.stop(TimeUnit.SECONDS.toMillis(10), TimeUnit.SECONDS.toMillis(10))
+            }
+        )
     }
 
     fun start() {

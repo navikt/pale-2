@@ -1,13 +1,6 @@
 package no.nav.syfo.application
 
 import io.ktor.util.KtorExperimentalAPI
-import java.io.StringReader
-import java.time.ZoneOffset
-import java.util.UUID
-import javax.jms.MessageConsumer
-import javax.jms.MessageProducer
-import javax.jms.Session
-import javax.jms.TextMessage
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.fields
@@ -57,6 +50,13 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
+import java.io.StringReader
+import java.time.ZoneOffset
+import java.util.UUID
+import javax.jms.MessageConsumer
+import javax.jms.MessageProducer
+import javax.jms.Session
+import javax.jms.TextMessage
 
 class BlockingApplicationRunner {
 
@@ -260,7 +260,8 @@ class BlockingApplicationRunner {
                             StructuredArguments.keyValue("status", validationResult.status),
                             StructuredArguments.keyValue(
                                 "ruleHits",
-                                validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName }),
+                                validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName }
+                            ),
                             StructuredArguments.keyValue("latency", currentRequestLatency),
                             fields(loggingMeta)
                         )
