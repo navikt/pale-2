@@ -1,12 +1,12 @@
 package no.nav.syfo.helpers
 
-import java.io.IOException
-import kotlin.reflect.KClass
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.syfo.metrics.NETWORK_CALL_SUMMARY
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.IOException
+import kotlin.reflect.KClass
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.network-helpers")
 

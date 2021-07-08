@@ -6,8 +6,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.util.KtorExperimentalAPI
-import java.util.Date
-import kotlin.math.max
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.syfo.helpers.retry
@@ -15,6 +13,8 @@ import no.nav.syfo.log
 import no.nav.syfo.model.SamhandlerPraksisType
 import no.nav.syfo.util.LoggingMeta
 import org.apache.commons.text.similarity.LevenshteinDistance
+import java.util.Date
+import kotlin.math.max
 
 @KtorExperimentalAPI
 class SarClient(
@@ -111,7 +111,8 @@ fun findBestSamhandlerPraksis(
         .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
 
     if (aktiveSamhandlere.isEmpty()) {
-        log.info("Fant ingen aktive samhandlere. {}  Meta: {}, {} ",
+        log.info(
+            "Fant ingen aktive samhandlere. {}  Meta: {}, {} ",
             keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
             keyValue("antall praksiser", samhandlere.size),
             StructuredArguments.fields(loggingMeta)
@@ -123,7 +124,8 @@ fun findBestSamhandlerPraksis(
             it.her_id == herId
         }
         if (samhandlerByHerId != null) {
-            log.info("Fant samhandler basert på herid. herid: $herId, {}, {}",
+            log.info(
+                "Fant samhandler basert på herid. herid: $herId, {}, {}",
                 keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
                 StructuredArguments.fields(loggingMeta)
             )
@@ -138,7 +140,7 @@ fun findBestSamhandlerPraksis(
     if (aktiveSamhandlereMedNavn.isNullOrEmpty() && !aktiveSamhandlere.isNullOrEmpty()) {
         val samhandlerFALEOrFALO = aktiveSamhandlere.find {
             it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLEGE.kodeVerdi ||
-                    it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLONNET.kodeVerdi
+                it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLONNET.kodeVerdi
         }
         if (samhandlerFALEOrFALO != null) {
             return SamhandlerPraksisMatch(samhandlerFALEOrFALO, 999.0)
@@ -180,14 +182,16 @@ fun filtererBortSamhanlderPraksiserPaaProsentMatch(
     loggingMeta: LoggingMeta
 ): SamhandlerPraksisMatch? {
     return if (samhandlerPraksis != null && samhandlerPraksis.percentageMatch >= prosentMatch) {
-        log.info("Beste match ble samhandler praksis: " +
+        log.info(
+            "Beste match ble samhandler praksis: " +
                 "Orgnumer: ${samhandlerPraksis.samhandlerPraksis.org_id} " +
                 "Navn: ${samhandlerPraksis.samhandlerPraksis.navn} " +
                 "Tssid: ${samhandlerPraksis.samhandlerPraksis.tss_ident} " +
                 "Adresselinje1: ${samhandlerPraksis.samhandlerPraksis.arbeids_adresse_linje_1} " +
                 "Samhandler praksis type: ${samhandlerPraksis.samhandlerPraksis.samh_praksis_type_kode} " +
                 "Prosent match:${samhandlerPraksis.percentageMatch} %, basert på legeerklæringens organisjons navn: $orgName " +
-                "{}", StructuredArguments.fields(loggingMeta)
+                "{}",
+            StructuredArguments.fields(loggingMeta)
         )
         samhandlerPraksis
     } else {

@@ -17,7 +17,7 @@ import no.nav.syfo.pdl.client.model.ResponseData
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.util.LoggingMeta
 import org.amshove.kluent.shouldBe
-import org.amshove.kluent.shouldEqual
+import org.amshove.kluent.shouldBeEqualTo
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
 
@@ -41,10 +41,10 @@ internal class PdlServiceTest {
 
         runBlocking {
             val person = pdlService.getPdlPerson("01245678901", loggingMeta)
-            person?.navn?.fornavn shouldEqual "fornavn"
-            person?.navn?.mellomnavn shouldEqual null
-            person?.navn?.etternavn shouldEqual "etternavn"
-            person?.aktorId shouldEqual "987654321"
+            person?.navn?.fornavn shouldBeEqualTo "fornavn"
+            person?.navn?.mellomnavn shouldBeEqualTo null
+            person?.navn?.etternavn shouldBeEqualTo "etternavn"
+            person?.aktorId shouldBeEqualTo "987654321"
         }
     }
 
@@ -68,7 +68,8 @@ internal class PdlServiceTest {
                     navn = emptyList(), adressebeskyttelse = null
                 ),
                 hentIdenter = HentIdenter(emptyList())
-            ), errors = null
+            ),
+            errors = null
         )
 
         runBlocking {
@@ -86,7 +87,8 @@ internal class PdlServiceTest {
                     navn = null, adressebeskyttelse = null
                 ),
                 hentIdenter = HentIdenter(listOf(PdlIdent(ident = "987654321", gruppe = "foo")))
-            ), errors = null
+            ),
+            errors = null
         )
 
         runBlocking {
@@ -105,7 +107,8 @@ internal class PdlServiceTest {
                     adressebeskyttelse = null
                 ),
                 hentIdenter = HentIdenter(emptyList())
-            ), errors = null
+            ),
+            errors = null
         )
 
         runBlocking {
