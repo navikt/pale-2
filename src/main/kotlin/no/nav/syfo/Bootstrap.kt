@@ -22,10 +22,10 @@ import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
+import no.nav.syfo.client.AccessTokenClientV2
 import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
-import no.nav.syfo.client.sts.StsOidcClient
 import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
@@ -83,10 +83,10 @@ fun main() {
 
     val httpClient = HttpClient(Apache, config)
 
-    val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword, env.securityTokenServiceURL)
+    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClient)
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
-    val pdlPersonService = PdlFactory.getPdlService(env, oidcClient, httpClient)
+    val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
     val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
         proxy { features.add(WSAddressingFeature()) }

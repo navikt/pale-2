@@ -74,3 +74,5 @@ spec:
       value: https://pdl-api.nais.preprod.local/graphql
     - name: PALE_2_REGLER_ENDPOINT_URL
       value: https://pale-2-regler.nais.preprod.local
+    - name: PDL_SCOPE
+      value: api://dev-fss.pdl.pdl-api/.default
