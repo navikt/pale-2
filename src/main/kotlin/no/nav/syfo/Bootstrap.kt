@@ -22,10 +22,10 @@ import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
+import no.nav.syfo.client.AccessTokenClientV2
 import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
-import no.nav.syfo.client.sts.StsOidcClient
 import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
@@ -37,10 +37,12 @@ import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.ws.createPort
 import org.apache.cxf.ws.addressing.WSAddressingFeature
+import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
+import java.net.ProxySelector
 import javax.jms.Session
 
 val objectMapper: ObjectMapper = ObjectMapper()
@@ -81,12 +83,22 @@ fun main() {
         expectSuccess = false
     }
 
-    val httpClient = HttpClient(Apache, config)
+    val proxyConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+        config()
+        engine {
+            customizeClient {
+                setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
+            }
+        }
+    }
 
-    val oidcClient = StsOidcClient(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword, env.securityTokenServiceURL)
+    val httpClient = HttpClient(Apache, config)
+    val httpClientWithProxy = HttpClient(Apache, proxyConfig)
+
+    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithProxy)
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
-    val pdlPersonService = PdlFactory.getPdlService(env, oidcClient, httpClient)
+    val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
     val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
         proxy { features.add(WSAddressingFeature()) }

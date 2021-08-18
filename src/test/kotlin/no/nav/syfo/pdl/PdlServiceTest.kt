@@ -5,8 +5,7 @@ import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.mockkClass
 import kotlinx.coroutines.runBlocking
-import no.nav.syfo.client.sts.OidcToken
-import no.nav.syfo.client.sts.StsOidcClient
+import no.nav.syfo.client.AccessTokenClientV2
 import no.nav.syfo.pdl.client.PdlClient
 import no.nav.syfo.pdl.client.model.GetPersonResponse
 import no.nav.syfo.pdl.client.model.HentIdenter
@@ -24,8 +23,8 @@ import org.junit.jupiter.api.BeforeEach
 @KtorExperimentalAPI
 internal class PdlServiceTest {
     private val pdlClient = mockkClass(PdlClient::class)
-    private val stsOidcClient = mockkClass(StsOidcClient::class)
-    private val pdlService = PdlPersonService(pdlClient, stsOidcClient)
+    private val accessTokenClientV2 = mockkClass(AccessTokenClientV2::class)
+    private val pdlService = PdlPersonService(pdlClient, accessTokenClientV2, "littaScope")
 
     private val loggingMeta = LoggingMeta("sykmeldingId", "journalpostId", "hendelsesId")
 
@@ -36,8 +35,9 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Hent person fra pdl uten fortrolig adresse`() {
-        coEvery { stsOidcClient.oidcToken() } returns OidcToken("Token", "JWT", 1L)
+
         coEvery { pdlClient.getPerson(any(), any()) } returns getPdlResponse()
+        coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
         runBlocking {
             val person = pdlService.getPdlPerson("01245678901", loggingMeta)
@@ -50,8 +50,8 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når person ikke finnes`() {
-        coEvery { stsOidcClient.oidcToken() } returns OidcToken("Token", "JWT", 1L)
         coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(ResponseData(null, null), errors = null)
+        coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
@@ -61,7 +61,6 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når navn er tom liste`() {
-        coEvery { stsOidcClient.oidcToken() } returns OidcToken("Token", "JWT", 1L)
         coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
             ResponseData(
                 hentPerson = HentPerson(
@@ -72,6 +71,8 @@ internal class PdlServiceTest {
             errors = null
         )
 
+        coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
+
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
             pdlPerson shouldBe null
@@ -80,7 +81,6 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når navn ikke finnes`() {
-        coEvery { stsOidcClient.oidcToken() } returns OidcToken("Token", "JWT", 1L)
         coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
             ResponseData(
                 hentPerson = HentPerson(
@@ -91,6 +91,8 @@ internal class PdlServiceTest {
             errors = null
         )
 
+        coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
+
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
             pdlPerson shouldBe null
@@ -99,7 +101,6 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når identer ikke finnes`() {
-        coEvery { stsOidcClient.oidcToken() } returns OidcToken("Token", "JWT", 1L)
         coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
             ResponseData(
                 hentPerson = HentPerson(
@@ -110,6 +111,8 @@ internal class PdlServiceTest {
             ),
             errors = null
         )
+
+        coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)

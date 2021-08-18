@@ -17,7 +17,6 @@ data class Environment(
     val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.teamsykmelding.svc.nais.local"),
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
     val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api.teamkuhr.svc.nais.local"),
-    val securityTokenServiceURL: String = getEnvVar("SECURITY_TOKEN_SERVICE_URL", "http://security-token-service.default/rest/v1/sts/token"),
     val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak.default/api/v1/saker"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
@@ -29,7 +28,11 @@ data class Environment(
     val pale2AvvistTopic: String = getEnvVar("KAFKA_PALE_2_AVVIST_TOPIC", "privat-syfo-pale2-avvist-v1"),
     val pale2ReglerEndpointURL: String = getEnvVar("PALE_2_REGLER_ENDPOINT_URL"),
     val sm2013VedleggTopic: String = "privat-syfo-vedlegg",
-    val pdlGraphqlPath: String = getEnvVar("PDL_GRAPHQL_PATH")
+    val pdlGraphqlPath: String = getEnvVar("PDL_GRAPHQL_PATH"),
+    val pdlScope: String = getEnvVar("PDL_SCOPE"),
+    val aadAccessTokenV2Url: String = getEnvVar("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
+    val clientIdV2: String = getEnvVar("AZURE_APP_CLIENT_ID"),
+    val clientSecretV2: String = getEnvVar("AZURE_APP_CLIENT_SECRET")
 ) : MqConfig, KafkaConfig
 
 data class VaultSecrets(
