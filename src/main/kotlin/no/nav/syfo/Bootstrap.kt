@@ -37,10 +37,12 @@ import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.ws.createPort
 import org.apache.cxf.ws.addressing.WSAddressingFeature
+import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
+import java.net.ProxySelector
 import javax.jms.Session
 
 val objectMapper: ObjectMapper = ObjectMapper()
@@ -81,9 +83,19 @@ fun main() {
         expectSuccess = false
     }
 
-    val httpClient = HttpClient(Apache, config)
+    val proxyConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+        config()
+        engine {
+            customizeClient {
+                setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
+            }
+        }
+    }
 
-    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClient)
+    val httpClient = HttpClient(Apache, config)
+    val httpClientWithProxy = HttpClient(Apache, proxyConfig)
+
+    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithProxy)
 
     val sarClient = SarClient(env.kuhrSarApiUrl, httpClient)
     val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
