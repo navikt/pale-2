@@ -40,8 +40,6 @@ spec:
   vault:
     enabled: true
     paths:
-      - kvPath: /azuread/data/dev/creds/pale-2
-        mountPath: /secrets/azuread/pale-2
       - kvPath: serviceuser/data/dev/srvpale2
         mountPath: /secrets/serviceuser
   webproxy: true
