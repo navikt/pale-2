@@ -38,8 +38,6 @@ data class Environment(
 data class VaultSecrets(
     val serviceuserUsername: String = getFileAsString("/secrets/serviceuser/username"),
     val serviceuserPassword: String = getFileAsString("/secrets/serviceuser/password"),
-    val clientId: String = getFileAsString("/secrets/azuread/pale-2/client_id"),
-    val clientsecret: String = getFileAsString("/secrets/azuread/pale-2/client_secret"),
     val redisSecret: String = getEnvVar("REDIS_PASSWORD")
 ) : KafkaCredentials {
     override val kafkaUsername: String = serviceuserUsername
