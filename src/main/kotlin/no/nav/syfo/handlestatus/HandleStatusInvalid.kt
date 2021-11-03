@@ -66,8 +66,10 @@ fun handleDuplicateSM2013Content(
 ) {
 
     log.warn(
-        "Message with {} marked as duplicate, has same redisSha256String {}",
-        keyValue("originalEdiLoggId", redisSha256String), fields(loggingMeta)
+        "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {} {}",
+        keyValue("originalEdiLoggId", redisSha256String),
+        keyValue("avvistAv", env.applicationName),
+        fields(loggingMeta)
     )
 
     sendReceipt(
@@ -93,8 +95,10 @@ fun handleDuplicateEdiloggid(
 ) {
 
     log.warn(
-        "Message with {} marked as duplicate, has same redisEdiloggid {}",
-        keyValue("originalEdiLoggId", redisEdiloggid), fields(loggingMeta)
+        "Melding med {} har samme ediLoggId som tidligere mottatt legeerklæring og er avvist som duplikat {} {}",
+        keyValue("originalEdiLoggId", redisEdiloggid),
+        keyValue("avvistAv", env.applicationName),
+        fields(loggingMeta)
     )
 
     sendReceipt(
@@ -122,7 +126,11 @@ fun handlePatientNotFoundInPDL(
     env: Environment,
     loggingMeta: LoggingMeta
 ) {
-    log.warn("Patient not found i PDL error: {}", fields(loggingMeta))
+    log.warn(
+        "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
+        keyValue("avvistAv", env.applicationName),
+        fields(loggingMeta)
+    )
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
@@ -146,7 +154,11 @@ fun handleDoctorNotFoundInPDL(
     env: Environment,
     loggingMeta: LoggingMeta
 ) {
-    log.warn("Doctor not found i PDL error: {}", fields(loggingMeta))
+    log.warn(
+        "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {} {}",
+        keyValue("avvistAv", env.applicationName),
+        fields(loggingMeta)
+    )
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
@@ -173,7 +185,11 @@ fun handleTestFnrInProd(
     env: Environment,
     loggingMeta: LoggingMeta
 ) {
-    log.warn("Test fødselsnummer er kommet inn i produksjon {}", fields(loggingMeta))
+    log.warn(
+        "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {} {}",
+        keyValue("avvistAv", env.applicationName),
+        fields(loggingMeta)
+    )
 
     log.warn(
         "Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR), {}",
