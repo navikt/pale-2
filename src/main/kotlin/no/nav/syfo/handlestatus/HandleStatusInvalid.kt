@@ -66,10 +66,10 @@ fun handleDuplicateSM2013Content(
 ) {
 
     log.warn(
-        "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {} {}",
+        "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {}",
         keyValue("originalEdiLoggId", redisSha256String),
-        keyValue("avvistAv", env.applicationName),
-        fields(loggingMeta)
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
     )
 
     sendReceipt(
@@ -95,10 +95,10 @@ fun handleDuplicateEdiloggid(
 ) {
 
     log.warn(
-        "Melding med {} har samme ediLoggId som tidligere mottatt legeerklæring og er avvist som duplikat {} {}",
+        "Melding med {} har samme ediLoggId som tidligere mottatt legeerklæring og er avvist som duplikat {}",
         keyValue("originalEdiLoggId", redisEdiloggid),
-        keyValue("avvistAv", env.applicationName),
-        fields(loggingMeta)
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
     )
 
     sendReceipt(
@@ -127,9 +127,9 @@ fun handlePatientNotFoundInPDL(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
-        keyValue("avvistAv", env.applicationName),
-        fields(loggingMeta)
+        "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
     )
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
@@ -155,9 +155,9 @@ fun handleDoctorNotFoundInPDL(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {} {}",
-        keyValue("avvistAv", env.applicationName),
-        fields(loggingMeta)
+        "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
     )
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
@@ -186,9 +186,9 @@ fun handleTestFnrInProd(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {} {}",
-        keyValue("avvistAv", env.applicationName),
-        fields(loggingMeta)
+        "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
     )
 
     log.warn(
