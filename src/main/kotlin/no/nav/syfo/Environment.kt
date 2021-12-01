@@ -17,7 +17,6 @@ data class Environment(
     val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.teamsykmelding.svc.nais.local"),
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
     val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL", "http://kuhr-sar-api.teamkuhr.svc.nais.local"),
-    val opprettSakUrl: String = getEnvVar("OPPRETT_SAK_URL", "http://sak.default/api/v1/saker"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
     override val kafkaBootstrapServers: String = getEnvVar("KAFKA_BOOTSTRAP_SERVERS_URL"),
