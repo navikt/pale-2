@@ -27,7 +27,7 @@ suspend fun startSubscription(
     retry(
         callName = "start_subscription_emottak",
         retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
-        legalExceptions = *arrayOf(IOException::class, WstxException::class)
+        legalExceptions = arrayOf(IOException::class, WstxException::class)
     ) {
         subscriptionEmottak.startSubscription(
             StartSubscriptionRequest().apply {

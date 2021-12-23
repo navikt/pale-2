@@ -1,6 +1,5 @@
 package no.nav.syfo.application
 
-import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.fields
@@ -60,7 +59,6 @@ import javax.jms.TextMessage
 
 class BlockingApplicationRunner {
 
-    @KtorExperimentalAPI
     suspend fun run(
         applicationState: ApplicationState,
         inputconsumer: MessageConsumer,

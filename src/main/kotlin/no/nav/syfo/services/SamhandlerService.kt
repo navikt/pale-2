@@ -1,6 +1,5 @@
 package no.nav.syfo.services
 
-import io.ktor.util.KtorExperimentalAPI
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
@@ -10,7 +9,6 @@ import no.nav.syfo.client.findBestSamhandlerPraksis
 import no.nav.syfo.log
 import no.nav.syfo.util.LoggingMeta
 
-@KtorExperimentalAPI
 class SamhandlerService(
     private val kuhrSarClient: SarClient,
     private val subscriptionEmottak: SubscriptionPort

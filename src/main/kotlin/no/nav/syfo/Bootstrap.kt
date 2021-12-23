@@ -11,9 +11,9 @@ import io.ktor.client.engine.apache.Apache
 import io.ktor.client.engine.apache.ApacheEngineConfig
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
-import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -54,7 +54,6 @@ val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
 const val NAV_OPPFOLGING_UTLAND_KONTOR_NR = "0393"
 
-@KtorExperimentalAPI
 fun main() {
     val env = Environment()
 
@@ -118,6 +117,7 @@ fun main() {
     )
 }
 
+@DelicateCoroutinesApi
 fun createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
     GlobalScope.launch {
         try {
@@ -129,7 +129,7 @@ fun createListener(applicationState: ApplicationState, action: suspend Coroutine
         }
     }
 
-@KtorExperimentalAPI
+@DelicateCoroutinesApi
 fun launchListeners(
     applicationState: ApplicationState,
     env: Environment,
