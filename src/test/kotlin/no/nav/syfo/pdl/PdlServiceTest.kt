@@ -1,6 +1,5 @@
 package no.nav.syfo.pdl
 
-import io.ktor.util.KtorExperimentalAPI
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.mockkClass
@@ -20,7 +19,6 @@ import org.amshove.kluent.shouldBeEqualTo
 import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
 
-@KtorExperimentalAPI
 internal class PdlServiceTest {
     private val pdlClient = mockkClass(PdlClient::class)
     private val accessTokenClientV2 = mockkClass(AccessTokenClientV2::class)

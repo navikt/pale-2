@@ -5,7 +5,6 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
-import io.ktor.util.KtorExperimentalAPI
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.syfo.helpers.retry
@@ -16,7 +15,6 @@ import org.apache.commons.text.similarity.LevenshteinDistance
 import java.util.Date
 import kotlin.math.max
 
-@KtorExperimentalAPI
 class SarClient(
     private val endpointUrl: String,
     private val httpClient: HttpClient
@@ -137,7 +135,7 @@ fun findBestSamhandlerPraksis(
         .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
         .filter { !it.navn.isNullOrEmpty() }
 
-    if (aktiveSamhandlereMedNavn.isNullOrEmpty() && !aktiveSamhandlere.isNullOrEmpty()) {
+    if (aktiveSamhandlereMedNavn.isEmpty() && aktiveSamhandlere.isNotEmpty()) {
         val samhandlerFALEOrFALO = aktiveSamhandlere.find {
             it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLEGE.kodeVerdi ||
                 it.samh_praksis_type_kode == SamhandlerPraksisType.FASTLONNET.kodeVerdi
@@ -145,7 +143,7 @@ fun findBestSamhandlerPraksis(
         if (samhandlerFALEOrFALO != null) {
             return SamhandlerPraksisMatch(samhandlerFALEOrFALO, 999.0)
         }
-    } else if (aktiveSamhandlere.isNullOrEmpty()) {
+    } else if (aktiveSamhandlere.isEmpty()) {
         val inaktiveSamhandlerMatchingPaaOrganisjonsNavn = samhandlerMatchingPaaOrganisjonsNavn(samhandlere, orgName)
         return filtererBortSamhanlderPraksiserPaaProsentMatch(
             inaktiveSamhandlerMatchingPaaOrganisjonsNavn,
@@ -158,7 +156,7 @@ fun findBestSamhandlerPraksis(
     return aktiveSamhandlereMedNavn
         .map { samhandlerPraksis ->
             SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn, orgName) * 100)
-        }.maxBy { it.percentageMatch }
+        }.maxByOrNull { it.percentageMatch }
 }
 
 fun samhandlerMatchingPaaOrganisjonsNavn(samhandlere: List<Samhandler>, orgName: String): SamhandlerPraksisMatch? {
@@ -168,8 +166,8 @@ fun samhandlerMatchingPaaOrganisjonsNavn(samhandlere: List<Samhandler>, orgName:
     return if (!inaktiveSamhandlereMedNavn.isNullOrEmpty()) {
         inaktiveSamhandlereMedNavn
             .map { samhandlerPraksis ->
-                SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn?.toLowerCase(), orgName.toLowerCase()) * 100)
-            }.maxBy { it.percentageMatch }
+                SamhandlerPraksisMatch(samhandlerPraksis, calculatePercentageStringMatch(samhandlerPraksis.navn?.lowercase(), orgName.lowercase()) * 100)
+            }.maxByOrNull { it.percentageMatch }
     } else {
         null
     }

@@ -1,20 +1,19 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
-import no.nils.wsdl2java.Wsdl2JavaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "1.5.1"
-val coroutinesVersion = "1.4.2"
-val prometheusVersion = "0.9.0"
-val junitJupiterVersion = "5.6.0"
-val kluentVersion = "1.65"
-val logbackVersion = "1.2.3"
-val logstashEncoderVersion = "6.5"
-val jacksonVersion = "2.12.3"
-val jedisVersion = "3.1.0"
+val ktorVersion = "1.6.7"
+val coroutinesVersion = "1.5.2"
+val prometheusVersion = "0.14.1"
+val junitJupiterVersion = "5.8.2"
+val kluentVersion = "1.68"
+val logbackVersion = "1.2.9"
+val logstashEncoderVersion = "7.0.1"
+val jacksonVersion = "2.13.1"
+val jedisVersion = "3.7.1"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
@@ -22,25 +21,25 @@ val javaxAnnotationApiVersion = "1.3.2"
 val jaxbRuntimeVersion = "2.4.0-b180830.0438"
 val jaxbApiVersion = "2.4.0-b180830.0359"
 val javaxActivationVersion = "1.1.1"
-val jaxwsToolsVersion = "2.3.1"
+val javaxSunActivationVersion = "1.2.0"
+val jaxwsToolsVersion = "2.3.2"
 val legeerklaering = "2019.07.29-02-53-86b22e73f7843e422ee500b486dac387a582f2d1"
 val kithApprecVersion = "2019.07.30-04-23-2a0d1388209441ec05d2e92a821eed4f796a3ae2"
-val commonsTextVersion = "1.4"
-val javaxJaxwsApiVersion = "2.2.1"
+val commonsTextVersion = "1.9"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
-val jfairyVersion = "0.6.2"
-val pale2CommonVersion = "1.d11e53f"
-val kafkaVersion = "2.4.0"
-val mockkVersion = "1.9.3"
+val jfairyVersion = "0.6.4"
+val pale2CommonVersion = "1.a86680d"
+val kafkaVersion = "3.0.0"
+val mockkVersion = "1.12.1"
+val kotlinVersion = "1.6.0"
 
 plugins {
-    java
-    id("no.nils.wsdl2java") version "0.10"
-    kotlin("jvm") version "1.4.21"
-    id("com.github.johnrengelman.shadow") version "6.1.0"
-    id("com.diffplug.spotless") version "5.8.2"
-    id("org.jmailen.kotlinter") version "3.3.0"
+    id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
+    kotlin("jvm") version "1.6.0"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
+    id("com.diffplug.spotless") version "5.16.0"
+    id("org.jmailen.kotlinter") version "3.6.0"
 }
 
 buildscript {
@@ -59,7 +58,6 @@ val githubPassword: String by project
 
 repositories {
     mavenCentral()
-    jcenter()
     maven(url= "https://packages.confluent.io/maven/")
     maven {
         url = uri("https://maven.pkg.github.com/navikt/pale-2-common")
@@ -72,14 +70,17 @@ repositories {
 
 dependencies {
 
-    wsdl2java("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
-    wsdl2java("javax.activation:activation:$javaxActivationVersion")
-    wsdl2java("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
-    wsdl2java("javax.xml.bind:jaxb-api:$jaxbApiVersion")
-    wsdl2java ("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
-    wsdl2java ("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
+    cxfCodegen("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
+    cxfCodegen("javax.activation:activation:$javaxActivationVersion")
+    cxfCodegen("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
+    cxfCodegen("javax.xml.bind:jaxb-api:$jaxbApiVersion")
+    cxfCodegen ("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
+    cxfCodegen ("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
         exclude(group = "com.sun.xml.ws", module = "policy")
     }
+    cxfCodegen("com.sun.xml.bind:jaxb-impl:2.3.3")
+    cxfCodegen("jakarta.xml.ws:jakarta.xml.ws-api:2.3.3")
+    cxfCodegen("jakarta.annotation:jakarta.annotation-api:1.3.5")
 
     implementation(kotlin("stdlib"))
 
@@ -149,20 +150,22 @@ tasks {
     }
 
     withType<KotlinCompile> {
-        dependsOn("wsdl2java")
+        dependsOn("wsdl2javaSubscription")
 
-        kotlinOptions.jvmTarget = "12"
+        kotlinOptions.jvmTarget = "17"
     }
-
-    withType<Wsdl2JavaTask> {
-        wsdlDir = file("$projectDir/src/main/resources/wsdl")
-        wsdlsToGenerate = listOf(
-            mutableListOf("-xjc", "-b", "$projectDir/src/main/resources/xjb/binding.xml", "$projectDir/src/main/resources/wsdl/subscription.wsdl")
-        )
+    cxfCodegen {
+        wsdl2java {
+            register("subscription") {
+                wsdl.set(file("$projectDir/src/main/resources/wsdl/subscription.wsdl"))
+                bindingFiles.add("$projectDir/src/main/resources/xjb/binding.xml")
+            }
+        }
     }
 
     withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "12"
+        dependsOn("wsdl2javaSubscription")
+        kotlinOptions.jvmTarget = "17"
     }
 
     withType<ShadowJar> {

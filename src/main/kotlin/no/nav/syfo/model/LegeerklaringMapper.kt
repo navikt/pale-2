@@ -202,7 +202,7 @@ operator fun Iterable<no.nav.helse.legeerklaering.Kontakt>.contains(kontaktType:
     any { it.kontakt.toInt() == kontaktType.type }
 
 fun XMLHealthcareProfessional.formatName(): String = if (middleName == null) {
-    "${familyName.toUpperCase()} ${givenName.toUpperCase()}"
+    "${familyName.uppercase()} ${givenName.uppercase()}"
 } else {
-    "${familyName.toUpperCase()} ${givenName.toUpperCase()} ${middleName.toUpperCase()}"
+    "${familyName.uppercase()} ${givenName.uppercase()} ${middleName.uppercase()}"
 }
