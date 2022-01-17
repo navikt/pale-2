@@ -121,6 +121,6 @@ fun RuleInfo.toApprecCV(): AppRecCV {
 
 fun createApprecError(textToTreater: String): AppRecCV = AppRecCV().apply {
     dn = textToTreater
-    v = "2.16.578.1.12.4.1.1.8221"
-    s = "X99"
+    s = "2.16.578.1.12.4.1.1.8221"
+    v = "X99"
 }
