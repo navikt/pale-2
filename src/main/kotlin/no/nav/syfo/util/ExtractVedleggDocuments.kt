@@ -2,8 +2,8 @@ package no.nav.syfo.util
 
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.kafka.vedlegg.model.Content
-import no.nav.syfo.kafka.vedlegg.model.Vedlegg
+import no.nav.syfo.vedlegg.model.Content
+import no.nav.syfo.vedlegg.model.Vedlegg
 import org.w3c.dom.Element
 
 fun removeVedleggFromFellesformat(fellesformat: XMLEIFellesformat) {

@@ -1,4 +1,4 @@
-package no.nav.syfo.kafka.vedlegg.model
+package no.nav.syfo.vedlegg.model
 
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.msgHead.XMLMsgHead
@@ -10,7 +10,7 @@ data class Vedlegg(
     val description: String
 )
 
-data class VedleggKafkaMessage(
+data class VedleggMessage(
     val vedlegg: Vedlegg,
     val behandler: BehandlerInfo,
     val pasientAktorId: String,
@@ -21,16 +21,14 @@ data class VedleggKafkaMessage(
 
 data class Content(val contentType: String, val content: String)
 
-data class BehandlerInfo(val fornavn: String?, val etternavn: String?, val mellomnavn: String?, val fnr: String?)
+data class BehandlerInfo(val fornavn: String?, val etternavn: String?, val fnr: String?)
 
 fun XMLEIFellesformat.getBehandlerInfo(fnr: String): BehandlerInfo {
     val fornavn = get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional?.givenName
     val etternavn = get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional?.familyName
-    val mellomnavn = get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional?.middleName
     return BehandlerInfo(
         fornavn = fornavn,
         etternavn = etternavn,
-        mellomnavn = mellomnavn,
         fnr = fnr
     )
 }

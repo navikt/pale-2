@@ -15,7 +15,6 @@ import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
-import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
@@ -45,6 +44,7 @@ import no.nav.syfo.util.getVedlegg
 import no.nav.syfo.util.removeVedleggFromFellesformat
 import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
+import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
@@ -73,7 +73,7 @@ class BlockingApplicationRunner {
         kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
         kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
         pale2ReglerClient: Pale2ReglerClient,
-        kafkaVedleggProducer: KafkaVedleggProducer
+        bucketUploadService: BucketUploadService
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -208,7 +208,19 @@ class BlockingApplicationRunner {
                         )
 
                         val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
-                        val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult)
+
+                        val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
+                            bucketUploadService.lastOppVedlegg(
+                                vedlegg = vedlegg,
+                                legeerklaering = receivedLegeerklaering,
+                                xmleiFellesformat = fellesformat,
+                                loggingMeta = loggingMeta
+                            )
+                        } else {
+                            emptyList()
+                        }
+
+                        val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult, vedleggListe)
 
                         skrivTilSakTopic(
                             kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
@@ -248,9 +260,6 @@ class BlockingApplicationRunner {
                             )
                         }
 
-                        if (vedlegg.isNotEmpty()) {
-                            kafkaVedleggProducer.sendVedlegg(vedlegg, receivedLegeerklaering, fellesformat, loggingMeta)
-                        }
                         val currentRequestLatency = requestLatency.observeDuration()
 
                         log.info(

@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.google.auth.Credentials
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.cloud.storage.Storage
+import com.google.cloud.storage.StorageOptions
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache.Apache
@@ -29,7 +33,6 @@ import no.nav.syfo.client.AccessTokenClientV2
 import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
-import no.nav.syfo.kafka.vedlegg.producer.KafkaVedleggProducer
 import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
@@ -38,6 +41,7 @@ import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.TrackableException
+import no.nav.syfo.vedlegg.google.BucketUploadService
 import no.nav.syfo.ws.createPort
 import org.apache.cxf.ws.addressing.WSAddressingFeature
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner
@@ -45,6 +49,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
+import java.io.FileInputStream
 import java.net.ProxySelector
 import javax.jms.Session
 
@@ -55,8 +60,7 @@ val objectMapper: ObjectMapper = ObjectMapper()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
-const val NAV_OPPFOLGING_UTLAND_KONTOR_NR = "0393"
-
+@DelicateCoroutinesApi
 fun main() {
     val env = Environment()
 
@@ -120,10 +124,14 @@ fun main() {
 
     val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
 
+    val paleVedleggStorageCredentials: Credentials = GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/nais.io/vault/pale2-google-creds.json"))
+    val paleVedleggStorage: Storage = StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
+    val paleVedleggBucketUploadService = BucketUploadService(env.paleVedleggBucketName, paleVedleggStorage)
+
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, vaultSecrets,
         kafkaClients.kafkaProducerLegeerklaeringSak, kafkaClients.kafkaProducerLegeerklaeringFellesformat,
-        pale2ReglerClient, kafkaClients.kafkaVedleggProducer
+        pale2ReglerClient, paleVedleggBucketUploadService
     )
 }
 
@@ -149,7 +157,7 @@ fun launchListeners(
     kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
     kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
     pale2ReglerClient: Pale2ReglerClient,
-    kafkaVedleggProducer: KafkaVedleggProducer
+    bucketUploadService: BucketUploadService
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(secrets.serviceuserUsername, secrets.serviceuserPassword).use { connection ->
@@ -170,7 +178,7 @@ fun launchListeners(
                     applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer, samhandlerService, pdlPersonService,
                     arenaProducer, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, kafkaVedleggProducer
+                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, bucketUploadService
                 )
             }
         }
