@@ -29,10 +29,11 @@ val commonsTextVersion = "1.9"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jfairyVersion = "0.6.4"
-val pale2CommonVersion = "1.a86680d"
+val pale2CommonVersion = "1.a40bf1a"
 val kafkaVersion = "3.0.0"
 val mockkVersion = "1.12.1"
 val kotlinVersion = "1.6.0"
+val googleCloudStorageVersion = "2.3.0"
 
 plugins {
     id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
@@ -82,7 +83,7 @@ dependencies {
     cxfCodegen("jakarta.xml.ws:jakarta.xml.ws-api:2.3.3")
     cxfCodegen("jakarta.annotation:jakarta.annotation-api:1.3.5")
 
-    implementation(kotlin("stdlib"))
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:$coroutinesVersion")
 
@@ -121,6 +122,7 @@ dependencies {
     implementation("no.nav.helse.xml:legeerklaering:$legeerklaering")
     implementation("no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
 
+    implementation("com.google.cloud:google-cloud-storage:$googleCloudStorageVersion")
     implementation("redis.clients:jedis:$jedisVersion")
 
     implementation("org.apache.commons:commons-text:$commonsTextVersion")
@@ -180,5 +182,9 @@ tasks {
         testLogging {
             showStandardStreams = true
         }
+    }
+
+    "check" {
+        dependsOn("formatKotlin")
     }
 }

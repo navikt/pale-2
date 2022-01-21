@@ -42,6 +42,8 @@ spec:
     paths:
       - kvPath: serviceuser/data/dev/srvpale2
         mountPath: /secrets/serviceuser
+      - kvPath: /kv/preprod/fss/pale-2/teamsykmelding
+        mountPath: /var/run/secrets/nais.io/vault
   webproxy: true
   envFrom:
     - secret: pale-2-redis-password
@@ -74,3 +76,5 @@ spec:
       value: https://pale-2-regler.nais.preprod.local
     - name: PDL_SCOPE
       value: api://dev-fss.pdl.pdl-api/.default
+    - name: PALE_VEDLEGG_BUCKET_NAME
+      value: teamsykmelding-pale2-vedlegg-bucket-dev
