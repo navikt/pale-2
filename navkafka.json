@@ -5,11 +5,9 @@
       "members": [
         {"member":"srvpale2", "role":"PRODUCER"},
         {"member":"srvpale2sak", "role":"CONSUMER"},
-        {"member":"s151890", "role":"MANAGER"},
-        {"member":"k143566", "role":"MANAGER"},
+        {"member":"srvsyfoservice-dat", "role":"CONSUMER"},
         {"member":"f133008", "role":"MANAGER"},
         {"member":"n157016", "role":"MANAGER"},
-        {"member":"k157140", "role":"MANAGER"},
         {"member":"g153850", "role":"MANAGER"},
         {"member":"h157812", "role":"MANAGER"}
       ],
@@ -23,11 +21,9 @@
       "members": [
         {"member":"srvpale2", "role":"PRODUCER"},
         {"member":"srvpale2", "role":"CONSUMER"},
-        {"member":"s151890", "role":"MANAGER"},
-        {"member":"k143566", "role":"MANAGER"},
+        {"member":"srvsyfoservice-dat", "role":"CONSUMER"},
         {"member":"f133008", "role":"MANAGER"},
         {"member":"n157016", "role":"MANAGER"},
-        {"member":"k157140", "role":"MANAGER"},
         {"member":"g153850", "role":"MANAGER"},
         {"member":"h157812", "role":"MANAGER"}
       ],
@@ -41,11 +37,9 @@
       "members": [
         {"member":"srvpale2", "role":"PRODUCER"},
         {"member":"srvpale2reg", "role":"CONSUMER"},
-        {"member":"s151890", "role":"MANAGER"},
-        {"member":"k143566", "role":"MANAGER"},
+        {"member":"srvsyfoservice-dat", "role":"CONSUMER"},
         {"member":"f133008", "role":"MANAGER"},
         {"member":"n157016", "role":"MANAGER"},
-        {"member":"k157140", "role":"MANAGER"},
         {"member":"g153850", "role":"MANAGER"},
         {"member":"h157812", "role":"MANAGER"}
       ],
@@ -59,11 +53,9 @@
       "members": [
         {"member":"srvpale2", "role":"PRODUCER"},
         {"member":"srvpale2reg", "role":"CONSUMER"},
-        {"member":"s151890", "role":"MANAGER"},
-        {"member":"k143566", "role":"MANAGER"},
+        {"member":"srvsyfoservice-dat", "role":"CONSUMER"},
         {"member":"f133008", "role":"MANAGER"},
         {"member":"n157016", "role":"MANAGER"},
-        {"member":"k157140", "role":"MANAGER"},
         {"member":"g153850", "role":"MANAGER"},
         {"member":"h157812", "role":"MANAGER"}
       ],
