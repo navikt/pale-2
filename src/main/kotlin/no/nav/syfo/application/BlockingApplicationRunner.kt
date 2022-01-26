@@ -20,9 +20,9 @@ import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.VEDLEGG_COUNTER
-import no.nav.syfo.model.LegeerklaeringSak
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.Status
+import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
 import no.nav.syfo.pdl.service.PdlPersonService
@@ -46,7 +46,6 @@ import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.clients.producer.ProducerRecord
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.io.StringReader
@@ -70,8 +69,7 @@ class BlockingApplicationRunner {
         samhandlerService: SamhandlerService,
         pdlPersonService: PdlPersonService,
         arenaProducer: MessageProducer,
-        kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
+        aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
         pale2ReglerClient: Pale2ReglerClient,
         bucketUploadService: BucketUploadService
     ) {
@@ -100,8 +98,6 @@ class BlockingApplicationRunner {
                         true -> fellesformatMarshaller.toString(fellesformat)
                         false -> inputMessageText
                     }
-
-                    dumpTilTopic(kafkaProducerLegeerklaeringFellesformat, env.pale2DumpTopic, fellesformat)
 
                     val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
                     val msgHead = fellesformat.get<XMLMsgHead>()
@@ -210,7 +206,7 @@ class BlockingApplicationRunner {
                         val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
 
                         val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
-                            bucketUploadService.lastOppVedlegg(
+                            bucketUploadService.uploadVedlegg(
                                 vedlegg = vedlegg,
                                 legeerklaering = receivedLegeerklaering,
                                 xmleiFellesformat = fellesformat,
@@ -220,15 +216,8 @@ class BlockingApplicationRunner {
                             emptyList()
                         }
 
-                        val legeerklaeringSak = LegeerklaeringSak(receivedLegeerklaering, validationResult, vedleggListe)
-
-                        skrivTilSakTopic(
-                            kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
-                            pale2SakTopic = env.pale2SakTopic,
-                            legeerklaringId = legeerklaring.id,
-                            legeerklaeringSak = legeerklaeringSak,
-                            loggingMeta = loggingMeta
-                        )
+                        val uploadLegeerklaering = bucketUploadService.uploadLegeerklaering(receivedLegeerklaering, loggingMeta)
+                        val legeerklaeringKafkaMessage = LegeerklaeringKafkaMessage(uploadLegeerklaering, validationResult, vedleggListe)
 
                         when (validationResult.status) {
                             Status.OK -> handleStatusOK(
@@ -241,9 +230,9 @@ class BlockingApplicationRunner {
                                 fnrLege = fnrLege,
                                 legeerklaring = legeerklaring,
                                 loggingMeta = loggingMeta,
-                                kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
-                                pale2OkTopic = env.pale2OkTopic,
-                                legeerklaeringSak = legeerklaeringSak,
+                                aivenKafkaProducer = aivenKafkaProducer,
+                                topic = env.legeerklaringTopic,
+                                legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName
                             )
 
@@ -253,9 +242,9 @@ class BlockingApplicationRunner {
                                 receiptProducer = receiptProducer,
                                 fellesformat = fellesformat,
                                 loggingMeta = loggingMeta,
-                                kafkaProducerLegeerklaeringSak = kafkaProducerLegeerklaeringSak,
-                                pale2AvvistTopic = env.pale2AvvistTopic,
-                                legeerklaeringSak = legeerklaeringSak,
+                                aivenKafkaProducer = aivenKafkaProducer,
+                                topic = env.legeerklaringTopic,
+                                legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName
                             )
                         }
@@ -294,39 +283,6 @@ class BlockingApplicationRunner {
         }
     }
 
-    fun dumpTilTopic(
-        kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
-        pale2DumpTopic: String,
-        fellesformat: XMLEIFellesformat
-    ) {
-        try {
-            kafkaProducerLegeerklaeringFellesformat.send(ProducerRecord(pale2DumpTopic, fellesformatTilString(fellesformat))).get()
-            log.info("Melding sendt til kafka dump topic {}", pale2DumpTopic)
-        } catch (e: Exception) {
-            log.error("Noe gikk galt ved skriving til topic $pale2DumpTopic: ${e.message}")
-            throw e
-        }
-    }
-
     fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
         fellesformatMarshaller.toString(fellesformat)
-
-    fun skrivTilSakTopic(
-        kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-        pale2SakTopic: String,
-        legeerklaringId: String,
-        legeerklaeringSak: LegeerklaeringSak,
-        loggingMeta: LoggingMeta
-    ) {
-        try {
-            kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2SakTopic, legeerklaringId, legeerklaeringSak)).get()
-            log.info(
-                "Melding sendt til kafka topic {}, {}", pale2SakTopic,
-                fields(loggingMeta)
-            )
-        } catch (e: Exception) {
-            log.error("Kunne ikke skrive til sak-topic: {}, {}", e.message, fields(loggingMeta))
-            throw e
-        }
-    }
 }

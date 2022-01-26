@@ -30,16 +30,18 @@ import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.application.exception.ServiceUnavailableException
 import no.nav.syfo.client.AccessTokenClientV2
-import no.nav.syfo.client.KafkaClients
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
-import no.nav.syfo.model.LegeerklaeringSak
+import no.nav.syfo.kafka.aiven.KafkaUtils
+import no.nav.syfo.kafka.toProducerConfig
+import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
+import no.nav.syfo.util.JacksonKafkaSerializer
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import no.nav.syfo.ws.createPort
@@ -120,18 +122,18 @@ fun main() {
 
     val samhandlerService = SamhandlerService(sarClient, subscriptionEmottak)
 
-    val kafkaClients = KafkaClients(env, vaultSecrets)
+    val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig().toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
+    val aivenKafkaProducer = KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
 
     val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
 
     val paleVedleggStorageCredentials: Credentials = GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/nais.io/vault/pale2-google-creds.json"))
     val paleVedleggStorage: Storage = StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
-    val paleVedleggBucketUploadService = BucketUploadService(env.paleVedleggBucketName, paleVedleggStorage)
+    val paleVedleggBucketUploadService = BucketUploadService(env.legeerklaeringBucketName, env.paleVedleggBucketName, paleVedleggStorage)
 
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, vaultSecrets,
-        kafkaClients.kafkaProducerLegeerklaeringSak, kafkaClients.kafkaProducerLegeerklaeringFellesformat,
-        pale2ReglerClient, paleVedleggBucketUploadService
+        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService
     )
 }
 
@@ -154,8 +156,7 @@ fun launchListeners(
     samhandlerService: SamhandlerService,
     pdlPersonService: PdlPersonService,
     secrets: VaultSecrets,
-    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-    kafkaProducerLegeerklaeringFellesformat: KafkaProducer<String, String>,
+    aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     pale2ReglerClient: Pale2ReglerClient,
     bucketUploadService: BucketUploadService
 ) {
@@ -177,8 +178,7 @@ fun launchListeners(
                 BlockingApplicationRunner().run(
                     applicationState, inputconsumer,
                     jedis, session, env, receiptProducer, backoutProducer, samhandlerService, pdlPersonService,
-                    arenaProducer, kafkaProducerLegeerklaeringSak,
-                    kafkaProducerLegeerklaeringFellesformat, pale2ReglerClient, bucketUploadService
+                    arenaProducer, aivenKafkaProducer, pale2ReglerClient, bucketUploadService
                 )
             }
         }
