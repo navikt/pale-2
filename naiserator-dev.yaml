@@ -45,6 +45,8 @@ spec:
       - kvPath: /kv/preprod/fss/pale-2/teamsykmelding
         mountPath: /var/run/secrets/nais.io/vault
   webproxy: true
+  kafka:
+    pool: nav-dev
   envFrom:
     - secret: pale-2-redis-password
   ingresses:
