@@ -66,8 +66,6 @@ spec:
       value: Q1_PALE_2.INPUT_BOQ
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.Q1_414.FS06_ARENA
-    - name: KAFKA_BOOTSTRAP_SERVERS_URL
-      value: SSL://b27apvl00045.preprod.local:8443,SSL://b27apvl00046.preprod.local:8443,SSL://b27apvl00047.preprod.local:8443
     - name: SUBSCRIPTION_ENDPOINT_URL
       value: https://wasapp-q1.adeo.no/nav-emottak-eletter-web/services/
     - name: PDL_GRAPHQL_PATH
@@ -78,3 +76,5 @@ spec:
       value: api://dev-fss.pdl.pdl-api/.default
     - name: PALE_VEDLEGG_BUCKET_NAME
       value: teamsykmelding-pale2-vedlegg-bucket-dev
+    - name: PALE_BUCKET_NAME
+      value: teamsykmelding-pale2-legeerklaring-bucket-dev

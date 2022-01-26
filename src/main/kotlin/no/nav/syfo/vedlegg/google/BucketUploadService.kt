@@ -15,10 +15,11 @@ import no.nav.syfo.vedlegg.model.getBehandlerInfo
 import java.util.UUID
 
 class BucketUploadService(
+    private val legeerklaringBucketName: String,
     private val bucketName: String,
     private val storage: Storage
 ) {
-    fun lastOppVedlegg(
+    fun uploadVedlegg(
         vedlegg: List<Vedlegg>,
         legeerklaering: ReceivedLegeerklaering,
         xmleiFellesformat: XMLEIFellesformat,
@@ -33,10 +34,10 @@ class BucketUploadService(
                 behandlerInfo = xmleiFellesformat.getBehandlerInfo(legeerklaering.personNrLege),
                 pasientAktoerId = legeerklaering.pasientAktoerId
             )
-        }.map { create(legeerklaering.legeerklaering.id, it, loggingMeta) }
+        }.map { createVedlegg(legeerklaering.legeerklaering.id, it, loggingMeta) }
     }
 
-    private fun create(legeerklaeringId: String, vedleggMessage: VedleggMessage, loggingMeta: LoggingMeta): String {
+    private fun createVedlegg(legeerklaeringId: String, vedleggMessage: VedleggMessage, loggingMeta: LoggingMeta): String {
         val vedleggId = "$legeerklaeringId/${UUID.randomUUID()}"
         storage.create(BlobInfo.newBuilder(bucketName, vedleggId).build(), objectMapper.writeValueAsBytes(vedleggMessage))
         log.info("Lastet opp vedlegg med id $vedleggId {}", StructuredArguments.fields(loggingMeta))
@@ -57,5 +58,20 @@ class BucketUploadService(
             behandler = behandlerInfo,
             pasientAktorId = pasientAktoerId
         )
+    }
+
+    fun uploadLegeerklaering(
+        legeerklaering: ReceivedLegeerklaering,
+        loggingMeta: LoggingMeta
+    ): String {
+        log.info("Laster opp legerklæring", StructuredArguments.fields(loggingMeta))
+        return createLegerklaering(legeerklaering, loggingMeta)
+    }
+
+    private fun createLegerklaering(legeerklaering: ReceivedLegeerklaering, loggingMeta: LoggingMeta): String {
+        val msgId = legeerklaering.msgId
+        storage.create(BlobInfo.newBuilder(legeerklaringBucketName, msgId).build(), objectMapper.writeValueAsBytes(legeerklaering))
+        log.info("Lastet opp legeerklæring med id $msgId {}", StructuredArguments.fields(loggingMeta))
+        return msgId
     }
 }

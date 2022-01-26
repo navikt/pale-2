@@ -6,7 +6,7 @@ import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
-import no.nav.syfo.model.LegeerklaeringSak
+import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
@@ -26,9 +26,9 @@ fun handleStatusOK(
     fnrLege: String,
     legeerklaring: Legeerklaering,
     loggingMeta: LoggingMeta,
-    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-    pale2OkTopic: String,
-    legeerklaeringSak: LegeerklaeringSak,
+    aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
+    topic: String,
+    legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
     apprecQueueName: String
 ) {
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
@@ -40,7 +40,7 @@ fun handleStatusOK(
     )
     log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
-    sendTilOKTopic(kafkaProducerLegeerklaeringSak, pale2OkTopic, legeerklaeringSak, loggingMeta)
+    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, loggingMeta)
 }
 
 fun sendArenaInfo(
@@ -57,15 +57,15 @@ fun sendArenaInfo(
     }
 )
 
-fun sendTilOKTopic(
-    kafkaProducerLegeerklaeringSak: KafkaProducer<String, LegeerklaeringSak>,
-    pale2OkTopic: String,
-    legeerklaeringSak: LegeerklaeringSak,
+fun sendTilTopic(
+    aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
+    topic: String,
+    legeerklaeringKafkaMessage: LegeerklaeringKafkaMessage,
     loggingMeta: LoggingMeta
 ) {
     try {
-        kafkaProducerLegeerklaeringSak.send(ProducerRecord(pale2OkTopic, legeerklaeringSak)).get()
-        log.info("Melding sendt til kafka topic {}", pale2OkTopic)
+        aivenKafkaProducer.send(ProducerRecord(topic, legeerklaeringKafkaMessage)).get()
+        log.info("Melding sendt til kafka topic {}", topic)
     } catch (e: Exception) {
         log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))
         throw e
