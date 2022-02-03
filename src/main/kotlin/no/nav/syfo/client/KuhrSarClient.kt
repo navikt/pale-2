@@ -3,6 +3,7 @@ package no.nav.syfo.client
 import io.ktor.client.HttpClient
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import net.logstash.logback.argument.StructuredArguments
@@ -17,11 +18,15 @@ import kotlin.math.max
 
 class SarClient(
     private val endpointUrl: String,
+    private val accessTokenClientV2: AccessTokenClientV2,
+    private val resourceId: String,
     private val httpClient: HttpClient
 ) {
     suspend fun getSamhandler(ident: String): List<Samhandler> = retry("get_samhandler") {
-        httpClient.get<List<Samhandler>>("$endpointUrl/rest/sar/samh") {
+        val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
+        httpClient.get<List<Samhandler>>("$endpointUrl/sar/rest/v2/samh") {
             accept(ContentType.Application.Json)
+            header("Authorization", "Bearer $accessToken")
             parameter("ident", ident)
         }
     }

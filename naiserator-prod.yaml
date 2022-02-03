@@ -80,3 +80,7 @@ spec:
       value: teamsykmelding-pale2-vedlegg-bucket-prod
     - name: PALE_BUCKET_NAME
       value: teamsykmelding-pale2-legeerklaring-bucket-prod
+    - name: KUHR_SAR_API_SCOPE
+      value: api://prod-fss.teamkuhr.kuhr-sar-api/.default
+    - name: KUHR_SAR_API_URL
+      value: https://kuhr-sar-api.nais.adeo.no
