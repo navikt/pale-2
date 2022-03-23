@@ -1,5 +1,6 @@
 package no.nav.syfo.vedlegg.google
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.Storage
 import net.logstash.logback.argument.StructuredArguments
@@ -65,13 +66,17 @@ class BucketUploadService(
         loggingMeta: LoggingMeta
     ): String {
         log.info("Laster opp legerklæring", StructuredArguments.fields(loggingMeta))
-        return createLegerklaering(legeerklaering, loggingMeta)
-    }
-
-    private fun createLegerklaering(legeerklaering: ReceivedLegeerklaering, loggingMeta: LoggingMeta): String {
         val msgId = legeerklaering.msgId
-        storage.create(BlobInfo.newBuilder(legeerklaringBucketName, msgId).build(), objectMapper.writeValueAsBytes(legeerklaering))
+        storage.create(BlobInfo.newBuilder(legeerklaringBucketName, msgId).build(), objectMapper.writeValueAsBytes(removeIllegalCharacters(legeerklaering)))
         log.info("Lastet opp legeerklæring med id $msgId {}", StructuredArguments.fields(loggingMeta))
         return msgId
+    }
+
+    fun removeIllegalCharacters(legeerklaering: ReceivedLegeerklaering): ReceivedLegeerklaering {
+        val legeerklaeringAsString = objectMapper.writeValueAsString(legeerklaering)
+        if (legeerklaeringAsString.contains("\uFEFF")) {
+            legeerklaeringAsString.replace("\uFEFF", "")
+        }
+        return objectMapper.readValue<ReceivedLegeerklaering>(legeerklaeringAsString)
     }
 }
