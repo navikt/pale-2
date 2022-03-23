@@ -75,8 +75,10 @@ class BucketUploadService(
     fun removeIllegalCharacters(legeerklaering: ReceivedLegeerklaering): ReceivedLegeerklaering {
         val legeerklaeringAsString = objectMapper.writeValueAsString(legeerklaering)
         if (legeerklaeringAsString.contains("\uFEFF")) {
-            legeerklaeringAsString.replace("\uFEFF", "")
+            val vasketLegeerklaering = legeerklaeringAsString.replace("\uFEFF", "")
+            log.info("Fjerner spesialtegn fra legeerklæring med id ${legeerklaering.legeerklaering.id}")
+            return objectMapper.readValue<ReceivedLegeerklaering>(vasketLegeerklaering)
         }
-        return objectMapper.readValue<ReceivedLegeerklaering>(legeerklaeringAsString)
+        return legeerklaering
     }
 }
