@@ -36,6 +36,7 @@ jobs:
           command: test
           args: --org=teamsykmelding --all-sub-projects --severity-threshold=high
   build-push-deploy:
+    needs: [ snyk-test ]
     name: Checkout code and create docker tag
     runs-on: ubuntu-latest
     steps:
