@@ -13,10 +13,11 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.apache.Apache
 import io.ktor.client.engine.apache.ApacheEngineConfig
-import io.ktor.client.features.HttpResponseValidator
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.network.sockets.SocketTimeoutException
+import io.ktor.serialization.jackson.jackson
 import io.prometheus.client.hotspot.DefaultExports
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -80,8 +81,8 @@ fun main() {
     DefaultExports.initialize()
 
     val config: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
-        install(JsonFeature) {
-            serializer = JacksonSerializer {
+        install(ContentNegotiation) {
+            jackson {
                 registerKotlinModule()
                 registerModule(JavaTimeModule())
                 configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
@@ -89,7 +90,7 @@ fun main() {
             }
         }
         HttpResponseValidator {
-            handleResponseException { exception ->
+            handleResponseExceptionWithRequest { exception, _ ->
                 when (exception) {
                     is SocketTimeoutException -> throw ServiceUnavailableException(exception.message)
                 }
@@ -97,7 +98,16 @@ fun main() {
         }
         expectSuccess = false
     }
-
+    val retryConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+        config().apply {
+            install(HttpRequestRetry) {
+                maxRetries = 3
+                delayMillis { retry ->
+                    retry * 500L
+                }
+            }
+        }
+    }
     val proxyConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
         config()
         engine {
@@ -109,10 +119,11 @@ fun main() {
 
     val httpClient = HttpClient(Apache, config)
     val httpClientWithProxy = HttpClient(Apache, proxyConfig)
+    val httpClientWithRetry = HttpClient(Apache, retryConfig)
 
     val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithProxy)
 
-    val sarClient = SarClient(env.kuhrSarApiUrl, accessTokenClientV2, env.kuhrSarApiScope, httpClient)
+    val sarClient = SarClient(env.kuhrSarApiUrl, accessTokenClientV2, env.kuhrSarApiScope, httpClientWithRetry)
     val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
     val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
@@ -125,7 +136,7 @@ fun main() {
     val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig().toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
     val aivenKafkaProducer = KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
 
-    val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClient)
+    val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClientWithRetry)
 
     val paleVedleggStorageCredentials: Credentials = GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/nais.io/vault/pale2-google-creds.json"))
     val paleVedleggStorage: Storage = StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service

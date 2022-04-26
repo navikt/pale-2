@@ -1,6 +1,7 @@
 package no.nav.syfo.client
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -8,7 +9,6 @@ import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.keyValue
-import no.nav.syfo.helpers.retry
 import no.nav.syfo.log
 import no.nav.syfo.model.SamhandlerPraksisType
 import no.nav.syfo.util.LoggingMeta
@@ -22,13 +22,13 @@ class SarClient(
     private val resourceId: String,
     private val httpClient: HttpClient
 ) {
-    suspend fun getSamhandler(ident: String): List<Samhandler> = retry("get_samhandler") {
+    suspend fun getSamhandler(ident: String): List<Samhandler> {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
-        httpClient.get<List<Samhandler>>("$endpointUrl/sar/rest/v2/samh") {
+        return httpClient.get("$endpointUrl/sar/rest/v2/samh") {
             accept(ContentType.Application.Json)
             header("Authorization", "Bearer $accessToken")
             parameter("ident", ident)
-        }
+        }.body<List<Samhandler>>()
     }
 }
 

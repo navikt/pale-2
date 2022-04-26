@@ -5,15 +5,17 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "1.6.8"
-val coroutinesVersion = "1.5.2"
+val ktorVersion = "2.0.0"
+val coroutinesVersion = "1.6.1"
 val prometheusVersion = "0.15.0"
 val junitJupiterVersion = "5.8.2"
 val kluentVersion = "1.68"
 val logbackVersion = "1.2.11"
-val logstashEncoderVersion = "7.0.1"
+val logstashEncoderVersion = "7.1.1"
 val jacksonVersion = "2.13.2"
-val jedisVersion = "3.7.1"
+val jacksonPatchVersion = "2.13.2.2"
+val jacksonBomVersion = "2.13.2.20220328"
+val jedisVersion = "4.2.2"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
@@ -28,16 +30,16 @@ val kithApprecVersion = "2019.07.30-04-23-2a0d1388209441ec05d2e92a821eed4f796a3a
 val commonsTextVersion = "1.9"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
-val jfairyVersion = "0.6.4"
-val pale2CommonVersion = "1.b61e3d4"
-val kafkaVersion = "3.0.0"
+val jfairyVersion = "0.6.5"
+val pale2CommonVersion = "1.e4cad79"
+val kafkaVersion = "3.1.0"
 val mockkVersion = "1.12.3"
-val kotlinVersion = "1.6.0"
-val googleCloudStorageVersion = "2.3.0"
+val kotlinVersion = "1.6.20"
+val googleCloudStorageVersion = "2.6.1"
 
 plugins {
     id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
-    kotlin("jvm") version "1.6.0"
+    kotlin("jvm") version "1.6.20"
     id("com.github.johnrengelman.shadow") version "7.0.0"
     id("com.diffplug.spotless") version "5.16.0"
     id("org.jmailen.kotlinter") version "3.6.0"
@@ -90,10 +92,12 @@ dependencies {
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
     implementation("io.prometheus:simpleclient_common:$prometheusVersion")
 
+    implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    implementation("io.ktor:ktor-client-auth-jvm:$ktorVersion")
-    implementation("io.ktor:ktor-client-jackson:$ktorVersion")
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
 
@@ -101,6 +105,8 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+    implementation("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion")
+    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonPatchVersion")
 
     implementation("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
     implementation("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
