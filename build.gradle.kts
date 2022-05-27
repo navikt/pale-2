@@ -5,17 +5,15 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.0.0"
+val ktorVersion = "2.0.1"
 val coroutinesVersion = "1.6.1"
 val prometheusVersion = "0.15.0"
 val junitJupiterVersion = "5.8.2"
 val kluentVersion = "1.68"
 val logbackVersion = "1.2.11"
 val logstashEncoderVersion = "7.1.1"
-val jacksonVersion = "2.13.2"
-val jacksonPatchVersion = "2.13.2.2"
-val jacksonBomVersion = "2.13.2.20220328"
-val jedisVersion = "4.2.2"
+val jacksonVersion = "2.13.3"
+val jedisVersion = "4.2.3"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
@@ -31,18 +29,18 @@ val commonsTextVersion = "1.9"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jfairyVersion = "0.6.5"
-val pale2CommonVersion = "1.e4cad79"
+val pale2CommonVersion = "1.14748dd-SNAPSHOT"
 val kafkaVersion = "3.1.0"
-val mockkVersion = "1.12.3"
-val kotlinVersion = "1.6.20"
+val mockkVersion = "1.12.4"
+val kotlinVersion = "1.6.21"
 val googleCloudStorageVersion = "2.6.1"
 
 plugins {
     id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
-    kotlin("jvm") version "1.6.20"
-    id("com.github.johnrengelman.shadow") version "7.0.0"
-    id("com.diffplug.spotless") version "5.16.0"
-    id("org.jmailen.kotlinter") version "3.6.0"
+    kotlin("jvm") version "1.6.21"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.diffplug.spotless") version "6.5.0"
+    id("org.jmailen.kotlinter") version "3.10.0"
 }
 
 buildscript {
@@ -105,8 +103,6 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-    implementation("com.fasterxml.jackson:jackson-bom:$jacksonBomVersion")
-    implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonPatchVersion")
 
     implementation("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
     implementation("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")

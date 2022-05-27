@@ -76,7 +76,6 @@ fun main() {
     )
 
     val applicationServer = ApplicationServer(applicationEngine, applicationState)
-    applicationServer.start()
 
     DefaultExports.initialize()
 
@@ -146,6 +145,8 @@ fun main() {
         applicationState, env, samhandlerService, pdlPersonService, vaultSecrets,
         aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService
     )
+
+    applicationServer.start()
 }
 
 @DelicateCoroutinesApi
@@ -156,6 +157,7 @@ fun createListener(applicationState: ApplicationState, action: suspend Coroutine
         } catch (e: TrackableException) {
             log.error("En uhåndtert feil oppstod, applikasjonen restarter {}", e.cause)
         } finally {
+            applicationState.ready = false
             applicationState.alive = false
         }
     }
@@ -181,8 +183,6 @@ fun launchListeners(
                 val receiptProducer = session.producerForQueue(env.apprecQueueName)
                 val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
                 val arenaProducer = session.producerForQueue(env.arenaQueueName)
-
-                applicationState.ready = true
 
                 jedis.auth(secrets.redisSecret)
 
