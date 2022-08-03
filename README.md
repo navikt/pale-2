@@ -10,7 +10,7 @@ Repository for PALE (legeerklæringer). Application written in Kotlin used to re
 * Kotlin
 * Ktor
 * Gradle
-* Spek
+* Junit
 * Jackson
 
 #### Requirements
@@ -118,3 +118,13 @@ https://confluence.adeo.no/display/KES/SyfoSmMottak.
 4. Click on File -> Export as SVG... save the file to here: file here: /src/svg/flytdiagram.svg
 5. Commit and push the changes so its up to date
 
+### Upgrading the gradle wrapper
+Find the newest version of gradle here: https://gradle.org/releases/ Then run this command:
+
+```./gradlew wrapper --gradle-version $gradleVersjon```
+
+### Inquiries
+Questions related to the code or the project can be asked as issues here on GitHub
+
+### For NAV employees
+We are available at the Slack channel #team-sykmelding
