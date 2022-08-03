@@ -17,7 +17,7 @@ internal class KuhrSarClientTest {
     @Test
     internal fun `Finner en samhandler når det bare er inaktivte samhandlere`() {
         val samhandlerMedNavn: List<Samhandler> = objectMapper.readValue(
-            KuhrSarClientTest::class.java.getResourceAsStream("/kuhr_sahr_response_inaktive.json").readBytes()
+            KuhrSarClientTest::class.java.getResourceAsStream("/kuhr_sahr_response_inaktive.json")!!.readBytes()
                 .toString(Charsets.UTF_8)
         )
 
