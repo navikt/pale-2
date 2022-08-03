@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.0.1"
+val ktorVersion = "2.0.3"
 val coroutinesVersion = "1.6.1"
 val prometheusVersion = "0.15.0"
 val junitJupiterVersion = "5.8.2"
@@ -32,12 +32,15 @@ val jfairyVersion = "0.6.5"
 val pale2CommonVersion = "1.19e8b45"
 val kafkaVersion = "3.1.0"
 val mockkVersion = "1.12.4"
-val kotlinVersion = "1.6.21"
+val kotlinVersion = "1.7.10"
 val googleCloudStorageVersion = "2.6.1"
+val jaxbImplVersion = "2.3.3"
+val wsApiVersion = "2.3.3"
+val annotationApiVersion = "1.3.5"
 
 plugins {
     id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
-    kotlin("jvm") version "1.6.21"
+    kotlin("jvm") version "1.7.10"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.diffplug.spotless") version "6.5.0"
     id("org.jmailen.kotlinter") version "3.10.0"
@@ -79,9 +82,9 @@ dependencies {
     cxfCodegen ("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
         exclude(group = "com.sun.xml.ws", module = "policy")
     }
-    cxfCodegen("com.sun.xml.bind:jaxb-impl:2.3.3")
-    cxfCodegen("jakarta.xml.ws:jakarta.xml.ws-api:2.3.3")
-    cxfCodegen("jakarta.annotation:jakarta.annotation-api:1.3.5")
+    cxfCodegen("com.sun.xml.bind:jaxb-impl:$jaxbImplVersion")
+    cxfCodegen("jakarta.xml.ws:jakarta.xml.ws-api:$wsApiVersion")
+    cxfCodegen("jakarta.annotation:jakarta.annotation-api:$annotationApiVersion")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
 
