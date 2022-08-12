@@ -2,6 +2,7 @@ package no.nav.syfo.util
 
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.legeerklaering.Legeerklaring
+import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLIdent
 import no.nav.helse.msgHead.XMLMsgHead
 
@@ -30,3 +31,12 @@ inline fun <reified T> XMLEIFellesformat.get() = this.any.find { it is T } as T
 
 fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
     legeerklaering.pasientopplysninger.pasient.fodselsnummer
+
+fun extractTlfFromHealthcareProfessional(healthcareProfessional: XMLHealthcareProfessional?): String? =
+    if (healthcareProfessional != null && healthcareProfessional.teleCom ?.size != 0 && healthcareProfessional.teleCom?.firstOrNull()!!.teleAddress != null &&
+        healthcareProfessional.teleCom.firstOrNull()!!.teleAddress?.v?.contains("tel:") == true
+    ) {
+        healthcareProfessional.teleCom.firstOrNull()!!.teleAddress?.v?.removePrefix("tel:")
+    } else {
+        healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v
+    }

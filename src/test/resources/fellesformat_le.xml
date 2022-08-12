@@ -49,7 +49,7 @@
                             <City>Oppdiktet</City>
                         </Address>
                         <TeleCom>
-                            <TeleAddress V="98765432" />
+                            <TeleAddress V="tel:98765432" />
                             <TypeTelecom DN="Hovedtelefon" />
                         </TeleCom>
                     </HealthcareProfessional>

@@ -9,6 +9,7 @@ import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.helse.legeerklaering.Pasientopplysninger
 import no.nav.helse.msgHead.XMLHealthcareProfessional
 import no.nav.helse.msgHead.XMLMsgHead
+import no.nav.syfo.util.extractTlfFromHealthcareProfessional
 import no.nav.syfo.util.get
 import java.time.LocalDateTime
 
@@ -105,7 +106,7 @@ fun Legeerklaring.toLegeerklaring(
         postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode,
         poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,
         signatur = "",
-        tlfNummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v ?: ""
+        tlfNummer = extractTlfFromHealthcareProfessional(fellesformat.get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional) ?: ""
     ),
     signaturDato = signaturDato
 )
