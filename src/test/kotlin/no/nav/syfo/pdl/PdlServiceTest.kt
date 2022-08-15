@@ -16,8 +16,8 @@ import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.util.LoggingMeta
 import org.amshove.kluent.shouldBe
 import org.amshove.kluent.shouldBeEqualTo
-import org.junit.Test
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
 internal class PdlServiceTest {
     private val pdlClient = mockkClass(PdlClient::class)

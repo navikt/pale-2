@@ -5,10 +5,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.0.3"
-val coroutinesVersion = "1.6.1"
+val ktorVersion = "2.1.0"
+val coroutinesVersion = "1.6.4"
 val prometheusVersion = "0.15.0"
-val junitJupiterVersion = "5.8.2"
+val junitJupiterVersion = "5.9.0"
 val kluentVersion = "1.68"
 val logbackVersion = "1.2.11"
 val logstashEncoderVersion = "7.1.1"
@@ -183,9 +183,11 @@ tasks {
     }
 
     withType<Test> {
-        useJUnit()
+        useJUnitPlatform {}
         testLogging {
-            showStandardStreams = true
+            events("skipped", "failed")
+            showStackTraces = true
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
 

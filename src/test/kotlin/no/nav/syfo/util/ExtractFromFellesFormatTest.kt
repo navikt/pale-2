@@ -3,7 +3,7 @@ package no.nav.syfo.util
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.msgHead.XMLMsgHead
 import org.amshove.kluent.shouldBeEqualTo
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import java.io.StringReader
 
 class ExtractFromFellesFormatTest {

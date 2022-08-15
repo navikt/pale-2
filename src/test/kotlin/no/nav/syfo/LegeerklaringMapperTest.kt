@@ -6,7 +6,7 @@ import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.getFileAsString
 import org.amshove.kluent.shouldBeEqualTo
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import java.io.StringReader
 import java.time.LocalDateTime
 import java.util.UUID
