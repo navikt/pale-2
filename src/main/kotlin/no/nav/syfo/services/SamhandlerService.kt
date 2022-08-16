@@ -1,17 +1,18 @@
 package no.nav.syfo.services
 
 import net.logstash.logback.argument.StructuredArguments
-import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
+import no.nav.syfo.client.EmottakSubscriptionClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
+import no.nav.syfo.client.samhandlerpraksisIsLegevakt
 import no.nav.syfo.log
 import no.nav.syfo.util.LoggingMeta
 
 class SamhandlerService(
     private val kuhrSarClient: SarClient,
-    private val subscriptionEmottak: SubscriptionPort
+    private val emottakSubscriptionClient: EmottakSubscriptionClient
 ) {
     suspend fun finnTssIdentOgStartSubscription(
         fnrLege: String,
@@ -21,7 +22,7 @@ class SamhandlerService(
         msgHead: XMLMsgHead,
         loggingMeta: LoggingMeta
     ): String {
-        val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege)
+        val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
         val samhandlerPraksisMatch = findBestSamhandlerPraksis(
             samhandlerInfo,
             legekontorOrgName,
@@ -42,15 +43,15 @@ class SamhandlerService(
                     "SamhandlerPraksis is Not found, {}",
                     StructuredArguments.fields(loggingMeta)
                 )
-                else -> if (!samhandlerPraksisErLegevakt(samhandlerPraksis) &&
+                else -> if (!samhandlerpraksisIsLegevakt(samhandlerPraksis) &&
                     !receiverBlock.partnerReferanse.isNullOrEmpty() &&
                     receiverBlock.partnerReferanse.isNotBlank()
                 ) {
-                    startSubscription(
-                        subscriptionEmottak,
+                    emottakSubscriptionClient.startSubscription(
                         samhandlerPraksis,
                         msgHead,
                         receiverBlock,
+                        msgHead.msgInfo.msgId,
                         loggingMeta
                     )
                 } else {

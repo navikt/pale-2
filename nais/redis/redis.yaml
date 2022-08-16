@@ -24,6 +24,11 @@ spec:
   service:
     port: 6379
     protocol: redis
+  accessPolicy:
+    inbound:
+      rules:
+        - application: pale-2
+        - application: pale-2-redisexporter
   envFrom:
     - secret: pale-2-redis-password
 
@@ -52,6 +57,10 @@ spec:
       memory: 100Mi
   liveness:
     path: /health
+  accessPolicy:
+    outbound:
+      rules:
+        - application: pale-2-redis
   env:
     - name: REDIS_ADDR
       value: pale-2-redis:6379

@@ -168,7 +168,7 @@ class BlockingApplicationRunner {
                             )
                             continue@loop
                         }
-                        if (erTestFnr(fnrPasient) && env.cluster == "prod-fss") {
+                        if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
                                 session, receiptProducer, fellesformat,
                                 ediLoggId, jedis, sha256String, env, loggingMeta
@@ -203,7 +203,7 @@ class BlockingApplicationRunner {
                             tssid = tssIdent
                         )
 
-                        val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering)
+                        val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
 
                         val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
                             bucketUploadService.uploadVedlegg(

@@ -24,13 +24,13 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import no.nav.emottak.subscription.SubscriptionPort
 import no.nav.syfo.application.ApplicationServer
 import no.nav.syfo.application.ApplicationState
 import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.application.exception.ServiceUnavailableException
 import no.nav.syfo.client.AccessTokenClientV2
+import no.nav.syfo.client.EmottakSubscriptionClient
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.kafka.aiven.KafkaUtils
@@ -45,15 +45,11 @@ import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.util.JacksonKafkaSerializer
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
-import no.nav.syfo.ws.createPort
-import org.apache.cxf.ws.addressing.WSAddressingFeature
-import org.apache.http.impl.conn.SystemDefaultRoutePlanner
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import java.io.FileInputStream
-import java.net.ProxySelector
 import javax.jms.Session
 
 val objectMapper: ObjectMapper = ObjectMapper()
@@ -67,7 +63,7 @@ val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 fun main() {
     val env = Environment()
 
-    val vaultSecrets = VaultSecrets()
+    val serviceUser = VaultServiceUser()
 
     val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(
@@ -107,42 +103,30 @@ fun main() {
             }
         }
     }
-    val proxyConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
-        config()
-        engine {
-            customizeClient {
-                setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
-            }
-        }
-    }
 
     val httpClient = HttpClient(Apache, config)
-    val httpClientWithProxy = HttpClient(Apache, proxyConfig)
     val httpClientWithRetry = HttpClient(Apache, retryConfig)
 
-    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithProxy)
+    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithRetry)
 
-    val sarClient = SarClient(env.kuhrSarApiUrl, accessTokenClientV2, env.kuhrSarApiScope, httpClientWithRetry)
+    val sarClient = SarClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
     val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
-    val subscriptionEmottak = createPort<SubscriptionPort>(env.subscriptionEndpointURL) {
-        proxy { features.add(WSAddressingFeature()) }
-        port { withBasicAuth(vaultSecrets.serviceuserUsername, vaultSecrets.serviceuserPassword) }
-    }
+    val emottakSubscriptionClient = EmottakSubscriptionClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
 
-    val samhandlerService = SamhandlerService(sarClient, subscriptionEmottak)
+    val samhandlerService = SamhandlerService(sarClient, emottakSubscriptionClient)
 
     val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig().toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
     val aivenKafkaProducer = KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
 
-    val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClientWithRetry)
+    val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClientWithRetry, accessTokenClientV2, env.pale2ReglerApiScope)
 
-    val paleVedleggStorageCredentials: Credentials = GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/nais.io/vault/pale2-google-creds.json"))
+    val paleVedleggStorageCredentials: Credentials = GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/pale2-google-creds.json"))
     val paleVedleggStorage: Storage = StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
     val paleVedleggBucketUploadService = BucketUploadService(env.legeerklaeringBucketName, env.paleVedleggBucketName, paleVedleggStorage)
 
     launchListeners(
-        applicationState, env, samhandlerService, pdlPersonService, vaultSecrets,
+        applicationState, env, samhandlerService, pdlPersonService, serviceUser,
         aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService
     )
 
@@ -155,7 +139,7 @@ fun createListener(applicationState: ApplicationState, action: suspend Coroutine
         try {
             action()
         } catch (e: TrackableException) {
-            log.error("En uhåndtert feil oppstod, applikasjonen restarter {}", e.cause)
+            log.error("En uhåndtert feil oppstod, applikasjonen restarter", e.cause)
         } finally {
             applicationState.ready = false
             applicationState.alive = false
@@ -168,13 +152,13 @@ fun launchListeners(
     env: Environment,
     samhandlerService: SamhandlerService,
     pdlPersonService: PdlPersonService,
-    secrets: VaultSecrets,
+    serviceUser: VaultServiceUser,
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     pale2ReglerClient: Pale2ReglerClient,
     bucketUploadService: BucketUploadService
 ) {
     createListener(applicationState) {
-        connectionFactory(env).createConnection(secrets.serviceuserUsername, secrets.serviceuserPassword).use { connection ->
+        connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword).use { connection ->
             Jedis(env.redishost, 6379).use { jedis ->
                 connection.start()
                 val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
@@ -184,7 +168,7 @@ fun launchListeners(
                 val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
                 val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
-                jedis.auth(secrets.redisSecret)
+                jedis.auth(env.redisSecret)
 
                 BlockingApplicationRunner().run(
                     applicationState, inputconsumer,
