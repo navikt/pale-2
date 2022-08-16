@@ -72,11 +72,11 @@ spec:
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.Q1_414.FS06_ARENA
     - name: PDL_GRAPHQL_PATH
-      value: https://pdl-api.dev-fss-pub.nais.io/graphql
+      value: https://pdl-api-q1.dev-fss-pub.nais.io/graphql
     - name: PALE_2_REGLER_ENDPOINT_URL
       value: https://pale-2-regler.dev.intern.nav.no
     - name: PDL_SCOPE
-      value: api://dev-fss.pdl.pdl-api/.default
+      value: api://dev-fss.pdl.pdl-api-q1/.default
     - name: PALE_VEDLEGG_BUCKET_NAME
       value: teamsykmelding-pale2-vedlegg-bucket-dev
     - name: PALE_BUCKET_NAME
