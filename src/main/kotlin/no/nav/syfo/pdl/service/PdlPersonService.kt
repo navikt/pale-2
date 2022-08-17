@@ -15,8 +15,8 @@ class PdlPersonService(
 ) {
 
     suspend fun getPdlPerson(ident: String, loggingMeta: LoggingMeta): PdlPerson? {
-        val stsToken = accessTokenClientV2.getAccessTokenV2(pdlScope)
-        val pdlResponse = pdlClient.getPerson(ident, stsToken)
+        val accestoken = accessTokenClientV2.getAccessTokenV2(pdlScope)
+        val pdlResponse = pdlClient.getPerson(ident, accestoken)
 
         if (pdlResponse.errors != null) {
             pdlResponse.errors.forEach {

@@ -22,11 +22,12 @@ class SarClient(
     private val resourceId: String,
     private val httpClient: HttpClient
 ) {
-    suspend fun getSamhandler(ident: String): List<Samhandler> {
+    suspend fun getSamhandler(ident: String, msgId: String): List<Samhandler> {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
-        return httpClient.get("$endpointUrl/sar/rest/v2/samh") {
+        return httpClient.get("$endpointUrl/kuhrsar/sar/rest/v2/samh") {
             accept(ContentType.Application.Json)
             header("Authorization", "Bearer $accessToken")
+            header("Nav-Call-Id", msgId)
             parameter("ident", ident)
         }.body<List<Samhandler>>()
     }

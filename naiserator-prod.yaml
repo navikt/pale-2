@@ -13,19 +13,19 @@ spec:
     cpuThresholdPercentage: 90
   port: 8080
   liveness:
-    path: /is_alive
+    path: /internal/is_alive
     initialDelay: 10
     timeout: 5
     periodSeconds: 5
     failureThreshold: 30
   readiness:
-    path: /is_ready
+    path: /internal/is_ready
     initialDelay: 30
     periodSeconds: 5
     timeout: 1
   prometheus:
     enabled: true
-    path: /prometheus
+    path: /internal/prometheus
   resources:
     limits:
       cpu: 500m
@@ -37,20 +37,23 @@ spec:
     application:
       enabled: true
       tenant: nav.no
+  accessPolicy:
+    outbound:
+      rules:
+        - application: pale-2-redis
+        - application: pale-2-regler
   vault:
-    enabled: true
-    paths:
-      - kvPath: serviceuser/data/prod/srvpale2
-        mountPath: /secrets/serviceuser
-      - kvPath: /kv/prod/fss/pale-2/teamsykmelding
-        mountPath: /var/run/secrets/nais.io/vault
-  webproxy: true
+    enabled: false
+  webproxy: false
   kafka:
     pool: nav-prod
   envFrom:
     - secret: pale-2-redis-password
+    - secret: srvpale2-secrets
   ingresses:
-    - "https://pale-2.nais.adeo.no"
+    - "https://pale-2.intern.nav.no"
+  filesFrom:
+    - secret: pale2-google-creds
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.P_PALE.INPUT
@@ -68,19 +71,17 @@ spec:
       value: QA.P_PALE_2.INPUT_BOQ
     - name: ARENA_OUTBOUND_QUEUENAME
       value: QA.P414.FS06_ARENA
-    - name: SUBSCRIPTION_ENDPOINT_URL
-      value: https://wasapp.adeo.no/nav-emottak-eletter-web/services/
     - name: PDL_GRAPHQL_PATH
-      value: https://pdl-api.nais.adeo.no/graphql
+      value: https://pdl-api.prod-fss-pub.nais.io/graphql
     - name: PALE_2_REGLER_ENDPOINT_URL
-      value: https://pale-2-regler.nais.adeo.no
+      value: https://pale-2-regler.intern.nav.no
     - name: PDL_SCOPE
       value: api://prod-fss.pdl.pdl-api/.default
     - name: PALE_VEDLEGG_BUCKET_NAME
       value: teamsykmelding-pale2-vedlegg-bucket-prod
     - name: PALE_BUCKET_NAME
       value: teamsykmelding-pale2-legeerklaring-bucket-prod
-    - name: KUHR_SAR_API_SCOPE
-      value: api://prod-fss.teamkuhr.kuhr-sar-api/.default
-    - name: KUHR_SAR_API_URL
-      value: https://kuhr-sar-api.nais.adeo.no
+    - name: SMGCP_PROXY_SCOPE
+      value: api://prod-fss.teamsykmelding.smgcp-proxy/.default
+    - name: SMGCP_PROXY_URL
+      value: https://smgcp-proxy.prod-fss-pub.nais.io

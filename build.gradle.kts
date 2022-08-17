@@ -7,11 +7,11 @@ version = "1.0.0"
 
 val ktorVersion = "2.1.0"
 val coroutinesVersion = "1.6.4"
-val prometheusVersion = "0.15.0"
+val prometheusVersion = "0.16.0"
 val junitJupiterVersion = "5.9.0"
 val kluentVersion = "1.68"
 val logbackVersion = "1.2.11"
-val logstashEncoderVersion = "7.1.1"
+val logstashEncoderVersion = "7.2"
 val jacksonVersion = "2.13.3"
 val jedisVersion = "4.2.3"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
@@ -21,8 +21,6 @@ val javaxAnnotationApiVersion = "1.3.2"
 val jaxbRuntimeVersion = "2.4.0-b180830.0438"
 val jaxbApiVersion = "2.4.0-b180830.0359"
 val javaxActivationVersion = "1.1.1"
-val javaxSunActivationVersion = "1.2.0"
-val jaxwsToolsVersion = "2.3.2"
 val legeerklaering = "2019.07.29-02-53-86b22e73f7843e422ee500b486dac387a582f2d1"
 val kithApprecVersion = "2019.07.30-04-23-2a0d1388209441ec05d2e92a821eed4f796a3ae2"
 val commonsTextVersion = "1.9"
@@ -33,7 +31,7 @@ val pale2CommonVersion = "1.19e8b45"
 val kafkaVersion = "3.1.0"
 val mockkVersion = "1.12.4"
 val kotlinVersion = "1.7.10"
-val googleCloudStorageVersion = "2.6.1"
+val googleCloudStorageVersion = "2.10.0"
 val jaxbImplVersion = "2.3.3"
 val wsApiVersion = "2.3.3"
 val annotationApiVersion = "1.3.5"
@@ -44,17 +42,6 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.diffplug.spotless") version "6.5.0"
     id("org.jmailen.kotlinter") version "3.10.0"
-}
-
-buildscript {
-    dependencies {
-        classpath("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
-        classpath("org.glassfish.jaxb:jaxb-runtime:2.4.0-b180830.0438")
-        classpath("com.sun.activation:javax.activation:1.2.0")
-        classpath("com.sun.xml.ws:jaxws-tools:2.3.1") {
-            exclude(group = "com.sun.xml.ws", module = "policy")
-        }
-    }
 }
 
 val githubUser: String by project
@@ -73,18 +60,6 @@ repositories {
 }
 
 dependencies {
-
-    cxfCodegen("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
-    cxfCodegen("javax.activation:activation:$javaxActivationVersion")
-    cxfCodegen("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
-    cxfCodegen("javax.xml.bind:jaxb-api:$jaxbApiVersion")
-    cxfCodegen ("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
-    cxfCodegen ("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
-        exclude(group = "com.sun.xml.ws", module = "policy")
-    }
-    cxfCodegen("com.sun.xml.bind:jaxb-impl:$jaxbImplVersion")
-    cxfCodegen("jakarta.xml.ws:jakarta.xml.ws-api:$wsApiVersion")
-    cxfCodegen("jakarta.annotation:jakarta.annotation-api:$annotationApiVersion")
 
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
 
@@ -112,12 +87,8 @@ dependencies {
     implementation("javax.xml.bind:jaxb-api:$jaxbApiVersion")
     implementation("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
     implementation("javax.activation:activation:$javaxActivationVersion")
-    implementation("com.sun.xml.ws:jaxws-tools:$jaxwsToolsVersion") {
-        exclude(group = "com.sun.xml.ws", module = "policy")
-    }
 
     implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
-    implementation("no.nav.syfo:pale-2-common-ws:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-metrics:$pale2CommonVersion")
@@ -157,21 +128,11 @@ tasks {
     }
 
     withType<KotlinCompile> {
-        dependsOn("wsdl2javaSubscription")
 
         kotlinOptions.jvmTarget = "17"
     }
-    cxfCodegen {
-        wsdl2java {
-            register("subscription") {
-                wsdl.set(file("$projectDir/src/main/resources/wsdl/subscription.wsdl"))
-                bindingFiles.add("$projectDir/src/main/resources/xjb/binding.xml")
-            }
-        }
-    }
 
     withType<KotlinCompile> {
-        dependsOn("wsdl2javaSubscription")
         kotlinOptions.jvmTarget = "17"
     }
 

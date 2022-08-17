@@ -1,7 +1,6 @@
 package no.nav.syfo
 
 import no.nav.syfo.mq.MqConfig
-import no.nav.syfo.util.getFileAsString
 
 data class Environment(
     val applicationName: String = getEnvVar("NAIS_APP_NAME", "pale-2"),
@@ -12,14 +11,12 @@ data class Environment(
     override val mqChannelName: String = getEnvVar("MQ_CHANNEL_NAME"),
     val inputQueueName: String = getEnvVar("MQ_INPUT_QUEUE_NAME"),
     val apprecQueueName: String = getEnvVar("MQ_APPREC_QUEUE_NAME"),
-    val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.teamsykmelding.svc.nais.local"),
+    val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.teamsykmelding.svc.cluster.local"),
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
-    val kuhrSarApiUrl: String = getEnvVar("KUHR_SAR_API_URL"),
-    val kuhrSarApiScope: String = getEnvVar("KUHR_SAR_API_SCOPE"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
-    val subscriptionEndpointURL: String = getEnvVar("SUBSCRIPTION_ENDPOINT_URL"),
     val pale2ReglerEndpointURL: String = getEnvVar("PALE_2_REGLER_ENDPOINT_URL"),
+    val pale2ReglerApiScope: String = getEnvVar("PALE_2_REGLER_API_SCOPE"),
     val pdlGraphqlPath: String = getEnvVar("PDL_GRAPHQL_PATH"),
     val pdlScope: String = getEnvVar("PDL_SCOPE"),
     val aadAccessTokenV2Url: String = getEnvVar("AZURE_OPENID_CONFIG_TOKEN_ENDPOINT"),
@@ -27,13 +24,15 @@ data class Environment(
     val clientSecretV2: String = getEnvVar("AZURE_APP_CLIENT_SECRET"),
     val paleVedleggBucketName: String = getEnvVar("PALE_VEDLEGG_BUCKET_NAME"),
     val legeerklaeringBucketName: String = getEnvVar("PALE_BUCKET_NAME"),
-    val legeerklaringTopic: String = "teamsykmelding.legeerklaering"
+    val legeerklaringTopic: String = "teamsykmelding.legeerklaering",
+    val smgcpProxyUrl: String = getEnvVar("SMGCP_PROXY_URL"),
+    val smgcpProxyScope: String = getEnvVar("SMGCP_PROXY_SCOPE"),
+    val redisSecret: String = getEnvVar("REDIS_PASSWORD"),
 ) : MqConfig
 
-data class VaultSecrets(
-    val serviceuserUsername: String = getFileAsString("/secrets/serviceuser/username"),
-    val serviceuserPassword: String = getFileAsString("/secrets/serviceuser/password"),
-    val redisSecret: String = getEnvVar("REDIS_PASSWORD")
+data class VaultServiceUser(
+    val serviceuserUsername: String = getEnvVar("SERVICEUSER_USERNAME"),
+    val serviceuserPassword: String = getEnvVar("SERVICEUSER_PASSWORD")
 )
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
