@@ -85,3 +85,5 @@ spec:
       value: api://prod-fss.teamsykmelding.smgcp-proxy/.default
     - name: SMGCP_PROXY_URL
       value: https://smgcp-proxy.prod-fss-pub.nais.io
+    - name: PALE_2_REGLER_API_SCOPE
+      value: api://prod-gcp.teamsykmelding.pale-2/.default
