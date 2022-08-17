@@ -86,4 +86,4 @@ spec:
     - name: PALE_2_REGLER_ENDPOINT_URL
       value: https://pale-2-regler.dev.intern.nav.no
     - name: PALE_2_REGLER_API_SCOPE
-      value: api://dev-gcp.teamsykmelding.pale-2/.default
+      value: api://dev-gcp.teamsykmelding.pale-2-regler/.default
