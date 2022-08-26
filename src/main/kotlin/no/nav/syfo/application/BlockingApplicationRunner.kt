@@ -46,6 +46,7 @@ import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.io.StringReader
@@ -55,6 +56,8 @@ import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
+
+private val sikkerlogg = LoggerFactory.getLogger("securelog")
 
 class BlockingApplicationRunner {
 
@@ -121,6 +124,8 @@ class BlockingApplicationRunner {
                     )
 
                     log.info("Received message, {}", fields(loggingMeta))
+
+                    sikkerlogg.info("Hei fra sikkerlogg, {}", fields(loggingMeta))
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
