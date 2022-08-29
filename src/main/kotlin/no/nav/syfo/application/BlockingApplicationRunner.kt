@@ -125,7 +125,12 @@ class BlockingApplicationRunner {
 
                     log.info("Received message, {}", fields(loggingMeta))
 
-                    sikkerlogg.info("Hei fra sikkerlogg, {}", fields(loggingMeta))
+                    sikkerlogg.info(
+                        "Received message for pasient fnr {}, lege fnr: {}, {}",
+                        fnrPasient,
+                        fnrLege,
+                        fields(loggingMeta)
+                    )
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
@@ -208,7 +213,8 @@ class BlockingApplicationRunner {
                             tssid = tssIdent
                         )
 
-                        val validationResult = pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
+                        val validationResult =
+                            pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
 
                         val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
                             bucketUploadService.uploadVedlegg(
@@ -221,8 +227,10 @@ class BlockingApplicationRunner {
                             emptyList()
                         }
 
-                        val uploadLegeerklaering = bucketUploadService.uploadLegeerklaering(receivedLegeerklaering, loggingMeta)
-                        val legeerklaeringKafkaMessage = LegeerklaeringKafkaMessage(uploadLegeerklaering, validationResult, vedleggListe)
+                        val uploadLegeerklaering =
+                            bucketUploadService.uploadLegeerklaering(receivedLegeerklaering, loggingMeta)
+                        val legeerklaeringKafkaMessage =
+                            LegeerklaeringKafkaMessage(uploadLegeerklaering, validationResult, vedleggListe)
 
                         when (validationResult.status) {
                             Status.OK -> handleStatusOK(

@@ -11,8 +11,8 @@ import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
-import io.ktor.client.engine.apache.Apache
-import io.ktor.client.engine.apache.ApacheEngineConfig
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.CIOEngineConfig
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -75,7 +75,7 @@ fun main() {
 
     DefaultExports.initialize()
 
-    val config: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+    val config: HttpClientConfig<CIOEngineConfig>.() -> Unit = {
         install(ContentNegotiation) {
             jackson {
                 registerKotlinModule()
@@ -93,7 +93,7 @@ fun main() {
         }
         expectSuccess = false
     }
-    val retryConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+    val retryConfig: HttpClientConfig<CIOEngineConfig>.() -> Unit = {
         config().apply {
             install(HttpRequestRetry) {
                 maxRetries = 3
@@ -104,8 +104,8 @@ fun main() {
         }
     }
 
-    val httpClient = HttpClient(Apache, config)
-    val httpClientWithRetry = HttpClient(Apache, retryConfig)
+    val httpClient = HttpClient(CIO, config)
+    val httpClientWithRetry = HttpClient(CIO, retryConfig)
 
     val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithRetry)
 

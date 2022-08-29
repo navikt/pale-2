@@ -29,7 +29,7 @@ val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6
 val jfairyVersion = "0.6.5"
 val pale2CommonVersion = "1.19e8b45"
 val kafkaVersion = "3.1.0"
-val mockkVersion = "1.12.4"
+val mockkVersion = "1.12.5"
 val kotlinVersion = "1.7.10"
 val googleCloudStorageVersion = "2.10.0"
 val jaxbImplVersion = "2.3.3"
@@ -73,7 +73,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-apache:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
 
