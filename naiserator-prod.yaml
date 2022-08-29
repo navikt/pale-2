@@ -54,6 +54,8 @@ spec:
     - "https://pale-2.intern.nav.no"
   filesFrom:
     - secret: pale2-google-creds
+  secureLogs:
+    enabled: true
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.P_PALE.INPUT

@@ -54,6 +54,8 @@ spec:
     - secret: pale2-google-creds
   ingresses:
     - "https://pale-2.dev.intern.nav.no"
+  secureLogs:
+    enabled: true
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.Q1_PALE.INPUT
