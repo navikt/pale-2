@@ -257,7 +257,7 @@ class BlockingApplicationRunner {
                         val currentRequestLatency = requestLatency.observeDuration()
 
                         log.info(
-                            "Finished message got outcome {}, {}, processing took {}s",
+                            "Finished message got outcome {}, {}, {},processing took {}s",
                             StructuredArguments.keyValue("status", validationResult.status),
                             StructuredArguments.keyValue(
                                 "ruleHits",
@@ -278,7 +278,7 @@ class BlockingApplicationRunner {
                     log.error("Setting applicationState.alive to false")
                     applicationState.alive = false
                 } catch (e: Exception) {
-                    log.error("Exception caught while handling message, sending to backout, {}", e)
+                    log.error("Exception caught while handling message, sending to backout: ", e)
                     backoutProducer.send(message)
                     MELDING_FEILET.inc()
                 } finally {
