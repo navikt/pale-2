@@ -1,7 +1,7 @@
 [![Build status](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)
 
 # Prosessering av legeerklæringer (PALE)
-Repository for PALE (legeerklæringer). Application written in Kotlin used to receive legeerklæringer from external systems, doing some validation, then pushing it to our internal systems.
+Application that receivea legeerklæringer from external systems, doing some validation, then pushing it to our internal systems.
 
 
 <img src="./src/svg/flytdiagram.svg" alt="Image of the flow of the pale-2 application">
