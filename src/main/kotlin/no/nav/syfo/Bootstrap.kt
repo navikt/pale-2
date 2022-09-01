@@ -36,6 +36,7 @@ import no.nav.syfo.client.SarClient
 import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.mq.MqTlsUtils
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
@@ -65,9 +66,7 @@ fun main() {
 
     val serviceUser = VaultServiceUser()
 
-    System.setProperty("javax.net.ssl.keyStore", "/var/run/keystore/pale2-keystore.jks")
-    System.setProperty("javax.net.ssl.keyStorePassword", env.keystorePassword)
-    System.setProperty("javax.net.ssl.keyStoreType", "jks")
+    System.setProperties(MqTlsUtils.getMqTlsConfig())
 
     val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(

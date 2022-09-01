@@ -27,8 +27,7 @@ data class Environment(
     val legeerklaringTopic: String = "teamsykmelding.legeerklaering",
     val smgcpProxyUrl: String = getEnvVar("SMGCP_PROXY_URL"),
     val smgcpProxyScope: String = getEnvVar("SMGCP_PROXY_SCOPE"),
-    val redisSecret: String = getEnvVar("REDIS_PASSWORD"),
-    val keystorePassword: String = getEnvVar("KEYSTORE_PASSWORD")
+    val redisSecret: String = getEnvVar("REDIS_PASSWORD")
 ) : MqConfig
 
 data class VaultServiceUser(

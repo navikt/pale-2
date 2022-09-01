@@ -91,3 +91,5 @@ spec:
       value: https://pale-2-regler.dev.intern.nav.no
     - name: PALE_2_REGLER_API_SCOPE
       value: api://dev-gcp.teamsykmelding.pale-2-regler/.default
+    - name: MQ_KEYSTORE_PATH
+      value: /var/run/keystore/pale2-keystore.jks
