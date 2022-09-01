@@ -50,10 +50,12 @@ spec:
   envFrom:
     - secret: pale-2-redis-password
     - secret: srvpale2-secrets
+    - secret: pale2-keystore-pwd
   filesFrom:
-    - secret: pale2-google-creds
-  ingresses:
-    - "https://pale-2.dev.intern.nav.no"
+    - mountPath: /var/run/secrets
+      secret: pale2-google-creds
+    - mountPath: /var/run/keystore
+      secret: pale2-keystore
   secureLogs:
     enabled: true
   env:
@@ -89,3 +91,5 @@ spec:
       value: https://pale-2-regler.dev.intern.nav.no
     - name: PALE_2_REGLER_API_SCOPE
       value: api://dev-gcp.teamsykmelding.pale-2-regler/.default
+    - name: MQ_KEYSTORE_PATH
+      value: /var/run/keystore/pale2-keystore.jks

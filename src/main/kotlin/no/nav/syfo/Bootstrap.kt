@@ -36,6 +36,7 @@ import no.nav.syfo.client.SarClient
 import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.mq.MqTlsUtils
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
@@ -64,6 +65,8 @@ fun main() {
     val env = Environment()
 
     val serviceUser = VaultServiceUser()
+
+    MqTlsUtils.getMqTlsConfig().forEach { key, value -> System.setProperty(key as String, value as String) }
 
     val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(
