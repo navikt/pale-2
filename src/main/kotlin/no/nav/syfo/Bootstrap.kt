@@ -66,7 +66,7 @@ fun main() {
 
     val serviceUser = VaultServiceUser()
 
-    System.setProperties(MqTlsUtils.getMqTlsConfig())
+    MqTlsUtils.getMqTlsConfig().forEach { key, value -> System.setProperty(key as String, value as String) }
 
     val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(
