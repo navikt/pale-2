@@ -52,8 +52,10 @@ spec:
     - secret: srvpale2-secrets
     - secret: pale2-keystore-pwd
   filesFrom:
-    - secret: pale2-google-creds
-    - secret: pale2-keystore
+    - mountPath: /var/run/secrets
+      secret: pale2-google-creds
+    - mountPath: /var/run/keystore
+      secret: pale2-keystore
   secureLogs:
     enabled: true
   env:

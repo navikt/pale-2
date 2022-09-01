@@ -65,7 +65,7 @@ fun main() {
 
     val serviceUser = VaultServiceUser()
 
-    System.setProperty("javax.net.ssl.keyStore", "/var/run/secrets/pale2-keystore.jks")
+    System.setProperty("javax.net.ssl.keyStore", "/var/run/keystore/pale2-keystore.jks")
     System.setProperty("javax.net.ssl.keyStorePassword", env.keystorePassword)
     System.setProperty("javax.net.ssl.keyStoreType", "jks")
 
