@@ -50,10 +50,10 @@ spec:
   envFrom:
     - secret: pale-2-redis-password
     - secret: srvpale2-secrets
+    - secret: pale2-keystore-pwd
   filesFrom:
     - secret: pale2-google-creds
-  ingresses:
-    - "https://pale-2.dev.intern.nav.no"
+    - secret: pale2-keystore
   secureLogs:
     enabled: true
   env:
