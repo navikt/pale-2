@@ -50,7 +50,7 @@ fun handleDuplicateSM2013Content(
 ) {
 
     log.warn(
-        "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {}",
+        "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {}, {}",
         keyValue("originalEdiLoggId", redisSha256String),
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
@@ -79,7 +79,7 @@ fun handleDuplicateEdiloggid(
 ) {
 
     log.warn(
-        "Melding med {} har samme ediLoggId som tidligere mottatt legeerklæring og er avvist som duplikat {}",
+        "Melding med {} har samme ediLoggId som tidligere mottatt legeerklæring og er avvist som duplikat {}, {}",
         keyValue("originalEdiLoggId", redisEdiloggid),
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
@@ -111,7 +111,7 @@ fun handlePatientNotFoundInPDL(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {}",
+        "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )
@@ -139,7 +139,7 @@ fun handleDoctorNotFoundInPDL(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}",
+        "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}, {}",
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )
@@ -170,7 +170,7 @@ fun handleTestFnrInProd(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}",
+        "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}, {}",
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )

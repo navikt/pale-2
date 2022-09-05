@@ -1,10 +1,30 @@
 [![Build status](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)
 
 # Prosessering av legeerklæringer (PALE)
-Application that receives legeerklæringer from external systems, doing some validation, then pushing it to our internal systems.
+Application that receives Legeerklæringer from external systems, doing some validation, then pushing it to our internal systems.
 
 
-<img src="./src/svg/flytdiagram.svg" alt="Image of the flow of the pale-2 application">
+## FlowChart
+This the high level flow of the application
+```mermaid
+  graph LR;
+      EPJ---eMottak;
+      eMottak --- id1([PALE.INPUT]);
+      id1([PALE.INPUT]) ---> pale-2;
+      pale-2 --->  B[\teamsykmelding.sykmelding-apprec/];
+      pale-2 --->  id2([PALE.INPUT]);
+      id2([PALE_2.INPUT_BOQ]) --->  id1([PALE.INPUT]);
+      pale-2 --- redis;
+      pale-2 --- Azure-AD;
+      pale-2 --- PDL;
+      pale-2 --- Kuhr-SAR;
+      pale-2 --- eMottak-subscription;
+      pale-2 --- GCP-Bucket;
+      pale-2 --- pale-2-regler;
+      pale-2 ---> id3([FS06_ARENA]);
+      id3([FS06_ARENA]) ---> Arena;
+      pale-2 ---- A[\teamsykmelding.legeerklaering/];
+```
 
 ## Technologies used
 * Kotlin
