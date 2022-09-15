@@ -11,8 +11,7 @@ This the high level flow of the application
       EPJ---eMottak;
       eMottak --- id1([PALE.INPUT]);
       id1([PALE.INPUT]) ---> pale-2;
-      pale-2 --->  B[\teamsykmelding.sykmelding-apprec/];
-      pale-2 --->  id2([PALE.INPUT]);
+      pale-2 ---> id2([PALE.INPUT]);
       id2([PALE_2.INPUT_BOQ]) --->  id1([PALE.INPUT]);
       pale-2 --- redis;
       pale-2 --- Azure-AD;
@@ -23,7 +22,9 @@ This the high level flow of the application
       pale-2 --- pale-2-regler;
       pale-2 ---> id3([FS06_ARENA]);
       id3([FS06_ARENA]) ---> Arena;
-      pale-2 ---- A[\teamsykmelding.legeerklaering/];
+      pale-2 --- A[\teamsykmelding.legeerklaering/];
+      pale-2 --- id4([QA.P414.IU03_UTSENDING]);
+      id4([QA.P414.IU03_UTSENDING]) ---> eMottak;
 ```
 
 ## Technologies used
