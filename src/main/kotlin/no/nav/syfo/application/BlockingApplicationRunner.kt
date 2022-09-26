@@ -14,6 +14,7 @@ import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
+import no.nav.syfo.handlestatus.handleStatusPresensHarForMangeTegn
 import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
@@ -180,6 +181,15 @@ class BlockingApplicationRunner {
                         }
                         if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
+                                session, receiptProducer, fellesformat,
+                                ediLoggId, jedis, sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        }
+                        if (legeerklaringxml.diagnoseArbeidsuforhet?.statusPresens?.length != null &&
+                            legeerklaringxml.diagnoseArbeidsuforhet.statusPresens.length > 10000
+                        ) {
+                            handleStatusPresensHarForMangeTegn(
                                 session, receiptProducer, fellesformat,
                                 ediLoggId, jedis, sha256String, env, loggingMeta
                             )

@@ -159,6 +159,37 @@ fun handleDoctorNotFoundInPDL(
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
+fun handleStatusPresensHarForMangeTegn(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
+    env: Environment,
+    loggingMeta: LoggingMeta
+) {
+    log.warn(
+        "Legeerklæringen er avvist fordi statusPresens inneholder mer enn 10 000 tegn {}, {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
+    )
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
+            createApprecError(
+                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
+                    " StatusPresens inneholder mer enn 10 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
+            )
+        )
+    )
+
+    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+
+    INVALID_MESSAGE_NO_NOTICE.inc()
+    updateRedis(jedis, ediLoggId, sha256String)
+}
+
 fun handleTestFnrInProd(
     session: Session,
     receiptProducer: MessageProducer,
