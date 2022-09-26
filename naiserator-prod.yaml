@@ -77,8 +77,6 @@ spec:
       value: QA.P414.FS06_ARENA
     - name: PDL_GRAPHQL_PATH
       value: https://pdl-api.prod-fss-pub.nais.io/graphql
-    - name: PALE_2_REGLER_ENDPOINT_URL
-      value: https://pale-2-regler.intern.nav.no
     - name: PDL_SCOPE
       value: api://prod-fss.pdl.pdl-api/.default
     - name: PALE_VEDLEGG_BUCKET_NAME
