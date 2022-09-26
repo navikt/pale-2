@@ -159,7 +159,7 @@ fun handleDoctorNotFoundInPDL(
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
-fun handleStatusPresensHarForMangeTegn(
+fun handleFritekstfeltHarForMangeTegn(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
@@ -167,10 +167,11 @@ fun handleStatusPresensHarForMangeTegn(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    fritekstfelt: String
 ) {
     log.warn(
-        "Legeerklæringen er avvist fordi statusPresens inneholder mer enn 10 000 tegn {}, {}",
+        "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )
@@ -179,7 +180,7 @@ fun handleStatusPresensHarForMangeTegn(
         listOf(
             createApprecError(
                 "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                    " StatusPresens inneholder mer enn 10 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
+                    " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
             )
         )
     )

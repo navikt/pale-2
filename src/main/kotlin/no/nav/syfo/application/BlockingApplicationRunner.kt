@@ -11,10 +11,10 @@ import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
+import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
-import no.nav.syfo.handlestatus.handleStatusPresensHarForMangeTegn
 import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
@@ -187,11 +187,20 @@ class BlockingApplicationRunner {
                             continue@loop
                         }
                         if (legeerklaringxml.diagnoseArbeidsuforhet?.statusPresens?.length != null &&
-                            legeerklaringxml.diagnoseArbeidsuforhet.statusPresens.length > 10000
+                            legeerklaringxml.diagnoseArbeidsuforhet.statusPresens.length > 15000
                         ) {
-                            handleStatusPresensHarForMangeTegn(
+                            handleFritekstfeltHarForMangeTegn(
                                 session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta
+                                ediLoggId, jedis, sha256String, env, loggingMeta, "StatusPresens"
+                            )
+                            continue@loop
+                        }
+                        if (legeerklaringxml.diagnoseArbeidsuforhet?.symptomerBehandling?.length != null &&
+                            legeerklaringxml.diagnoseArbeidsuforhet.symptomerBehandling.length > 15000
+                        ) {
+                            handleFritekstfeltHarForMangeTegn(
+                                session, receiptProducer, fellesformat,
+                                ediLoggId, jedis, sha256String, env, loggingMeta, "SymptomerBehandling"
                             )
                             continue@loop
                         }
