@@ -191,7 +191,7 @@ class BlockingApplicationRunner {
                         ) {
                             handleFritekstfeltHarForMangeTegn(
                                 session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta, "StatusPresens"
+                                ediLoggId, jedis, sha256String, env, loggingMeta, "Punkt 2.6 Status presens"
                             )
                             continue@loop
                         }
@@ -200,7 +200,7 @@ class BlockingApplicationRunner {
                         ) {
                             handleFritekstfeltHarForMangeTegn(
                                 session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta, "SymptomerBehandling"
+                                ediLoggId, jedis, sha256String, env, loggingMeta, "Punkt 2.5 Sykehistorie med symptomer og behandling"
                             )
                             continue@loop
                         }

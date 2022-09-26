@@ -89,9 +89,7 @@ fun handleDuplicateEdiloggid(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
             createApprecError(
-                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                    "Denne legeerklæringen har ein identisk identifikator med ein legeerklæring som er mottatt tidligere," +
-                    " og er derfor ein duplikat." +
+                "Duplikat! Denne legeerklæringen har samme identifikator som en legeerklæring som er mottatt tidligere" +
                     " og skal ikke sendes på nytt. Dersom dette ikke stemmer, kontakt din EPJ-leverandør"
             )
         )
@@ -147,8 +145,7 @@ fun handleDoctorNotFoundInPDL(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
             createApprecError(
-                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                    " Behandler er ikkje registrert i folkeregisteret"
+                "Behandler er ikke registrert i folkeregisteret"
             )
         )
     )
@@ -179,7 +176,7 @@ fun handleFritekstfeltHarForMangeTegn(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
             createApprecError(
-                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
+                "Legeerklæringen er avvist fordi den inneholder for mange tegn: " +
                     " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
             )
         )
@@ -216,8 +213,7 @@ fun handleTestFnrInProd(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
             createApprecError(
-                "Legeerklæringen kan ikke rettes, det må skrives en ny. Grunnet følgende:" +
-                    "Dettte fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
+                "Dette fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
             )
         )
     )
