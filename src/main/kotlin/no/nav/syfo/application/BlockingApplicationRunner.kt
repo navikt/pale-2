@@ -11,6 +11,7 @@ import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
+import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
@@ -182,6 +183,24 @@ class BlockingApplicationRunner {
                             handleTestFnrInProd(
                                 session, receiptProducer, fellesformat,
                                 ediLoggId, jedis, sha256String, env, loggingMeta
+                            )
+                            continue@loop
+                        }
+                        if (legeerklaringxml.diagnoseArbeidsuforhet?.statusPresens?.length != null &&
+                            legeerklaringxml.diagnoseArbeidsuforhet.statusPresens.length > 15000
+                        ) {
+                            handleFritekstfeltHarForMangeTegn(
+                                session, receiptProducer, fellesformat,
+                                ediLoggId, jedis, sha256String, env, loggingMeta, "Punkt 2.6 Status presens"
+                            )
+                            continue@loop
+                        }
+                        if (legeerklaringxml.diagnoseArbeidsuforhet?.symptomerBehandling?.length != null &&
+                            legeerklaringxml.diagnoseArbeidsuforhet.symptomerBehandling.length > 15000
+                        ) {
+                            handleFritekstfeltHarForMangeTegn(
+                                session, receiptProducer, fellesformat,
+                                ediLoggId, jedis, sha256String, env, loggingMeta, "Punkt 2.5 Sykehistorie med symptomer og behandling"
                             )
                             continue@loop
                         }
