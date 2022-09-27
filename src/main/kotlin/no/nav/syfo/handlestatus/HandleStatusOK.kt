@@ -66,7 +66,7 @@ fun sendTilTopic(
 ) {
     try {
         aivenKafkaProducer.send(ProducerRecord(topic, legeerklaeringId, legeerklaeringKafkaMessage)).get()
-        log.info("Melding med msgId ${legeerklaeringKafkaMessage.legeerklaeringObjectId} sendt til kafka topic {}", topic)
+        log.info("Melding med id $legeerklaeringId sendt til kafka topic {}", topic)
     } catch (e: Exception) {
         log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))
         throw e
