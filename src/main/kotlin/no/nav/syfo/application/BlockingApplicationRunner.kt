@@ -265,7 +265,8 @@ class BlockingApplicationRunner {
                                 aivenKafkaProducer = aivenKafkaProducer,
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName
+                                apprecQueueName = env.apprecQueueName,
+                                legeerklaeringId = legeerklaring.id
                             )
 
                             Status.INVALID -> handleStatusINVALID(
@@ -277,7 +278,8 @@ class BlockingApplicationRunner {
                                 aivenKafkaProducer = aivenKafkaProducer,
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName
+                                apprecQueueName = env.apprecQueueName,
+                                legeerklaeringId = legeerklaring.id
                             )
                         }
 
