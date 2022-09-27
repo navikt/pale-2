@@ -29,7 +29,8 @@ fun handleStatusINVALID(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     topic: String,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
-    apprecQueueName: String
+    apprecQueueName: String,
+    legeerklaeringId: String
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
@@ -37,7 +38,7 @@ fun handleStatusINVALID(
     )
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
-    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, loggingMeta)
+    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
 }
 
 fun handleDuplicateSM2013Content(

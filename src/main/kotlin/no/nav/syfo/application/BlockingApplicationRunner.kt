@@ -60,22 +60,23 @@ import javax.jms.TextMessage
 
 private val sikkerlogg = LoggerFactory.getLogger("securelog")
 
-class BlockingApplicationRunner {
+class BlockingApplicationRunner(
+    private val applicationState: ApplicationState,
+    private val jedis: Jedis,
+    private val env: Environment,
+    private val samhandlerService: SamhandlerService,
+    private val pdlPersonService: PdlPersonService,
+    private val aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
+    private val pale2ReglerClient: Pale2ReglerClient,
+    private val bucketUploadService: BucketUploadService
+) {
 
     suspend fun run(
-        applicationState: ApplicationState,
         inputconsumer: MessageConsumer,
-        jedis: Jedis,
         session: Session,
-        env: Environment,
         receiptProducer: MessageProducer,
         backoutProducer: MessageProducer,
-        samhandlerService: SamhandlerService,
-        pdlPersonService: PdlPersonService,
-        arenaProducer: MessageProducer,
-        aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
-        pale2ReglerClient: Pale2ReglerClient,
-        bucketUploadService: BucketUploadService
+        arenaProducer: MessageProducer
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -277,7 +278,8 @@ class BlockingApplicationRunner {
                                 aivenKafkaProducer = aivenKafkaProducer,
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName
+                                apprecQueueName = env.apprecQueueName,
+                                legeerklaeringId = legeerklaring.id
                             )
                         }
 
@@ -314,7 +316,7 @@ class BlockingApplicationRunner {
             }
         }
     }
-
-    fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
-        fellesformatMarshaller.toString(fellesformat)
 }
+
+fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
+    fellesformatMarshaller.toString(fellesformat)

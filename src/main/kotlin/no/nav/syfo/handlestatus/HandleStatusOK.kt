@@ -40,7 +40,7 @@ fun handleStatusOK(
     )
     log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
-    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, loggingMeta)
+    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaring.id, loggingMeta)
 }
 
 fun sendArenaInfo(
@@ -61,11 +61,12 @@ fun sendTilTopic(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     topic: String,
     legeerklaeringKafkaMessage: LegeerklaeringKafkaMessage,
+    legeerklaeringId: String,
     loggingMeta: LoggingMeta
 ) {
     try {
-        aivenKafkaProducer.send(ProducerRecord(topic, legeerklaeringKafkaMessage)).get()
-        log.info("Melding sendt til kafka topic {}", topic)
+        aivenKafkaProducer.send(ProducerRecord(topic, legeerklaeringId, legeerklaeringKafkaMessage)).get()
+        log.info("Melding med id $legeerklaeringId sendt til kafka topic {}", topic)
     } catch (e: Exception) {
         log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))
         throw e

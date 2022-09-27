@@ -3,7 +3,7 @@ package no.nav.syfo
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.application.BlockingApplicationRunner
+import no.nav.syfo.application.fellesformatTilString
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.get
 import no.nav.syfo.util.getFileAsString
@@ -17,7 +17,7 @@ internal class DumpTopicTest {
     internal fun `Skal kunne deserialisere melding fra dumptopic`() {
         val fellesformatOriginal =
             fellesformatUnmarshaller.unmarshal(StringReader(getFileAsString("src/test/resources/fellesformat_le.xml"))) as XMLEIFellesformat
-        val fellesformatSomString = BlockingApplicationRunner().fellesformatTilString(fellesformatOriginal)
+        val fellesformatSomString = fellesformatTilString(fellesformatOriginal)
 
         val fellesformat = fellesformatUnmarshaller.unmarshal(StringReader(fellesformatSomString)) as XMLEIFellesformat
 
