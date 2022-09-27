@@ -29,8 +29,7 @@ fun handleStatusOK(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     topic: String,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
-    apprecQueueName: String,
-    legeerklaeringId: String
+    apprecQueueName: String
 ) {
     sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
@@ -41,7 +40,7 @@ fun handleStatusOK(
     )
     log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
-    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
+    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaring.id, loggingMeta)
 }
 
 fun sendArenaInfo(

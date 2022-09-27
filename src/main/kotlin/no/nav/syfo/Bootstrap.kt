@@ -173,10 +173,21 @@ fun launchListeners(
 
                 jedis.auth(env.redisSecret)
 
-                BlockingApplicationRunner().run(
-                    applicationState, inputconsumer,
-                    jedis, session, env, receiptProducer, backoutProducer, samhandlerService, pdlPersonService,
-                    arenaProducer, aivenKafkaProducer, pale2ReglerClient, bucketUploadService
+                BlockingApplicationRunner(
+                    applicationState = applicationState,
+                    jedis = jedis,
+                    env = env,
+                    samhandlerService = samhandlerService,
+                    pdlPersonService = pdlPersonService,
+                    aivenKafkaProducer = aivenKafkaProducer,
+                    pale2ReglerClient = pale2ReglerClient,
+                    bucketUploadService = bucketUploadService
+                ).run(
+                    inputconsumer = inputconsumer,
+                    session = session,
+                    receiptProducer = receiptProducer,
+                    backoutProducer = backoutProducer,
+                    arenaProducer = arenaProducer
                 )
             }
         }
