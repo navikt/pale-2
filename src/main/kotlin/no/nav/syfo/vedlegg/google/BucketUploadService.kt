@@ -65,7 +65,7 @@ class BucketUploadService(
         legeerklaering: ReceivedLegeerklaering,
         loggingMeta: LoggingMeta
     ): String {
-        log.info("Laster opp legerklæring", StructuredArguments.fields(loggingMeta))
+        log.info("Laster opp legerklæring {}", StructuredArguments.fields(loggingMeta))
         val msgId = legeerklaering.msgId
         storage.create(BlobInfo.newBuilder(legeerklaringBucketName, msgId).build(), objectMapper.writeValueAsBytes(removeIllegalCharacters(legeerklaering)))
         log.info("Lastet opp legeerklæring med id $msgId {}", StructuredArguments.fields(loggingMeta))
