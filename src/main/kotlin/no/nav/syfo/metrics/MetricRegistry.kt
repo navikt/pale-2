@@ -28,6 +28,12 @@ val INVALID_MESSAGE_NO_NOTICE: Counter = Counter.build()
     .help("Counts the number of messages, that has not enough information to be sendt to the rule engine ")
     .register()
 
+val FOR_MANGE_TEGN: Counter = Counter.build()
+    .namespace(METRICS_NS)
+    .name("for_mange_tegn_count")
+    .help("Antall meldinger som har for mange tegn i fritekstfelt")
+    .register()
+
 val TEST_FNR_IN_PROD: Counter = Counter.build()
     .namespace(METRICS_NS)
     .name("test_fnr_in_prod")

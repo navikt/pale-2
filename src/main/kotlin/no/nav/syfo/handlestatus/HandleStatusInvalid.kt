@@ -8,6 +8,7 @@ import no.nav.syfo.Environment
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.toApprecCV
 import no.nav.syfo.log
+import no.nav.syfo.metrics.FOR_MANGE_TEGN
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.TEST_FNR_IN_PROD
 import no.nav.syfo.model.ValidationResult
@@ -166,7 +167,10 @@ fun handleFritekstfeltHarForMangeTegn(
     sha256String: String,
     env: Environment,
     loggingMeta: LoggingMeta,
-    fritekstfelt: String
+    fritekstfelt: String,
+    aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
+    legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
+    legeerklaeringId: String
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
@@ -185,7 +189,10 @@ fun handleFritekstfeltHarForMangeTegn(
 
     log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
 
-    INVALID_MESSAGE_NO_NOTICE.inc()
+    sendTilTopic(aivenKafkaProducer, env.legeerklaringTopic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
+    log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
+
+    FOR_MANGE_TEGN.inc()
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
