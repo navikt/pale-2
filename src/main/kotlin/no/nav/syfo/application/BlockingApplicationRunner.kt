@@ -24,6 +24,7 @@ import no.nav.syfo.metrics.VEDLEGG_COUNTER
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Status
+import no.nav.syfo.model.Sykdomsopplysninger
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.model.toLegeerklaring
@@ -324,73 +325,16 @@ class BlockingApplicationRunner(
         sha256String: String
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
-        val forkortedeSykdomsopplysninger =
-            if (legeerklaering.sykdomsopplysninger.statusPresens.length > 15000 && legeerklaering.sykdomsopplysninger.sykdomshistorie.length > 15000) {
-                legeerklaering.sykdomsopplysninger.copy(
-                    statusPresens = "FOR STOR",
-                    sykdomshistorie = "FOR STOR"
-                )
-            } else if (legeerklaering.sykdomsopplysninger.statusPresens.length > 15000) {
-                legeerklaering.sykdomsopplysninger.copy(statusPresens = "FOR STOR")
-            } else {
-                legeerklaering.sykdomsopplysninger.copy(sykdomshistorie = "FOR STOR")
-            }
-
-        val validationResult =
-            if (legeerklaering.sykdomsopplysninger.statusPresens.length > 15000 && legeerklaering.sykdomsopplysninger.sykdomshistorie.length > 15000) {
-                ValidationResult(
-                    Status.INVALID,
-                    listOf(
-                        RuleInfo(
-                            "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
-                            "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                            "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                            Status.INVALID
-                        )
-                    )
-                )
-            } else if (legeerklaering.sykdomsopplysninger.statusPresens.length > 15000) {
-                ValidationResult(
-                    Status.INVALID,
-                    listOf(
-                        RuleInfo(
-                            "FOR_MANGE_TEGN_STATUSPRESENS",
-                            "Punkt 2.6 Status presens har mer enn 15 000 tegn",
-                            "Punkt 2.6 Status presens har mer enn 15 000 tegn",
-                            Status.INVALID
-                        )
-                    )
-                )
-            } else {
-                ValidationResult(
-                    Status.INVALID,
-                    listOf(
-                        RuleInfo(
-                            "FOR_MANGE_TEGN_SYMPTOMER",
-                            "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                            "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                            Status.INVALID
-                        )
-                    )
-                )
-            }
-
-        val fritekstfelt =
-            if (legeerklaering.sykdomsopplysninger.statusPresens.length > 15000 && legeerklaering.sykdomsopplysninger.sykdomshistorie.length > 15000) {
-                "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling"
-            } else if (legeerklaering.sykdomsopplysninger.statusPresens.length > 15000) {
-                "Punkt 2.6 Status presens"
-            } else {
-                "Punkt 2.5 Sykehistorie med symptomer og behandling"
-            }
+        val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
+        val validationResult = getValidationResult(legeerklaering.sykdomsopplysninger)
+        val fritekstfelt = getFritekstfelt(legeerklaering.sykdomsopplysninger)
 
         val forkortetReceivedLegeerklaering =
             receivedLegeerklaering.copy(legeerklaering = legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger))
-        val uploadForkortetLegeerklaering =
-            bucketUploadService.uploadLegeerklaering(
-                forkortetReceivedLegeerklaering,
-                loggingMeta
-            )
+        val uploadForkortetLegeerklaering = bucketUploadService.uploadLegeerklaering(
+            forkortetReceivedLegeerklaering,
+            loggingMeta
+        )
         val forkortetLegeerklaeringKafkaMessage =
             LegeerklaeringKafkaMessage(uploadForkortetLegeerklaering, validationResult, emptyList())
 
@@ -410,6 +354,66 @@ class BlockingApplicationRunner(
         )
     }
 }
+
+fun getFritekstfelt(sykdomsopplysninger: Sykdomsopplysninger) =
+    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+        "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling"
+    } else if (sykdomsopplysninger.statusPresens.length > 15000) {
+        "Punkt 2.6 Status presens"
+    } else {
+        "Punkt 2.5 Sykehistorie med symptomer og behandling"
+    }
+
+fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
+    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+        ValidationResult(
+            Status.INVALID,
+            listOf(
+                RuleInfo(
+                    "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
+                    "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    Status.INVALID
+                )
+            )
+        )
+    } else if (sykdomsopplysninger.statusPresens.length > 15000) {
+        ValidationResult(
+            Status.INVALID,
+            listOf(
+                RuleInfo(
+                    "FOR_MANGE_TEGN_STATUSPRESENS",
+                    "Punkt 2.6 Status presens har mer enn 15 000 tegn",
+                    "Punkt 2.6 Status presens har mer enn 15 000 tegn",
+                    Status.INVALID
+                )
+            )
+        )
+    } else {
+        ValidationResult(
+            Status.INVALID,
+            listOf(
+                RuleInfo(
+                    "FOR_MANGE_TEGN_SYMPTOMER",
+                    "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    Status.INVALID
+                )
+            )
+        )
+    }
+
+fun getForkortedeSykdomsopplysninger(sykdomsopplysninger: Sykdomsopplysninger) =
+    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+        sykdomsopplysninger.copy(
+            statusPresens = "FOR STOR",
+            sykdomshistorie = "FOR STOR"
+        )
+    } else if (sykdomsopplysninger.statusPresens.length > 15000) {
+        sykdomsopplysninger.copy(statusPresens = "FOR STOR")
+    } else {
+        sykdomsopplysninger.copy(sykdomshistorie = "FOR STOR")
+    }
 
 fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
     fellesformatMarshaller.toString(fellesformat)
