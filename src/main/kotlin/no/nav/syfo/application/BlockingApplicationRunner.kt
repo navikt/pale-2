@@ -22,7 +22,10 @@ import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.VEDLEGG_COUNTER
 import no.nav.syfo.model.ReceivedLegeerklaering
+import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Status
+import no.nav.syfo.model.Sykdomsopplysninger
+import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
@@ -187,24 +190,6 @@ class BlockingApplicationRunner(
                             )
                             continue@loop
                         }
-                        if (legeerklaringxml.diagnoseArbeidsuforhet?.statusPresens?.length != null &&
-                            legeerklaringxml.diagnoseArbeidsuforhet.statusPresens.length > 15000
-                        ) {
-                            handleFritekstfeltHarForMangeTegn(
-                                session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta, "Punkt 2.6 Status presens"
-                            )
-                            continue@loop
-                        }
-                        if (legeerklaringxml.diagnoseArbeidsuforhet?.symptomerBehandling?.length != null &&
-                            legeerklaringxml.diagnoseArbeidsuforhet.symptomerBehandling.length > 15000
-                        ) {
-                            handleFritekstfeltHarForMangeTegn(
-                                session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta, "Punkt 2.5 Sykehistorie med symptomer og behandling"
-                            )
-                            continue@loop
-                        }
 
                         val legeerklaring = legeerklaringxml.toLegeerklaring(
                             legeerklaringId = UUID.randomUUID().toString(),
@@ -232,6 +217,19 @@ class BlockingApplicationRunner(
                             fellesformat = fellesformatText,
                             tssid = tssIdent
                         )
+
+                        if (legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 || legeerklaring.sykdomsopplysninger.sykdomshistorie.length > 15000) {
+                            handleTooLargeMessage(
+                                receivedLegeerklaering,
+                                loggingMeta,
+                                session,
+                                receiptProducer,
+                                fellesformat,
+                                ediLoggId,
+                                sha256String
+                            )
+                            continue@loop
+                        }
 
                         val validationResult =
                             pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
@@ -316,7 +314,106 @@ class BlockingApplicationRunner(
             }
         }
     }
+
+    private fun handleTooLargeMessage(
+        receivedLegeerklaering: ReceivedLegeerklaering,
+        loggingMeta: LoggingMeta,
+        session: Session,
+        receiptProducer: MessageProducer,
+        fellesformat: XMLEIFellesformat,
+        ediLoggId: String,
+        sha256String: String
+    ) {
+        val legeerklaering = receivedLegeerklaering.legeerklaering
+        val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
+        val validationResult = getValidationResult(legeerklaering.sykdomsopplysninger)
+        val fritekstfelt = getFritekstfelt(legeerklaering.sykdomsopplysninger)
+
+        val forkortetReceivedLegeerklaering =
+            receivedLegeerklaering.copy(legeerklaering = legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger))
+        val uploadForkortetLegeerklaering = bucketUploadService.uploadLegeerklaering(
+            forkortetReceivedLegeerklaering,
+            loggingMeta
+        )
+        val forkortetLegeerklaeringKafkaMessage =
+            LegeerklaeringKafkaMessage(uploadForkortetLegeerklaering, validationResult, emptyList())
+
+        handleFritekstfeltHarForMangeTegn(
+            session = session,
+            receiptProducer = receiptProducer,
+            fellesformat = fellesformat,
+            ediLoggId = ediLoggId,
+            jedis = jedis,
+            sha256String = sha256String,
+            env = env,
+            loggingMeta = loggingMeta,
+            fritekstfelt = fritekstfelt,
+            aivenKafkaProducer = aivenKafkaProducer,
+            legeerklaringKafkaMessage = forkortetLegeerklaeringKafkaMessage,
+            legeerklaeringId = legeerklaering.id
+        )
+    }
 }
+
+fun getFritekstfelt(sykdomsopplysninger: Sykdomsopplysninger) =
+    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+        "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling"
+    } else if (sykdomsopplysninger.statusPresens.length > 15000) {
+        "Punkt 2.6 Status presens"
+    } else {
+        "Punkt 2.5 Sykehistorie med symptomer og behandling"
+    }
+
+fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
+    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+        ValidationResult(
+            Status.INVALID,
+            listOf(
+                RuleInfo(
+                    "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
+                    "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    Status.INVALID
+                )
+            )
+        )
+    } else if (sykdomsopplysninger.statusPresens.length > 15000) {
+        ValidationResult(
+            Status.INVALID,
+            listOf(
+                RuleInfo(
+                    "FOR_MANGE_TEGN_STATUSPRESENS",
+                    "Punkt 2.6 Status presens har mer enn 15 000 tegn",
+                    "Punkt 2.6 Status presens har mer enn 15 000 tegn",
+                    Status.INVALID
+                )
+            )
+        )
+    } else {
+        ValidationResult(
+            Status.INVALID,
+            listOf(
+                RuleInfo(
+                    "FOR_MANGE_TEGN_SYMPTOMER",
+                    "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                    Status.INVALID
+                )
+            )
+        )
+    }
+
+fun getForkortedeSykdomsopplysninger(sykdomsopplysninger: Sykdomsopplysninger) =
+    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+        sykdomsopplysninger.copy(
+            statusPresens = "FOR STOR",
+            sykdomshistorie = "FOR STOR"
+        )
+    } else if (sykdomsopplysninger.statusPresens.length > 15000) {
+        sykdomsopplysninger.copy(statusPresens = "FOR STOR")
+    } else {
+        sykdomsopplysninger.copy(sykdomshistorie = "FOR STOR")
+    }
 
 fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
     fellesformatMarshaller.toString(fellesformat)
