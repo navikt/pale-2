@@ -29,7 +29,7 @@ val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6
 val jfairyVersion = "0.6.5"
 val pale2CommonVersion = "1.7dbd229"
 val kafkaVersion = "3.2.3"
-val mockkVersion = "1.12.8"
+val mockkVersion = "1.13.2"
 val kotlinVersion = "1.7.20"
 val googleCloudStorageVersion = "2.12.0"
 val jaxbImplVersion = "2.3.3"
@@ -74,6 +74,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
+    {
+        exclude(group = "commons-codec")
+    }
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
 
