@@ -23,7 +23,7 @@ val jaxbApiVersion = "2.4.0-b180830.0359"
 val javaxActivationVersion = "1.1.1"
 val legeerklaering = "2019.07.29-02-53-86b22e73f7843e422ee500b486dac387a582f2d1"
 val kithApprecVersion = "2019.07.30-04-23-2a0d1388209441ec05d2e92a821eed4f796a3ae2"
-val commonsTextVersion = "1.9"
+val commonsTextVersion = "1.10.0"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jfairyVersion = "0.6.5"
@@ -114,7 +114,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
-    testImplementation("com.devskiller:jfairy:$jfairyVersion")
+    testImplementation("com.devskiller:jfairy:$jfairyVersion") {
+        exclude(group = "org.apache.commons", module = "commons-text")
+    }
     testImplementation("io.mockk:mockk:$mockkVersion")
 }
 
