@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import org.amshove.kluent.shouldBeEqualTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class KuhrSarClientTest {
@@ -22,7 +22,6 @@ internal class KuhrSarClientTest {
         )
 
         val match = samhandlerMatchingPaaOrganisjonsNavn(samhandlerMedNavn, "Testlegesenteret")
-
-        match?.samhandlerPraksis?.navn shouldBeEqualTo "Testlegesenteret - org nr"
+        assertEquals("Testlegesenteret - org nr", match?.samhandlerPraksis?.navn)
     }
 }

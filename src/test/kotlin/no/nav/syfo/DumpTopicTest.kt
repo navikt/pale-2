@@ -7,7 +7,7 @@ import no.nav.syfo.application.fellesformatTilString
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.get
 import no.nav.syfo.util.getFileAsString
-import org.amshove.kluent.shouldBeEqualTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.StringReader
 
@@ -26,7 +26,7 @@ internal class DumpTopicTest {
         val ediLoggId = receiverBlock.ediLoggId
         val msgId = msgHead.msgInfo.msgId
 
-        ediLoggId shouldBeEqualTo "FiktivTestdata0001"
-        msgId shouldBeEqualTo "05565fb0-cd7e-410d-bc1f-e1e918df2eac"
+        assertEquals("FiktivTestdata0001", ediLoggId)
+        assertEquals("05565fb0-cd7e-410d-bc1f-e1e918df2eac", msgId)
     }
 }

@@ -5,12 +5,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.1.1"
+val ktorVersion = "2.1.2"
 val coroutinesVersion = "1.6.4"
 val prometheusVersion = "0.16.0"
 val junitJupiterVersion = "5.9.0"
 val kluentVersion = "1.68"
-val logbackVersion = "1.4.1"
+val logbackVersion = "1.4.3"
 val logstashEncoderVersion = "7.2"
 val jacksonVersion = "2.13.4"
 val jedisVersion = "4.2.3"
@@ -30,7 +30,7 @@ val jfairyVersion = "0.6.5"
 val pale2CommonVersion = "1.7dbd229"
 val kafkaVersion = "3.2.3"
 val mockkVersion = "1.12.8"
-val kotlinVersion = "1.7.10"
+val kotlinVersion = "1.7.20"
 val googleCloudStorageVersion = "2.12.0"
 val jaxbImplVersion = "2.3.3"
 val wsApiVersion = "2.3.3"
@@ -38,7 +38,7 @@ val annotationApiVersion = "1.3.5"
 
 plugins {
     id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
-    kotlin("jvm") version "1.7.10"
+    kotlin("jvm") version "1.7.20"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.diffplug.spotless") version "6.5.0"
     id("org.jmailen.kotlinter") version "3.10.0"
@@ -73,7 +73,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-apache:$ktorVersion")
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
 
@@ -108,7 +108,6 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion") {
         exclude(group = "org.eclipse.jetty")
     }
-    testImplementation("org.amshove.kluent:kluent:$kluentVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")

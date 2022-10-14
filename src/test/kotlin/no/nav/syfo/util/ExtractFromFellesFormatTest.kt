@@ -2,7 +2,7 @@ package no.nav.syfo.util
 
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.msgHead.XMLMsgHead
-import org.amshove.kluent.shouldBeEqualTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.StringReader
 
@@ -18,7 +18,6 @@ class ExtractFromFellesFormatTest {
             felleformatLe.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
 
         val tlfFromFromHealthcareProfessional = extractTlfFromHealthcareProfessional(healthcareProfessional)
-
-        tlfFromFromHealthcareProfessional shouldBeEqualTo "98765432"
+        assertEquals("98765432", tlfFromFromHealthcareProfessional)
     }
 }
