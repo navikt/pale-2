@@ -5,7 +5,7 @@ import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.util.extractLegeerklaering
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.getFileAsString
-import org.amshove.kluent.shouldBeEqualTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.StringReader
 import java.time.LocalDateTime
@@ -27,87 +27,87 @@ internal class LegeerklaringMapperTest {
             behandlerNavn = "Navn Navnesen"
         )
 
-        legeerklaering.arbeidsvurderingVedSykefravaer shouldBeEqualTo false
-        legeerklaering.arbeidsavklaringspenger shouldBeEqualTo true
-        legeerklaering.yrkesrettetAttforing shouldBeEqualTo false
-        legeerklaering.uforepensjon shouldBeEqualTo false
-        legeerklaering.pasient.fornavn shouldBeEqualTo "Kari"
-        legeerklaering.pasient.mellomnavn?.shouldBeEqualTo("Setesdal")
-        legeerklaering.pasient.etternavn shouldBeEqualTo "Nordmann"
-        legeerklaering.pasient.fnr shouldBeEqualTo "12349812345"
-        legeerklaering.pasient.navKontor?.shouldBeEqualTo("NAV Sagene")
-        legeerklaering.pasient.adresse?.shouldBeEqualTo("Hjemmeaddresse 2")
-        legeerklaering.pasient.postnummer?.shouldBeEqualTo(1234)
-        legeerklaering.pasient.yrke?.shouldBeEqualTo("Dokumentforfalsker")
-        legeerklaering.pasient.arbeidsgiver.navn?.shouldBeEqualTo("NAV IKT")
-        legeerklaering.pasient.arbeidsgiver.adresse?.shouldBeEqualTo("Oppdiktet gate 32")
-        legeerklaering.pasient.arbeidsgiver.postnummer?.shouldBeEqualTo(1234)
-        legeerklaering.pasient.arbeidsgiver.poststed?.shouldBeEqualTo("Ukjentby")
-        legeerklaering.sykdomsopplysninger.hoveddiagnose?.kode?.shouldBeEqualTo("K74")
-        legeerklaering.sykdomsopplysninger.hoveddiagnose?.tekst?.shouldBeEqualTo("82-01-Le")
-        legeerklaering.sykdomsopplysninger.bidiagnose.firstOrNull()?.kode?.shouldBeEqualTo("U99")
-        legeerklaering.sykdomsopplysninger.bidiagnose.firstOrNull()?.tekst?.shouldBeEqualTo("Nyresvikt kronisk")
-        legeerklaering.sykdomsopplysninger.arbeidsuforFra shouldBeEqualTo LocalDateTime.of(2017, 11, 5, 0, 0, 0)
-        legeerklaering.sykdomsopplysninger.sykdomshistorie.shouldBeEqualTo("vethellerikkehvasomskalhit")
-        legeerklaering.sykdomsopplysninger.statusPresens.shouldBeEqualTo("vetikkehvasomskalhit")
-        legeerklaering.sykdomsopplysninger.borNavKontoretVurdereOmDetErEnYrkesskade shouldBeEqualTo false
-        legeerklaering.sykdomsopplysninger.yrkesSkadeDato shouldBeEqualTo LocalDateTime.of(2017, 10, 14, 0, 0, 0)
-        legeerklaering.plan?.utredning?.tekst?.shouldBeEqualTo("Dra p� fisketur med en guide")
-        legeerklaering.plan?.utredning?.dato shouldBeEqualTo LocalDateTime.of(2017, 11, 5, 0, 0, 0)
-        legeerklaering.plan?.utredning?.antattVentetIUker?.shouldBeEqualTo(3)
-        legeerklaering.plan?.behandling?.tekst?.shouldBeEqualTo("Dra p� fisketur med en guide")
-        legeerklaering.plan?.behandling?.dato shouldBeEqualTo null
-        legeerklaering.plan?.behandling?.antattVentetIUker?.shouldBeEqualTo(3)
-        legeerklaering.plan?.utredningsplan?.shouldBeEqualTo("Burde dra ut p� fisketur for � slappe av")
-        legeerklaering.plan?.behandlingsplan?.shouldBeEqualTo("Trenger � slappe av med litt fisking")
-        legeerklaering.plan?.vurderingAvTidligerePlan?.shouldBeEqualTo("Trenger ikke ny vurdering")
-        legeerklaering.plan?.narSporreOmNyeLegeopplysninger?.shouldBeEqualTo("Den gamle planen fungerte ikke")
-        legeerklaering.plan?.videreBehandlingIkkeAktueltGrunn?.shouldBeEqualTo("Trenger � slappe av med litt fisking")
-        legeerklaering.forslagTilTiltak.behov shouldBeEqualTo true
-        legeerklaering.forslagTilTiltak.kjopAvHelsetjenester shouldBeEqualTo true
-        legeerklaering.forslagTilTiltak.reisetilskudd shouldBeEqualTo false
-        legeerklaering.forslagTilTiltak.aktivSykmelding shouldBeEqualTo false
-        legeerklaering.forslagTilTiltak.hjelpemidlerArbeidsplassen shouldBeEqualTo false
-        legeerklaering.forslagTilTiltak.arbeidsavklaringspenger shouldBeEqualTo false
-        legeerklaering.forslagTilTiltak.friskmeldingTilArbeidsformidling shouldBeEqualTo false
-        legeerklaering.forslagTilTiltak.andreTiltak?.shouldBeEqualTo("Den gamle planen fungerte ikke")
-        legeerklaering.forslagTilTiltak.naermereOpplysninger.shouldBeEqualTo("")
-        legeerklaering.forslagTilTiltak.tekst.shouldBeEqualTo("Trenger lettere arbeid")
-        legeerklaering.funksjonsOgArbeidsevne.vurderingFunksjonsevne?.shouldBeEqualTo("Kan ikke lengre danse")
-        legeerklaering.funksjonsOgArbeidsevne.inntektsgivendeArbeid shouldBeEqualTo false
-        legeerklaering.funksjonsOgArbeidsevne.hjemmearbeidende shouldBeEqualTo false
-        legeerklaering.funksjonsOgArbeidsevne.student shouldBeEqualTo false
-        legeerklaering.funksjonsOgArbeidsevne.annetArbeid.shouldBeEqualTo("")
-        legeerklaering.funksjonsOgArbeidsevne.kravTilArbeid?.shouldBeEqualTo("Ingen dans")
-        legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeid shouldBeEqualTo false
-        legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeidNa shouldBeEqualTo true
-        legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeidEtterBehandling shouldBeEqualTo false
-        legeerklaering.funksjonsOgArbeidsevne.kanIkkeGjenopptaNaverendeArbeid?.shouldBeEqualTo("Ikke tunge l�ft")
-        legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeid shouldBeEqualTo true
-        legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeidNa shouldBeEqualTo true
-        legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeidEtterBehandling shouldBeEqualTo false
-        legeerklaering.funksjonsOgArbeidsevne.kanIkkeTaAnnetArbeid?.shouldBeEqualTo("Ingen dans")
-        legeerklaering.prognose.vilForbedreArbeidsevne shouldBeEqualTo false
-        legeerklaering.prognose.anslattVarighetSykdom?.shouldBeEqualTo("Ikke varig.")
-        legeerklaering.prognose.anslattVarighetFunksjonsnedsetting?.shouldBeEqualTo("Ikke varig.")
-        legeerklaering.prognose.anslattVarighetNedsattArbeidsevne?.shouldBeEqualTo("Ikke varig.")
-        legeerklaering.arsakssammenheng?.shouldBeEqualTo("Sikker.")
-        legeerklaering.andreOpplysninger?.shouldBeEqualTo("Andre opplysninger")
-        legeerklaering.kontakt.skalKontakteBehandlendeLege shouldBeEqualTo false
-        legeerklaering.kontakt.skalKontakteArbeidsgiver shouldBeEqualTo false
-        legeerklaering.kontakt.skalKontakteBasisgruppe shouldBeEqualTo false
-        legeerklaering.kontakt.kontakteAnnenInstans?.shouldBeEqualTo("Andre opplysninger")
-        legeerklaering.kontakt.onskesKopiAvVedtak shouldBeEqualTo true
-        legeerklaering.pasientenBurdeIkkeVite?.shouldBeEqualTo("")
-        legeerklaering.tilbakeholdInnhold shouldBeEqualTo true
-        legeerklaering.signatur.dato shouldBeEqualTo LocalDateTime.of(2017, 11, 5, 0, 0, 0)
-        legeerklaering.signatur.navn?.shouldBeEqualTo("LEGESEN TEST LEGE")
-        legeerklaering.signatur.adresse?.shouldBeEqualTo("Oppdiktet gate 203")
-        legeerklaering.signatur.postnummer?.shouldBeEqualTo("1234")
-        legeerklaering.signatur.poststed?.shouldBeEqualTo("Oslo")
-        legeerklaering.signatur.signatur?.shouldBeEqualTo("")
-        legeerklaering.signatur.tlfNummer?.shouldBeEqualTo("98765432")
-        legeerklaering.signaturDato shouldBeEqualTo LocalDateTime.of(2017, 11, 5, 0, 0, 0)
+        assertEquals(false, legeerklaering.arbeidsvurderingVedSykefravaer)
+        assertEquals(true, legeerklaering.arbeidsavklaringspenger)
+        assertEquals(false, legeerklaering.yrkesrettetAttforing)
+        assertEquals(false, legeerklaering.uforepensjon)
+        assertEquals("Kari", legeerklaering.pasient.fornavn)
+        assertEquals("Setesdal", legeerklaering.pasient.mellomnavn)
+        assertEquals("Nordmann", legeerklaering.pasient.etternavn)
+        assertEquals("12349812345", legeerklaering.pasient.fnr)
+        assertEquals("NAV Sagene", legeerklaering.pasient.navKontor)
+        assertEquals("Hjemmeaddresse 2", legeerklaering.pasient.adresse)
+        assertEquals(1234, legeerklaering.pasient.postnummer)
+        assertEquals("Dokumentforfalsker", legeerklaering.pasient.yrke)
+        assertEquals("NAV IKT", legeerklaering.pasient.arbeidsgiver.navn)
+        assertEquals("Oppdiktet gate 32", legeerklaering.pasient.arbeidsgiver.adresse)
+        assertEquals(1234, legeerklaering.pasient.arbeidsgiver.postnummer)
+        assertEquals("Ukjentby", legeerklaering.pasient.arbeidsgiver.poststed)
+        assertEquals("K74", legeerklaering.sykdomsopplysninger.hoveddiagnose?.kode)
+        assertEquals("82-01-Le", legeerklaering.sykdomsopplysninger.hoveddiagnose?.tekst)
+        assertEquals("U99", legeerklaering.sykdomsopplysninger.bidiagnose.firstOrNull()?.kode)
+        assertEquals("Nyresvikt kronisk", legeerklaering.sykdomsopplysninger.bidiagnose.firstOrNull()?.tekst)
+        assertEquals(LocalDateTime.of(2017, 11, 5, 0, 0, 0), legeerklaering.sykdomsopplysninger.arbeidsuforFra)
+        assertEquals("vethellerikkehvasomskalhit", legeerklaering.sykdomsopplysninger.sykdomshistorie)
+        assertEquals("vetikkehvasomskalhit", legeerklaering.sykdomsopplysninger.statusPresens)
+        assertEquals(false, legeerklaering.sykdomsopplysninger.borNavKontoretVurdereOmDetErEnYrkesskade)
+        assertEquals(LocalDateTime.of(2017, 10, 14, 0, 0, 0), legeerklaering.sykdomsopplysninger.yrkesSkadeDato)
+        assertEquals("Dra p� fisketur med en guide", legeerklaering.plan?.utredning?.tekst)
+        assertEquals(LocalDateTime.of(2017, 11, 5, 0, 0, 0), legeerklaering.plan?.utredning?.dato)
+        assertEquals(3, legeerklaering.plan?.utredning?.antattVentetIUker)
+        assertEquals("Dra p� fisketur med en guide", legeerklaering.plan?.behandling?.tekst)
+        assertEquals(LocalDateTime.of(2017, 11, 5, 0, 0, 0), legeerklaering.plan?.behandling?.dato)
+        assertEquals(3, legeerklaering.plan?.behandling?.antattVentetIUker)
+        assertEquals("Burde dra ut p� fisketur for � slappe av", legeerklaering.plan?.utredningsplan)
+        assertEquals("Trenger � slappe av med litt fisking", legeerklaering.plan?.behandlingsplan)
+        assertEquals("Trenger ikke ny vurdering", legeerklaering.plan?.vurderingAvTidligerePlan)
+        assertEquals("Den gamle planen fungerte ikke", legeerklaering.plan?.narSporreOmNyeLegeopplysninger)
+        assertEquals("Trenger � slappe av med litt fisking", legeerklaering.plan?.videreBehandlingIkkeAktueltGrunn)
+        assertEquals(true, legeerklaering.forslagTilTiltak.behov)
+        assertEquals(false, legeerklaering.forslagTilTiltak.kjopAvHelsetjenester)
+        assertEquals(false, legeerklaering.forslagTilTiltak.reisetilskudd)
+        assertEquals(false, legeerklaering.forslagTilTiltak.aktivSykmelding)
+        assertEquals(false, legeerklaering.forslagTilTiltak.hjelpemidlerArbeidsplassen)
+        assertEquals(false, legeerklaering.forslagTilTiltak.arbeidsavklaringspenger)
+        assertEquals(false, legeerklaering.forslagTilTiltak.friskmeldingTilArbeidsformidling)
+        assertEquals("Den gamle planen fungerte ikke", legeerklaering.forslagTilTiltak.andreTiltak)
+        assertEquals("", legeerklaering.forslagTilTiltak.naermereOpplysninger)
+        assertEquals("Trenger lettere arbeid", legeerklaering.forslagTilTiltak.tekst)
+        assertEquals("Kan ikke lengre danse", legeerklaering.funksjonsOgArbeidsevne.vurderingFunksjonsevne)
+        assertEquals(false, legeerklaering.funksjonsOgArbeidsevne.inntektsgivendeArbeid)
+        assertEquals(false, legeerklaering.funksjonsOgArbeidsevne.hjemmearbeidende)
+        assertEquals(false, legeerklaering.funksjonsOgArbeidsevne.student)
+        assertEquals("", legeerklaering.funksjonsOgArbeidsevne.annetArbeid)
+        assertEquals("Ingen dans", legeerklaering.funksjonsOgArbeidsevne.kravTilArbeid)
+        assertEquals(false, legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeid)
+        assertEquals(true, legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeidNa)
+        assertEquals(false, legeerklaering.funksjonsOgArbeidsevne.kanGjenopptaTidligereArbeidEtterBehandling)
+        assertEquals("Ikke tunge l�ft", legeerklaering.funksjonsOgArbeidsevne.kanIkkeGjenopptaNaverendeArbeid)
+        assertEquals(true, legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeid)
+        assertEquals(true, legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeidNa)
+        assertEquals(false, legeerklaering.funksjonsOgArbeidsevne.kanTaAnnetArbeidEtterBehandling)
+        assertEquals("Ingen dans", legeerklaering.funksjonsOgArbeidsevne.kanIkkeTaAnnetArbeid)
+        assertEquals(false, legeerklaering.prognose.vilForbedreArbeidsevne)
+        assertEquals("Ikke varig.", legeerklaering.prognose.anslattVarighetSykdom)
+        assertEquals("Ikke varig.", legeerklaering.prognose.anslattVarighetFunksjonsnedsetting)
+        assertEquals("Ikke varig.", legeerklaering.prognose.anslattVarighetNedsattArbeidsevne)
+        assertEquals("Sikker.", legeerklaering.arsakssammenheng)
+        assertEquals("Andre opplysninger", legeerklaering.andreOpplysninger)
+        assertEquals(false, legeerklaering.kontakt.skalKontakteBehandlendeLege)
+        assertEquals(false, legeerklaering.kontakt.skalKontakteArbeidsgiver)
+        assertEquals(false, legeerklaering.kontakt.skalKontakteBasisgruppe)
+        assertEquals("DPS", legeerklaering.kontakt.kontakteAnnenInstans)
+        assertEquals(true, legeerklaering.kontakt.onskesKopiAvVedtak)
+        assertEquals("", legeerklaering.pasientenBurdeIkkeVite)
+        assertEquals(true, legeerklaering.tilbakeholdInnhold)
+        assertEquals(LocalDateTime.of(2017, 11, 5, 0, 0, 0), legeerklaering.signatur.dato)
+        assertEquals("LEGESEN TEST LEGE", legeerklaering.signatur.navn)
+        assertEquals("Oppdiktet gate 203", legeerklaering.signatur.adresse)
+        assertEquals("1234", legeerklaering.signatur.postnummer)
+        assertEquals("Oslo", legeerklaering.signatur.poststed)
+        assertEquals("", legeerklaering.signatur.signatur)
+        assertEquals("98765432", legeerklaering.signatur.tlfNummer)
+        assertEquals(LocalDateTime.of(2017, 11, 5, 0, 0, 0), legeerklaering.signaturDato)
     }
 
     @Test
@@ -123,7 +123,6 @@ internal class LegeerklaringMapperTest {
             signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0),
             behandlerNavn = "Navn Navnesen"
         )
-
-        legeerklaering.signatur.navn?.shouldBeEqualTo("Navn Navnesen")
+        assertEquals("Navn Navnesen", legeerklaering.signatur.navn)
     }
 }

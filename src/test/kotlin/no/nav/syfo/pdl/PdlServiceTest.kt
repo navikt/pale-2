@@ -14,8 +14,7 @@ import no.nav.syfo.pdl.client.model.PdlIdent
 import no.nav.syfo.pdl.client.model.ResponseData
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.util.LoggingMeta
-import org.amshove.kluent.shouldBe
-import org.amshove.kluent.shouldBeEqualTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -39,10 +38,10 @@ internal class PdlServiceTest {
 
         runBlocking {
             val person = pdlService.getPdlPerson("01245678901", loggingMeta)
-            person?.navn?.fornavn shouldBeEqualTo "fornavn"
-            person?.navn?.mellomnavn shouldBeEqualTo null
-            person?.navn?.etternavn shouldBeEqualTo "etternavn"
-            person?.aktorId shouldBeEqualTo "987654321"
+            assertEquals("fornavn", person?.navn?.fornavn)
+            assertEquals(null, person?.navn?.mellomnavn)
+            assertEquals("etternavn", person?.navn?.etternavn)
+            assertEquals("987654321", person?.aktorId)
         }
     }
 
@@ -53,7 +52,7 @@ internal class PdlServiceTest {
 
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
-            pdlPerson shouldBe null
+            assertEquals(null, pdlPerson)
         }
     }
 
@@ -73,7 +72,7 @@ internal class PdlServiceTest {
 
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
-            pdlPerson shouldBe null
+            assertEquals(null, pdlPerson)
         }
     }
 
@@ -93,7 +92,7 @@ internal class PdlServiceTest {
 
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
-            pdlPerson shouldBe null
+            assertEquals(null, pdlPerson)
         }
     }
 
@@ -114,7 +113,7 @@ internal class PdlServiceTest {
 
         runBlocking {
             val pdlPerson = pdlService.getPdlPerson("123", loggingMeta)
-            pdlPerson shouldBe null
+            assertEquals(null, pdlPerson)
         }
     }
 }

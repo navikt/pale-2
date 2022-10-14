@@ -4,7 +4,7 @@ import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.Sykdomsopplysninger
 import no.nav.syfo.model.ValidationResult
-import org.amshove.kluent.shouldBeEqualTo
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 internal class ForStoreFritekstfeltTest {
@@ -24,26 +24,32 @@ internal class ForStoreFritekstfeltTest {
         val validationResults = getValidationResult(sykdomsopplysninger)
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(sykdomsopplysninger)
 
-        fritekstfelt shouldBeEqualTo "Punkt 2.6 Status presens"
-        validationResults shouldBeEqualTo ValidationResult(
-            Status.INVALID,
-            listOf(
-                RuleInfo(
-                    "FOR_MANGE_TEGN_STATUSPRESENS",
-                    "Punkt 2.6 Status presens har mer enn 15 000 tegn",
-                    "Punkt 2.6 Status presens har mer enn 15 000 tegn",
-                    Status.INVALID
+        assertEquals("Punkt 2.6 Status presens", fritekstfelt)
+        assertEquals(
+            ValidationResult(
+                Status.INVALID,
+                listOf(
+                    RuleInfo(
+                        "FOR_MANGE_TEGN_STATUSPRESENS",
+                        "Punkt 2.6 Status presens har mer enn 15 000 tegn",
+                        "Punkt 2.6 Status presens har mer enn 15 000 tegn",
+                        Status.INVALID
+                    )
                 )
-            )
+            ),
+            validationResults
         )
-        forkortedeSykdomsopplysninger shouldBeEqualTo Sykdomsopplysninger(
-            hoveddiagnose = null,
-            bidiagnose = emptyList(),
-            arbeidsuforFra = null,
-            sykdomshistorie = "historie",
-            statusPresens = "FOR STOR",
-            borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null
+        assertEquals(
+            Sykdomsopplysninger(
+                hoveddiagnose = null,
+                bidiagnose = emptyList(),
+                arbeidsuforFra = null,
+                sykdomshistorie = "historie",
+                statusPresens = "FOR STOR",
+                borNavKontoretVurdereOmDetErEnYrkesskade = false,
+                yrkesSkadeDato = null
+            ),
+            forkortedeSykdomsopplysninger
         )
     }
 
@@ -63,26 +69,32 @@ internal class ForStoreFritekstfeltTest {
         val validationResults = getValidationResult(sykdomsopplysninger)
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(sykdomsopplysninger)
 
-        fritekstfelt shouldBeEqualTo "Punkt 2.5 Sykehistorie med symptomer og behandling"
-        validationResults shouldBeEqualTo ValidationResult(
-            Status.INVALID,
-            listOf(
-                RuleInfo(
-                    "FOR_MANGE_TEGN_SYMPTOMER",
-                    "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                    "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                    Status.INVALID
+        assertEquals("Punkt 2.5 Sykehistorie med symptomer og behandling", fritekstfelt)
+        assertEquals(
+            ValidationResult(
+                Status.INVALID,
+                listOf(
+                    RuleInfo(
+                        "FOR_MANGE_TEGN_SYMPTOMER",
+                        "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                        "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                        Status.INVALID
+                    )
                 )
-            )
+            ),
+            validationResults
         )
-        forkortedeSykdomsopplysninger shouldBeEqualTo Sykdomsopplysninger(
-            hoveddiagnose = null,
-            bidiagnose = emptyList(),
-            arbeidsuforFra = null,
-            sykdomshistorie = "FOR STOR",
-            statusPresens = "statusPresens",
-            borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null
+        assertEquals(
+            Sykdomsopplysninger(
+                hoveddiagnose = null,
+                bidiagnose = emptyList(),
+                arbeidsuforFra = null,
+                sykdomshistorie = "FOR STOR",
+                statusPresens = "statusPresens",
+                borNavKontoretVurdereOmDetErEnYrkesskade = false,
+                yrkesSkadeDato = null
+            ),
+            forkortedeSykdomsopplysninger
         )
     }
 
@@ -102,26 +114,33 @@ internal class ForStoreFritekstfeltTest {
         val validationResults = getValidationResult(sykdomsopplysninger)
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(sykdomsopplysninger)
 
-        fritekstfelt shouldBeEqualTo "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling"
-        validationResults shouldBeEqualTo ValidationResult(
-            Status.INVALID,
-            listOf(
-                RuleInfo(
-                    "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
-                    "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                    "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                    Status.INVALID
+        assertEquals("Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling", fritekstfelt)
+        assertEquals(
+            ValidationResult(
+                Status.INVALID,
+                listOf(
+                    RuleInfo(
+                        "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
+                        "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                        "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
+                        Status.INVALID
+                    )
                 )
-            )
+            ),
+            validationResults
         )
-        forkortedeSykdomsopplysninger shouldBeEqualTo Sykdomsopplysninger(
-            hoveddiagnose = null,
-            bidiagnose = emptyList(),
-            arbeidsuforFra = null,
-            sykdomshistorie = "FOR STOR",
-            statusPresens = "FOR STOR",
-            borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null
+
+        assertEquals(
+            Sykdomsopplysninger(
+                hoveddiagnose = null,
+                bidiagnose = emptyList(),
+                arbeidsuforFra = null,
+                sykdomshistorie = "FOR STOR",
+                statusPresens = "FOR STOR",
+                borNavKontoretVurdereOmDetErEnYrkesskade = false,
+                yrkesSkadeDato = null
+            ),
+            forkortedeSykdomsopplysninger
         )
     }
 }
