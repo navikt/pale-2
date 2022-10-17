@@ -37,7 +37,6 @@ val wsApiVersion = "2.3.3"
 val annotationApiVersion = "1.3.5"
 
 plugins {
-    id("io.mateo.cxf-codegen") version "1.0.0-rc.3"
     kotlin("jvm") version "1.7.20"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.diffplug.spotless") version "6.5.0"
