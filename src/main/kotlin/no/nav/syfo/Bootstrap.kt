@@ -30,6 +30,7 @@ import no.nav.syfo.application.BlockingApplicationRunner
 import no.nav.syfo.application.createApplicationEngine
 import no.nav.syfo.application.exception.ServiceUnavailableException
 import no.nav.syfo.client.AccessTokenClientV2
+import no.nav.syfo.client.ClamAvClient
 import no.nav.syfo.client.EmottakSubscriptionClient
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
@@ -43,6 +44,7 @@ import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
+import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.util.JacksonKafkaSerializer
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
@@ -128,9 +130,13 @@ fun main() {
     val paleVedleggStorage: Storage = StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
     val paleVedleggBucketUploadService = BucketUploadService(env.legeerklaeringBucketName, env.paleVedleggBucketName, paleVedleggStorage)
 
+    val clamAvClient = ClamAvClient(httpClientWithRetry, env.clamAvEndpointUrl)
+
+    val virusScanService = VirusScanService(clamAvClient)
+
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, serviceUser,
-        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService
+        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService
     )
 
     applicationServer.start()
@@ -158,7 +164,8 @@ fun launchListeners(
     serviceUser: VaultServiceUser,
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     pale2ReglerClient: Pale2ReglerClient,
-    bucketUploadService: BucketUploadService
+    bucketUploadService: BucketUploadService,
+    virusScanService: VirusScanService
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword).use { connection ->
@@ -181,7 +188,8 @@ fun launchListeners(
                     pdlPersonService = pdlPersonService,
                     aivenKafkaProducer = aivenKafkaProducer,
                     pale2ReglerClient = pale2ReglerClient,
-                    bucketUploadService = bucketUploadService
+                    bucketUploadService = bucketUploadService,
+                    virusScanService = virusScanService
                 ).run(
                     inputconsumer = inputconsumer,
                     session = session,

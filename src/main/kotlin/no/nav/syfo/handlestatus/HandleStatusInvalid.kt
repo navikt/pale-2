@@ -196,6 +196,37 @@ fun handleFritekstfeltHarForMangeTegn(
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
+fun handleVedleggContainsVirus(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
+    env: Environment,
+    loggingMeta: LoggingMeta
+) {
+    log.warn(
+        "Legeerklæringen er avvist fordi noen av vedleggene kan inneholde virus {}, {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
+    )
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
+            createApprecError(
+                "Legeerklæringen er avvist fordi noen av vedleggene kan inneholde virus" +
+                    "sjekk om vedleggene inneholder virus"
+            )
+        )
+    )
+
+    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+    INVALID_MESSAGE_NO_NOTICE.inc()
+
+    updateRedis(jedis, ediLoggId, sha256String)
+}
+
 fun handleTestFnrInProd(
     session: Session,
     receiptProducer: MessageProducer,

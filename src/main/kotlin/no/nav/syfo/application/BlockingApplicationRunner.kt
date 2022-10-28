@@ -16,6 +16,7 @@ import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
+import no.nav.syfo.handlestatus.handleVedleggContainsVirus
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
@@ -31,6 +32,7 @@ import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
+import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.sha256hashstring
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
@@ -71,7 +73,8 @@ class BlockingApplicationRunner(
     private val pdlPersonService: PdlPersonService,
     private val aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     private val pale2ReglerClient: Pale2ReglerClient,
-    private val bucketUploadService: BucketUploadService
+    private val bucketUploadService: BucketUploadService,
+    private val virusScanService: VirusScanService
 ) {
 
     suspend fun run(
@@ -233,6 +236,16 @@ class BlockingApplicationRunner(
 
                         val validationResult =
                             pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
+
+                        if (vedlegg.isNotEmpty()) {
+                            if (virusScanService.vedleggContainsVirus(vedlegg)) {
+                                handleVedleggContainsVirus(
+                                    session, receiptProducer, fellesformat,
+                                    ediLoggId, jedis, sha256String, env, loggingMeta
+                                )
+                                continue@loop
+                            }
+                        }
 
                         val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
                             bucketUploadService.uploadVedlegg(

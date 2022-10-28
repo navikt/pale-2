@@ -27,7 +27,8 @@ data class Environment(
     val legeerklaringTopic: String = "teamsykmelding.legeerklaering",
     val smgcpProxyUrl: String = getEnvVar("SMGCP_PROXY_URL"),
     val smgcpProxyScope: String = getEnvVar("SMGCP_PROXY_SCOPE"),
-    val redisSecret: String = getEnvVar("REDIS_PASSWORD")
+    val redisSecret: String = getEnvVar("REDIS_PASSWORD"),
+    val clamAvEndpointUrl: String = getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.clamav.svc.cluster.local")
 ) : MqConfig
 
 data class VaultServiceUser(
