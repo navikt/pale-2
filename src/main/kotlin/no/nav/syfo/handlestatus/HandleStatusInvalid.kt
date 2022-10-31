@@ -207,7 +207,7 @@ fun handleVedleggContainsVirus(
     loggingMeta: LoggingMeta
 ) {
     log.warn(
-        "Legeerklæringen er avvist fordi noen av vedleggene kan inneholde virus {}, {}",
+        "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus {}, {}",
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )
@@ -215,7 +215,7 @@ fun handleVedleggContainsVirus(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
             createApprecError(
-                "Legeerklæringen er avvist fordi noen av vedleggene kan inneholde virus" +
+                "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus" +
                     "sjekk om vedleggene inneholder virus"
             )
         )
