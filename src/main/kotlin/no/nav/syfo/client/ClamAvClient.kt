@@ -17,7 +17,7 @@ class ClamAvClient(
                 url = "$endpointUrl/scan",
                 formData = formData {
                     vedlegg.map {
-                        append(it.description + it.type, base64Decode(it.content.content))
+                        append(it.description + it.type, it.content.content)
                     }
                 }
             )
@@ -33,6 +33,3 @@ data class ScanResult(
 enum class Result {
     FOUND, OK
 }
-
-fun base64Decode(encoded: String): String =
-    String(Base64.getDecoder().decode(encoded))
