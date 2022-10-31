@@ -5,6 +5,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import no.nav.syfo.vedlegg.model.Vedlegg
+import java.util.Base64
 
 class ClamAvClient(
     private val httpClient: HttpClient,
@@ -16,7 +17,7 @@ class ClamAvClient(
                 url = "$endpointUrl/scan",
                 formData = formData {
                     vedlegg.map {
-                        append(it.description + it.type, it.content.content)
+                        append(it.description + it.type, base64Decode(it.content.content))
                     }
                 }
             )
@@ -32,3 +33,6 @@ data class ScanResult(
 enum class Result {
     FOUND, OK
 }
+
+fun base64Decode(encoded: String): String =
+    String(Base64.getDecoder().decode(encoded))
