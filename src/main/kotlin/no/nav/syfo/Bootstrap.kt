@@ -16,6 +16,8 @@ import io.ktor.client.engine.apache.ApacheEngineConfig
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.network.sockets.SocketTimeoutException
 import io.ktor.serialization.jackson.jackson
 import io.prometheus.client.hotspot.DefaultExports
@@ -62,6 +64,8 @@ val objectMapper: ObjectMapper = ObjectMapper()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
+val secureLog = LoggerFactory.getLogger("secureLog")
+
 @DelicateCoroutinesApi
 fun main() {
     val env = Environment()
@@ -106,29 +110,44 @@ fun main() {
                     retry * 500L
                 }
             }
+            install(Logging) {
+                level = LogLevel.BODY
+                logger = object : io.ktor.client.plugins.logging.Logger {
+                    override fun log(message: String) {
+                        secureLog.info(message)
+                    }
+                }
+            }
         }
     }
 
     val httpClient = HttpClient(Apache, config)
     val httpClientWithRetry = HttpClient(Apache, retryConfig)
 
-    val accessTokenClientV2 = AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithRetry)
+    val accessTokenClientV2 =
+        AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithRetry)
 
     val sarClient = SarClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
     val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
-    val emottakSubscriptionClient = EmottakSubscriptionClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
+    val emottakSubscriptionClient =
+        EmottakSubscriptionClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
 
     val samhandlerService = SamhandlerService(sarClient, emottakSubscriptionClient)
 
-    val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig().toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
+    val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig()
+        .toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
     val aivenKafkaProducer = KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
 
-    val pale2ReglerClient = Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClientWithRetry, accessTokenClientV2, env.pale2ReglerApiScope)
+    val pale2ReglerClient =
+        Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClientWithRetry, accessTokenClientV2, env.pale2ReglerApiScope)
 
-    val paleVedleggStorageCredentials: Credentials = GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/pale2-google-creds.json"))
-    val paleVedleggStorage: Storage = StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
-    val paleVedleggBucketUploadService = BucketUploadService(env.legeerklaeringBucketName, env.paleVedleggBucketName, paleVedleggStorage)
+    val paleVedleggStorageCredentials: Credentials =
+        GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/pale2-google-creds.json"))
+    val paleVedleggStorage: Storage =
+        StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
+    val paleVedleggBucketUploadService =
+        BucketUploadService(env.legeerklaeringBucketName, env.paleVedleggBucketName, paleVedleggStorage)
 
     val clamAvClient = ClamAvClient(httpClientWithRetry, env.clamAvEndpointUrl)
 
@@ -168,36 +187,37 @@ fun launchListeners(
     virusScanService: VirusScanService
 ) {
     createListener(applicationState) {
-        connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword).use { connection ->
-            Jedis(env.redishost, 6379).use { jedis ->
-                connection.start()
-                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
+        connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
+            .use { connection ->
+                Jedis(env.redishost, 6379).use { jedis ->
+                    connection.start()
+                    val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-                val inputconsumer = session.consumerForQueue(env.inputQueueName)
-                val receiptProducer = session.producerForQueue(env.apprecQueueName)
-                val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-                val arenaProducer = session.producerForQueue(env.arenaQueueName)
+                    val inputconsumer = session.consumerForQueue(env.inputQueueName)
+                    val receiptProducer = session.producerForQueue(env.apprecQueueName)
+                    val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+                    val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
-                jedis.auth(env.redisSecret)
+                    jedis.auth(env.redisSecret)
 
-                BlockingApplicationRunner(
-                    applicationState = applicationState,
-                    jedis = jedis,
-                    env = env,
-                    samhandlerService = samhandlerService,
-                    pdlPersonService = pdlPersonService,
-                    aivenKafkaProducer = aivenKafkaProducer,
-                    pale2ReglerClient = pale2ReglerClient,
-                    bucketUploadService = bucketUploadService,
-                    virusScanService = virusScanService
-                ).run(
-                    inputconsumer = inputconsumer,
-                    session = session,
-                    receiptProducer = receiptProducer,
-                    backoutProducer = backoutProducer,
-                    arenaProducer = arenaProducer
-                )
+                    BlockingApplicationRunner(
+                        applicationState = applicationState,
+                        jedis = jedis,
+                        env = env,
+                        samhandlerService = samhandlerService,
+                        pdlPersonService = pdlPersonService,
+                        aivenKafkaProducer = aivenKafkaProducer,
+                        pale2ReglerClient = pale2ReglerClient,
+                        bucketUploadService = bucketUploadService,
+                        virusScanService = virusScanService
+                    ).run(
+                        inputconsumer = inputconsumer,
+                        session = session,
+                        receiptProducer = receiptProducer,
+                        backoutProducer = backoutProducer,
+                        arenaProducer = arenaProducer
+                    )
+                }
             }
-        }
     }
 }

@@ -31,6 +31,7 @@ import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
 import no.nav.syfo.pdl.service.PdlPersonService
+import no.nav.syfo.secureLog
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.sha256hashstring
@@ -52,7 +53,6 @@ import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.io.StringReader
@@ -62,8 +62,6 @@ import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
-
-private val sikkerlogg = LoggerFactory.getLogger("securelog")
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -133,7 +131,7 @@ class BlockingApplicationRunner(
 
                     log.info("Received message, {}", fields(loggingMeta))
 
-                    sikkerlogg.info(
+                    secureLog.info(
                         "Received message for pasient fnr {}, lege fnr: {}, {}",
                         fnrPasient,
                         fnrLege,

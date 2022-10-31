@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.1.2"
+val ktorVersion = "2.1.3"
 val coroutinesVersion = "1.6.4"
 val prometheusVersion = "0.16.0"
 val junitJupiterVersion = "5.9.0"
@@ -76,6 +76,7 @@ dependencies {
     {
         exclude(group = "commons-codec")
     }
+    implementation("io.ktor:ktor-client-logging-jvm:$ktorVersion")
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
 
