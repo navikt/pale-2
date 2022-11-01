@@ -17,7 +17,7 @@ class ClamAvClient(
                 url = "$endpointUrl/scan",
                 formData = formData {
                     vedlegg.map {
-                        append(it.description + it.type, it.content.content)
+                        append(it.description + it.type,  Base64.getMimeDecoder().decode(it.content.content))
                     }
                 }
             )
