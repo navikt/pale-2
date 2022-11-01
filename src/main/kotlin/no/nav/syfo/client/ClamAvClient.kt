@@ -4,8 +4,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.request.put
-import io.ktor.client.statement.HttpResponse
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import no.nav.syfo.vedlegg.model.Vedlegg
 import java.util.Base64
 
@@ -19,7 +19,12 @@ class ClamAvClient(
                 url = "$endpointUrl/scan",
                 formData = formData {
                     vedlegg.map {
-                        append(it.description + it.type,  Base64.getMimeDecoder().decode(it.content.content))
+                        append(it.description + it.type,  Base64.getMimeDecoder().decode(it.content.content),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, it.content.contentType)
+                                append(HttpHeaders.ContentDisposition, "filename=${it.description + it.type}")
+                            })
+
                     }
                 }
             )
