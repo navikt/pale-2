@@ -4,6 +4,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.put
+import io.ktor.client.statement.HttpResponse
 import no.nav.syfo.vedlegg.model.Vedlegg
 import java.util.Base64
 
@@ -21,15 +23,19 @@ class ClamAvClient(
                     }
                 }
             )
-        return httpResponse.body<List<ScanResult>>()
+        val result = httpResponse.body<List<ScanResult>>()
+        if (result.size != 1) {
+            throw RuntimeException("Unexpected result size from virus scan request")
+        }
+        return result
     }
 }
 
 data class ScanResult(
     val filename: String,
-    val result: Result,
+    val result: Status,
 )
 
-enum class Result {
-    FOUND, OK
+enum class Status {
+    FOUND, OK, ERROR
 }
