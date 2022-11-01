@@ -12,7 +12,7 @@ class VirusScanService(
     suspend fun vedleggContainsVirus(vedlegg: List<Vedlegg>): Boolean {
         log.info("Scanning vedlegg for virus, numbers of vedlegg: " + vedlegg.size)
         return clamAvClient.virusScanVedlegg(vedlegg).any {
-            it.result != Status.OK
+            it.Result != Status.OK
         }
     }
 }
