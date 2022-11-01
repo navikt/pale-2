@@ -6,6 +6,7 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import no.nav.syfo.log
 import no.nav.syfo.vedlegg.model.Vedlegg
 import java.util.Base64
 
@@ -13,23 +14,25 @@ class ClamAvClient(
     private val httpClient: HttpClient,
     private val endpointUrl: String
 ) {
-    suspend fun virusScanVedlegg(vedlegg: List<Vedlegg>): List<ScanResult> {
+    suspend fun virusScanVedlegg(vedleggList: List<Vedlegg>): List<ScanResult> {
         val httpResponse =
             httpClient.submitFormWithBinaryData(
                 url = "$endpointUrl/scan",
                 formData = formData {
-                    vedlegg.map {
-                        append(it.description + it.type,  Base64.getMimeDecoder().decode(it.content.content),
+                    vedleggList.forEachIndexed { index, vedlegg ->
+                        append(
+                            vedlegg.description + vedlegg.type, Base64.getMimeDecoder().decode(vedlegg.content.content),
                             Headers.build {
-                                append(HttpHeaders.ContentType, it.content.contentType)
-                                append(HttpHeaders.ContentDisposition, "filename=${it.description + it.type}")
-                            })
-
+                                append(HttpHeaders.ContentType, vedlegg.content.contentType)
+                                append(HttpHeaders.ContentDisposition, "file" + index + "=${vedlegg.description + vedlegg.type}")
+                            }
+                        )
                     }
                 }
             )
         val result = httpResponse.body<List<ScanResult>>()
         if (result.size != 1) {
+            log.warn("result size: " + result.size)
             throw RuntimeException("Unexpected result size from virus scan request")
         }
         return result
