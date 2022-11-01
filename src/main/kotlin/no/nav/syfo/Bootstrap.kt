@@ -16,8 +16,6 @@ import io.ktor.client.engine.apache.ApacheEngineConfig
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.network.sockets.SocketTimeoutException
 import io.ktor.serialization.jackson.jackson
 import io.prometheus.client.hotspot.DefaultExports
@@ -108,15 +106,6 @@ fun main() {
                 maxRetries = 3
                 delayMillis { retry ->
                     retry * 500L
-                }
-            }
-
-            install(Logging) {
-                level = LogLevel.BODY
-                logger = object : io.ktor.client.plugins.logging.Logger {
-                    override fun log(message: String) {
-                        log.info(message)
-                    }
                 }
             }
         }

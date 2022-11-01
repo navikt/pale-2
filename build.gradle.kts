@@ -77,8 +77,6 @@ dependencies {
         exclude(group = "commons-codec")
     }
 
-    implementation("io.ktor:ktor-client-logging-jvm:$ktorVersion")
-
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
