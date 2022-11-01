@@ -112,10 +112,10 @@ fun main() {
             }
 
             install(Logging) {
-                level = LogLevel.ALL
+                level = LogLevel.BODY
                 logger = object : io.ktor.client.plugins.logging.Logger {
                     override fun log(message: String) {
-                        secureLog.info(message)
+                        log.info(message)
                     }
                 }
             }
