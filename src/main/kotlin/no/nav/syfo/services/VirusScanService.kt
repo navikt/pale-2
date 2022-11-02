@@ -25,7 +25,7 @@ class VirusScanService(
 
 fun logVedleggOver300MegaByteMetric(vedlegg: List<Vedlegg>) {
     vedlegg
-        .filter { !fileSizeLagerThan300MegaBytes(Base64.getMimeDecoder().decode(it.content.content)) }
+        .filter { fileSizeLagerThan300MegaBytes(Base64.getMimeDecoder().decode(it.content.content)) }
         .forEach { _ ->
             VEDLEGG_OVER_300_MEGABYTE_COUNTER.inc()
         }
