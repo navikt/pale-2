@@ -16,6 +16,7 @@ import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
+import no.nav.syfo.handlestatus.handleVedleggContainsVirus
 import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
@@ -30,7 +31,9 @@ import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
 import no.nav.syfo.pdl.service.PdlPersonService
+import no.nav.syfo.secureLog
 import no.nav.syfo.services.SamhandlerService
+import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.sha256hashstring
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
@@ -50,7 +53,6 @@ import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
-import org.slf4j.LoggerFactory
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.exceptions.JedisConnectionException
 import java.io.StringReader
@@ -61,8 +63,6 @@ import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
 
-private val sikkerlogg = LoggerFactory.getLogger("securelog")
-
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
     private val jedis: Jedis,
@@ -71,7 +71,8 @@ class BlockingApplicationRunner(
     private val pdlPersonService: PdlPersonService,
     private val aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     private val pale2ReglerClient: Pale2ReglerClient,
-    private val bucketUploadService: BucketUploadService
+    private val bucketUploadService: BucketUploadService,
+    private val virusScanService: VirusScanService
 ) {
 
     suspend fun run(
@@ -130,7 +131,7 @@ class BlockingApplicationRunner(
 
                     log.info("Received message, {}", fields(loggingMeta))
 
-                    sikkerlogg.info(
+                    secureLog.info(
                         "Received message for pasient fnr {}, lege fnr: {}, {}",
                         fnrPasient,
                         fnrLege,
@@ -233,6 +234,16 @@ class BlockingApplicationRunner(
 
                         val validationResult =
                             pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
+
+                        if (vedlegg.isNotEmpty()) {
+                            if (virusScanService.vedleggContainsVirus(vedlegg)) {
+                                handleVedleggContainsVirus(
+                                    session, receiptProducer, fellesformat,
+                                    ediLoggId, jedis, sha256String, env, loggingMeta
+                                )
+                                continue@loop
+                            }
+                        }
 
                         val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
                             bucketUploadService.uploadVedlegg(

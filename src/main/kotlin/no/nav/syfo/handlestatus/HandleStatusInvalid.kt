@@ -11,6 +11,7 @@ import no.nav.syfo.log
 import no.nav.syfo.metrics.FOR_MANGE_TEGN
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.TEST_FNR_IN_PROD
+import no.nav.syfo.metrics.VEDLEGG_VIRUS_COUNTER
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.services.sendReceipt
@@ -193,6 +194,38 @@ fun handleFritekstfeltHarForMangeTegn(
     log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
 
     FOR_MANGE_TEGN.inc()
+    updateRedis(jedis, ediLoggId, sha256String)
+}
+
+fun handleVedleggContainsVirus(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
+    env: Environment,
+    loggingMeta: LoggingMeta
+) {
+    log.warn(
+        "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus {}, {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName)
+    )
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        listOf(
+            createApprecError(
+                "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus" +
+                    "sjekk om vedleggene inneholder virus"
+            )
+        )
+    )
+
+    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
+    INVALID_MESSAGE_NO_NOTICE.inc()
+    VEDLEGG_VIRUS_COUNTER.inc()
+
     updateRedis(jedis, ediLoggId, sha256String)
 }
 

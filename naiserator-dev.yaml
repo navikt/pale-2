@@ -42,6 +42,8 @@ spec:
       rules:
         - application: pale-2-redis
         - application: pale-2-regler
+        - application: clamav
+          namespace: clamav
   vault:
     enabled: false
   webproxy: false
