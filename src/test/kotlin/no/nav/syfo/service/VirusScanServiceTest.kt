@@ -8,11 +8,15 @@ import no.nav.syfo.client.ClamAvClient
 import no.nav.syfo.client.ScanResult
 import no.nav.syfo.client.Status
 import no.nav.syfo.services.VirusScanService
+import no.nav.syfo.services.fileSizeLagerThan300MegaBytes
 import no.nav.syfo.vedlegg.model.Content
 import no.nav.syfo.vedlegg.model.Vedlegg
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.Base64
 
 internal class VirusScanServiceTest {
 
@@ -81,5 +85,15 @@ internal class VirusScanServiceTest {
                 VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
             assertEquals(vedleggContainsVirus, true)
         }
+    }
+    @Test
+    fun `Should return false when file size is lower than 300 megabytes`() {
+        val base64EncodedContent = Base64.getMimeEncoder().encodeToString(Files.readAllBytes(Paths.get("src/test/resources/image_of_folder.png")))
+
+        val vedlegg = Vedlegg(Content("Base64Container", base64EncodedContent), "image/jpeg", "image_of_file")
+
+        val file = Base64.getMimeDecoder().decode(vedlegg.content.content)
+
+        assertEquals(false, fileSizeLagerThan300MegaBytes(file))
     }
 }
