@@ -15,6 +15,7 @@ import io.ktor.client.engine.apache.Apache
 import io.ktor.client.engine.apache.ApacheEngineConfig
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.network.sockets.SocketTimeoutException
 import io.ktor.serialization.jackson.jackson
@@ -103,10 +104,24 @@ fun main() {
     val retryConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
         config().apply {
             install(HttpRequestRetry) {
-                maxRetries = 3
-                delayMillis { retry ->
-                    retry * 500L
+                constantDelay(50, 0, false)
+                retryOnExceptionIf(3) { request, throwable ->
+                    log.warn("Caught exception ${throwable.message}, for url ${request.url}")
+                    true
                 }
+                retryIf(maxRetries) { request, response ->
+                    if (response.status.value.let { it in 500..599 }) {
+                        log.warn("Retrying for statuscode ${response.status.value}, for url ${request.url}")
+                        true
+                    } else {
+                        false
+                    }
+                }
+            }
+            install(HttpTimeout) {
+                socketTimeoutMillis = 20_000
+                connectTimeoutMillis = 20_000
+                requestTimeoutMillis = 20_000
             }
         }
     }
