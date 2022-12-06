@@ -29,7 +29,7 @@ class SarClient(
             header("Authorization", "Bearer $accessToken")
             header("Nav-Call-Id", msgId)
             parameter("ident", ident)
-        }.body<List<Samhandler>>()
+        }.body()
     }
 }
 
@@ -105,10 +105,52 @@ fun List<Samhandler>.formaterPraksis() = flatMap { it.samh_praksis }
         "${praksis.navn}: ${praksis.samh_praksis_status_kode} ${praksis.samh_praksis_periode.formaterPerioder()}"
     }
 
+fun findBestSamhandlerPraksisEmottak(
+    samhandlere: List<Samhandler>,
+    orgNumber: String?,
+    herId: String?,
+    loggingMeta: LoggingMeta
+): SamhandlerPraksisMatch? {
+
+    val aktiveSamhandlere = samhandlere.flatMap { it.samh_praksis }
+        .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
+
+    if (!herId.isNullOrEmpty() && aktiveSamhandlere.isNotEmpty()) {
+        val samhandlerByHerId = aktiveSamhandlere.find {
+            it.her_id == herId
+        }
+        if (samhandlerByHerId != null) {
+            log.info(
+                "Fant samhandler basert på herid. herid: $herId, {}, {}",
+                keyValue("praksis Informasjon", samhandlere.formaterPraksis()),
+                StructuredArguments.fields(loggingMeta)
+            )
+            return SamhandlerPraksisMatch(samhandlerByHerId, 100.0)
+        }
+    }
+
+    if (!orgNumber.isNullOrEmpty() && aktiveSamhandlere.isNotEmpty()) {
+        val samhandlerByOrgNumber = aktiveSamhandlere.find {
+            it.org_id == orgNumber
+        }
+        if (samhandlerByOrgNumber != null) {
+            log.info(
+                "Fant samhandler basert på orgNumber. orgNumber: $orgNumber, {}, {}",
+                keyValue("praksis Informasjon", samhandlere.formaterPraksis()),
+                StructuredArguments.fields(loggingMeta)
+            )
+            return SamhandlerPraksisMatch(samhandlerByOrgNumber, 100.0)
+        }
+    }
+
+    return null
+}
+
 fun findBestSamhandlerPraksis(
     samhandlere: List<Samhandler>,
     orgName: String,
     herId: String?,
+    orgNumber: String?,
     loggingMeta: LoggingMeta
 ): SamhandlerPraksisMatch? {
     val aktiveSamhandlere = samhandlere.flatMap { it.samh_praksis }
@@ -134,6 +176,20 @@ fun findBestSamhandlerPraksis(
                 StructuredArguments.fields(loggingMeta)
             )
             return SamhandlerPraksisMatch(samhandlerByHerId, 100.0)
+        }
+    }
+
+    if (!orgNumber.isNullOrEmpty() && aktiveSamhandlere.isNotEmpty()) {
+        val samhandlerByOrgNumber = aktiveSamhandlere.find {
+            it.org_id == orgNumber
+        }
+        if (samhandlerByOrgNumber != null) {
+            log.info(
+                "Fant samhandler basert på orgNumber. orgNumber: $orgNumber, {}, {}",
+                keyValue("praksis Informasjon", samhandlere.formaterPraksis()),
+                StructuredArguments.fields(loggingMeta)
+            )
+            return SamhandlerPraksisMatch(samhandlerByOrgNumber, 100.0)
         }
     }
 

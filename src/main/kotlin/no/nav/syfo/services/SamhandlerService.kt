@@ -4,64 +4,107 @@ import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.client.EmottakSubscriptionClient
+import no.nav.syfo.client.SamhandlerPraksisMatch
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
+import no.nav.syfo.client.findBestSamhandlerPraksisEmottak
 import no.nav.syfo.client.samhandlerpraksisIsLegevakt
 import no.nav.syfo.log
+import no.nav.syfo.metrics.IKKE_OPPDATERT_PARTNERREG
 import no.nav.syfo.util.LoggingMeta
 
 class SamhandlerService(
     private val kuhrSarClient: SarClient,
     private val emottakSubscriptionClient: EmottakSubscriptionClient
 ) {
-    suspend fun finnTssIdentOgStartSubscription(
+
+    suspend fun findSamhandlerPraksisAndHandleEmottakSubscription(
         fnrLege: String,
         legekontorOrgName: String,
+        legekontorOrgNumber: String?,
+        legekontorHerId: String?,
+        msgHead: XMLMsgHead,
+        receiverBlock: XMLMottakenhetBlokk,
+        loggingMeta: LoggingMeta
+    ): SamhandlerPraksisMatch? {
+        val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
+
+        handleEmottakSubscription(
+            fnrLege,
+            legekontorOrgNumber,
+            legekontorHerId,
+            receiverBlock,
+            msgHead,
+            loggingMeta
+        )
+
+        return findBestSamhandlerPraksis(
+            samhandlerInfo,
+            legekontorOrgName,
+            legekontorHerId,
+            legekontorOrgNumber,
+            loggingMeta
+        )
+    }
+
+    suspend fun handleEmottakSubscription(
+        fnrLege: String,
+        legekontorOrgNumber: String?,
         legekontorHerId: String?,
         receiverBlock: XMLMottakenhetBlokk,
         msgHead: XMLMsgHead,
         loggingMeta: LoggingMeta
-    ): String {
+    ) {
         val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
-        val samhandlerPraksisMatch = findBestSamhandlerPraksis(
+
+        val samhandlerPraksisMatchEmottak = findBestSamhandlerPraksisEmottak(
             samhandlerInfo,
-            legekontorOrgName,
+            legekontorOrgNumber,
             legekontorHerId,
             loggingMeta
         )
 
-        val samhandlerPraksis = samhandlerPraksisMatch?.samhandlerPraksis
-
-        if (samhandlerPraksisMatch?.percentageMatch != null && samhandlerPraksisMatch.percentageMatch == 999.0) {
+        if (samhandlerPraksisMatchEmottak?.percentageMatch != null && samhandlerPraksisMatchEmottak.percentageMatch == 999.0) {
             log.info(
                 "SamhandlerPraksis is found but is FALE or FALO, subscription_emottak is not created, {}",
                 StructuredArguments.fields(loggingMeta)
             )
+            IKKE_OPPDATERT_PARTNERREG.inc()
         } else {
-            when (samhandlerPraksis) {
-                null -> log.info(
-                    "SamhandlerPraksis is Not found, {}",
-                    StructuredArguments.fields(loggingMeta)
-                )
-                else -> if (!samhandlerpraksisIsLegevakt(samhandlerPraksis) &&
+            when (samhandlerPraksisMatchEmottak?.samhandlerPraksis) {
+                null -> {
+                    log.info("SamhandlerPraksis is Not found, {}", StructuredArguments.fields(loggingMeta))
+                    IKKE_OPPDATERT_PARTNERREG.inc()
+                }
+
+                else -> if (!samhandlerpraksisIsLegevakt(samhandlerPraksisMatchEmottak.samhandlerPraksis) &&
                     !receiverBlock.partnerReferanse.isNullOrEmpty() &&
                     receiverBlock.partnerReferanse.isNotBlank()
                 ) {
                     emottakSubscriptionClient.startSubscription(
-                        samhandlerPraksis,
+                        samhandlerPraksisMatchEmottak.samhandlerPraksis,
                         msgHead,
                         receiverBlock,
                         msgHead.msgInfo.msgId,
                         loggingMeta
                     )
                 } else {
-                    log.info(
-                        "SamhandlerPraksis is Legevakt or partnerReferanse is empty or blank, subscription_emottak is not created, {}",
-                        StructuredArguments.fields(loggingMeta)
-                    )
+                    if (!receiverBlock.partnerReferanse.isNullOrEmpty() &&
+                        receiverBlock.partnerReferanse.isNotBlank()
+                    ) {
+                        log.info(
+                            "PartnerReferanse is empty or blank, subscription_emottak is not created, {}",
+                            StructuredArguments.fields(loggingMeta)
+                        )
+                    } else {
+                        log.info(
+                            "SamhandlerPraksis is Legevakt, subscription_emottak is not created, {}",
+                            StructuredArguments.fields(loggingMeta)
+                        )
+                    }
+                    IKKE_OPPDATERT_PARTNERREG.inc()
                 }
             }
         }
-        return samhandlerPraksis?.tss_ident ?: ""
     }
 }
