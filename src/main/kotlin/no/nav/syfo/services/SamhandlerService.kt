@@ -73,7 +73,7 @@ class SamhandlerService(
         } else {
             when (samhandlerPraksisMatchEmottak?.samhandlerPraksis) {
                 null -> {
-                    log.info("SamhandlerPraksis is Not found, {}", StructuredArguments.fields(loggingMeta))
+                    log.info("SamhandlerPraksis is Not found, subscription_emottak is not created {}", StructuredArguments.fields(loggingMeta))
                     IKKE_OPPDATERT_PARTNERREG.inc()
                 }
 
