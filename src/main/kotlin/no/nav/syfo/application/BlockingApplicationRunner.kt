@@ -140,14 +140,15 @@ class BlockingApplicationRunner(
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
-                    val tssIdent = samhandlerService.finnTssIdentOgStartSubscription(
+                    val samhandlerPraksisTssId = samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
                         fnrLege = fnrLege,
                         legekontorOrgName = legekontorOrgName,
+                        legekontorOrgNumber = legekontorOrgNr,
                         legekontorHerId = legekontorHerId,
-                        receiverBlock = receiverBlock,
                         msgHead = msgHead,
+                        receiverBlock = receiverBlock,
                         loggingMeta = loggingMeta
-                    )
+                    )?.samhandlerPraksis?.tss_ident
 
                     val redisSha256String = jedis.get(sha256String)
                     val redisEdiloggid = jedis.get(ediLoggId)
@@ -216,7 +217,7 @@ class BlockingApplicationRunner(
                                     ZoneOffset.UTC
                                 ).toLocalDateTime(),
                             fellesformat = fellesformatText,
-                            tssid = tssIdent
+                            tssid = samhandlerPraksisTssId
                         )
 
                         if (legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 || legeerklaring.sykdomsopplysninger.sykdomshistorie.length > 15000) {
@@ -267,7 +268,7 @@ class BlockingApplicationRunner(
                                 receiptProducer = receiptProducer,
                                 fellesformat = fellesformat,
                                 arenaProducer = arenaProducer,
-                                tssId = tssIdent,
+                                tssId = samhandlerPraksisTssId,
                                 ediLoggId = ediLoggId,
                                 fnrLege = fnrLege,
                                 legeerklaring = legeerklaring,
