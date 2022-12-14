@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.1.3"
+val ktorVersion = "2.2.1"
 val coroutinesVersion = "1.6.4"
 val prometheusVersion = "0.16.0"
 val junitJupiterVersion = "5.9.0"
@@ -31,10 +31,12 @@ val pale2CommonVersion = "1.7dbd229"
 val kafkaVersion = "3.2.3"
 val mockkVersion = "1.13.2"
 val kotlinVersion = "1.7.21"
-val googleCloudStorageVersion = "2.12.0"
+val googleCloudStorageVersion = "2.13.0"
 val jaxbImplVersion = "2.3.3"
 val wsApiVersion = "2.3.3"
 val annotationApiVersion = "1.3.5"
+val nettyCodecVersion = "4.1.86.Final"
+
 
 plugins {
     kotlin("jvm") version "1.7.21"
@@ -69,6 +71,9 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    //This is to override version that is in io.ktor:ktor-server-netty
+    //https://www.cve.org/CVERecord?id=CVE-2022-41915
+    implementation("io.netty:netty-codec:$nettyCodecVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
