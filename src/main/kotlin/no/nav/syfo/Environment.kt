@@ -28,7 +28,12 @@ data class Environment(
     val smgcpProxyUrl: String = getEnvVar("SMGCP_PROXY_URL"),
     val smgcpProxyScope: String = getEnvVar("SMGCP_PROXY_SCOPE"),
     val redisSecret: String = getEnvVar("REDIS_PASSWORD"),
-    val clamAvEndpointUrl: String = getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.clamav.svc.cluster.local")
+    val clamAvEndpointUrl: String = getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.clamav.svc.cluster.local"),
+    val databaseUsername: String = getEnvVar("DB_USERNAME"),
+    val databasePassword: String = getEnvVar("DB_PASSWORD"),
+    val dbHost: String = getEnvVar("DB_HOST"),
+    val dbPort: String = getEnvVar("DB_PORT"),
+    val dbName: String = getEnvVar("DB_DATABASE")
 ) : MqConfig
 
 data class VaultServiceUser(

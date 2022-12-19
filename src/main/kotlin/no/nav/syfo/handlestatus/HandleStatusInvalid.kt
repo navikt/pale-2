@@ -14,6 +14,8 @@ import no.nav.syfo.metrics.TEST_FNR_IN_PROD
 import no.nav.syfo.metrics.VEDLEGG_VIRUS_COUNTER
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
@@ -43,7 +45,7 @@ fun handleStatusINVALID(
     sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
 }
 
-fun handleDuplicateSM2013Content(
+fun handleDuplicateLegeerklaringContent(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
@@ -109,7 +111,9 @@ fun handlePatientNotFoundInPDL(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
@@ -126,6 +130,8 @@ fun handlePatientNotFoundInPDL(
     log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
 
     INVALID_MESSAGE_NO_NOTICE.inc()
+    duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
+
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
@@ -137,7 +143,9 @@ fun handleDoctorNotFoundInPDL(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}, {}",
@@ -156,6 +164,8 @@ fun handleDoctorNotFoundInPDL(
     log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
 
     INVALID_MESSAGE_NO_NOTICE.inc()
+    duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
+
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
@@ -171,7 +181,9 @@ fun handleFritekstfeltHarForMangeTegn(
     fritekstfelt: String,
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
-    legeerklaeringId: String
+    legeerklaeringId: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
@@ -194,6 +206,7 @@ fun handleFritekstfeltHarForMangeTegn(
     log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
 
     FOR_MANGE_TEGN.inc()
+    duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
@@ -205,7 +218,9 @@ fun handleVedleggContainsVirus(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus {}, {}",
@@ -226,6 +241,7 @@ fun handleVedleggContainsVirus(
     INVALID_MESSAGE_NO_NOTICE.inc()
     VEDLEGG_VIRUS_COUNTER.inc()
 
+    duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
@@ -237,7 +253,9 @@ fun handleTestFnrInProd(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}, {}",
@@ -262,6 +280,7 @@ fun handleTestFnrInProd(
 
     INVALID_MESSAGE_NO_NOTICE.inc()
     TEST_FNR_IN_PROD.inc()
+    duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
     updateRedis(jedis, ediLoggId, sha256String)
 }
 
