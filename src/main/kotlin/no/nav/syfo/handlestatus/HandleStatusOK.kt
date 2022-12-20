@@ -15,7 +15,6 @@ import no.nav.syfo.util.arenaMarshaller
 import no.nav.syfo.util.toString
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import redis.clients.jedis.Jedis
 import javax.jms.MessageProducer
 import javax.jms.Session
 
@@ -35,12 +34,10 @@ fun handleStatusOK(
     apprecQueueName: String,
     duplicationCheckService: DuplicationCheckService,
     duplicationCheckModel: DuplicationCheckModel,
-    jedis: Jedis,
-    sha256String: String
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.ok, emptyList(), duplicationCheckService,
-        duplicationCheckModel, loggingMeta, apprecQueueName, ediLoggId, jedis, sha256String
+        duplicationCheckModel, loggingMeta, apprecQueueName
     )
 
     sendArenaInfo(

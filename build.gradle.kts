@@ -13,7 +13,6 @@ val kluentVersion = "1.68"
 val logbackVersion = "1.4.5"
 val logstashEncoderVersion = "7.2"
 val jacksonVersion = "2.14.1"
-val jedisVersion = "4.2.3"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
@@ -110,7 +109,6 @@ dependencies {
     implementation("no.nav.helse.xml:arenainfo-2:$arenaInfoVersion")
 
     implementation("com.google.cloud:google-cloud-storage:$googleCloudStorageVersion")
-    implementation("redis.clients:jedis:$jedisVersion")
 
     implementation("org.postgresql:postgresql:$postgresVersion")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
