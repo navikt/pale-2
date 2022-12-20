@@ -7,12 +7,15 @@ import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
 import no.nav.syfo.util.toString
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
+import redis.clients.jedis.Jedis
 import javax.jms.MessageProducer
 import javax.jms.Session
 
@@ -29,9 +32,17 @@ fun handleStatusOK(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     topic: String,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
-    apprecQueueName: String
+    apprecQueueName: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel,
+    jedis: Jedis,
+    sha256String: String
 ) {
-    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.ok, emptyList(), duplicationCheckService,
+        duplicationCheckModel, loggingMeta, apprecQueueName, ediLoggId, jedis, sha256String
+    )
+
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
 
     sendArenaInfo(

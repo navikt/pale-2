@@ -37,7 +37,6 @@ import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
-import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
@@ -166,14 +165,16 @@ class BlockingApplicationRunner(
                         log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
                         handleDuplicateLegeerklaringContent(
                             session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisSha256String
+                            fellesformat, loggingMeta, env, redisSha256String, duplicationCheckService,
+                            duplicationCheckModel, ediLoggId, jedis, sha256String
                         )
                         continue@loop
                     } else if (redisEdiloggid != null) {
                         log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
                         handleDuplicateEdiloggid(
                             session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisEdiloggid
+                            fellesformat, loggingMeta, env, redisEdiloggid, ediLoggId, jedis, sha256String,
+                            duplicationCheckService, duplicationCheckModel
                         )
                         continue@loop
                     } else {
@@ -289,7 +290,11 @@ class BlockingApplicationRunner(
                                 aivenKafkaProducer = aivenKafkaProducer,
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName
+                                apprecQueueName = env.apprecQueueName,
+                                duplicationCheckService = duplicationCheckService,
+                                duplicationCheckModel = duplicationCheckModel,
+                                jedis = jedis,
+                                sha256String = sha256String
                             )
 
                             Status.INVALID -> handleStatusINVALID(
@@ -302,7 +307,13 @@ class BlockingApplicationRunner(
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName,
-                                legeerklaeringId = legeerklaring.id
+                                legeerklaeringId = legeerklaring.id,
+                                duplicationCheckService = duplicationCheckService,
+                                duplicationCheckModel = duplicationCheckModel,
+                                ediLoggId = ediLoggId,
+                                jedis = jedis,
+                                sha256String = sha256String,
+                                env = env
                             )
                         }
 
@@ -318,8 +329,6 @@ class BlockingApplicationRunner(
                             StructuredArguments.keyValue("latency", currentRequestLatency),
                             fields(loggingMeta)
                         )
-                        updateRedis(jedis, ediLoggId, sha256String)
-                        duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
                     }
                 } catch (jedisException: JedisConnectionException) {
                     log.error(
