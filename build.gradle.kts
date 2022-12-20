@@ -36,6 +36,10 @@ val jaxbImplVersion = "2.3.3"
 val wsApiVersion = "2.3.3"
 val annotationApiVersion = "1.3.5"
 val nettyCodecVersion = "4.1.86.Final"
+val flywayVersion = "9.3.0"
+val hikariVersion = "5.0.1"
+val postgresVersion = "42.5.1"
+val embeddedPostgresVersion = "2.0.2"
 
 
 plugins {
@@ -108,6 +112,10 @@ dependencies {
     implementation("com.google.cloud:google-cloud-storage:$googleCloudStorageVersion")
     implementation("redis.clients:jedis:$jedisVersion")
 
+    implementation("org.postgresql:postgresql:$postgresVersion")
+    implementation("com.zaxxer:HikariCP:$hikariVersion")
+    implementation("org.flywaydb:flyway-core:$flywayVersion")
+
     implementation("org.apache.commons:commons-text:$commonsTextVersion")
 
     implementation("com.migesok", "jaxb-java-time-adapters", javaTimeAdapterVersion)
@@ -122,6 +130,7 @@ dependencies {
         exclude(group = "org.apache.commons", module = "commons-text")
     }
     testImplementation("io.mockk:mockk:$mockkVersion")
+    testImplementation("io.zonky.test:embedded-postgres:$embeddedPostgresVersion")
 }
 
 tasks {

@@ -14,8 +14,9 @@ import no.nav.syfo.metrics.TEST_FNR_IN_PROD
 import no.nav.syfo.metrics.VEDLEGG_VIRUS_COUNTER
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
 import no.nav.syfo.services.sendReceipt
-import no.nav.syfo.services.updateRedis
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 import redis.clients.jedis.Jedis
@@ -32,24 +33,35 @@ fun handleStatusINVALID(
     topic: String,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
     apprecQueueName: String,
-    legeerklaeringId: String
+    legeerklaeringId: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
-        validationResult.ruleHits.map { it.toApprecCV() }
-    )
-    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
+        validationResult.ruleHits.map { it.toApprecCV() },
 
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        apprecQueueName, ediLoggId, jedis, sha256String
+    )
     sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
 }
 
-fun handleDuplicateSM2013Content(
+fun handleDuplicateLegeerklaringContent(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
     loggingMeta: LoggingMeta,
     env: Environment,
-    redisSha256String: String
+    redisSha256String: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String
 ) {
 
     log.warn(
@@ -66,9 +78,10 @@ fun handleDuplicateSM2013Content(
                 "Duplikat! - Denne legeerklæringen er mottatt tidligere. " +
                     "Skal ikke sendes på nytt."
             )
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
@@ -78,7 +91,12 @@ fun handleDuplicateEdiloggid(
     fellesformat: XMLEIFellesformat,
     loggingMeta: LoggingMeta,
     env: Environment,
-    redisEdiloggid: String
+    redisEdiloggid: String,
+    ediLoggId: String,
+    jedis: Jedis,
+    sha256String: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
 
     log.warn(
@@ -95,9 +113,10 @@ fun handleDuplicateEdiloggid(
                 "Duplikat! Denne legeerklæringen har samme identifikator som en legeerklæring som er mottatt tidligere" +
                     " og skal ikke sendes på nytt. Dersom dette ikke stemmer, kontakt din EPJ-leverandør"
             )
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
@@ -109,7 +128,9 @@ fun handlePatientNotFoundInPDL(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
@@ -120,13 +141,11 @@ fun handlePatientNotFoundInPDL(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         listOf(
             createApprecError("Pasienten er ikkje registrert i folkeregisteret")
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-
     INVALID_MESSAGE_NO_NOTICE.inc()
-    updateRedis(jedis, ediLoggId, sha256String)
 }
 
 fun handleDoctorNotFoundInPDL(
@@ -137,7 +156,9 @@ fun handleDoctorNotFoundInPDL(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}, {}",
@@ -150,13 +171,12 @@ fun handleDoctorNotFoundInPDL(
             createApprecError(
                 "Behandler er ikke registrert i folkeregisteret"
             )
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
 
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-
     INVALID_MESSAGE_NO_NOTICE.inc()
-    updateRedis(jedis, ediLoggId, sha256String)
 }
 
 fun handleFritekstfeltHarForMangeTegn(
@@ -171,7 +191,9 @@ fun handleFritekstfeltHarForMangeTegn(
     fritekstfelt: String,
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
-    legeerklaeringId: String
+    legeerklaeringId: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
@@ -185,16 +207,15 @@ fun handleFritekstfeltHarForMangeTegn(
                 "Legeerklæringen er avvist fordi den inneholder for mange tegn: " +
                     " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
             )
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
 
     sendTilTopic(aivenKafkaProducer, env.legeerklaringTopic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
     log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
 
     FOR_MANGE_TEGN.inc()
-    updateRedis(jedis, ediLoggId, sha256String)
 }
 
 fun handleVedleggContainsVirus(
@@ -205,7 +226,9 @@ fun handleVedleggContainsVirus(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus {}, {}",
@@ -219,14 +242,13 @@ fun handleVedleggContainsVirus(
                 "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus" +
                     "sjekk om vedleggene inneholder virus"
             )
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
 
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
     INVALID_MESSAGE_NO_NOTICE.inc()
     VEDLEGG_VIRUS_COUNTER.inc()
-
-    updateRedis(jedis, ediLoggId, sha256String)
 }
 
 fun handleTestFnrInProd(
@@ -237,7 +259,9 @@ fun handleTestFnrInProd(
     jedis: Jedis,
     sha256String: String,
     env: Environment,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     log.warn(
         "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}, {}",
@@ -256,13 +280,13 @@ fun handleTestFnrInProd(
             createApprecError(
                 "Dette fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
             )
-        )
+        ),
+        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
 
     INVALID_MESSAGE_NO_NOTICE.inc()
     TEST_FNR_IN_PROD.inc()
-    updateRedis(jedis, ediLoggId, sha256String)
 }
 
 fun createApprecError(textToTreater: String): XMLCV = XMLCV().apply {

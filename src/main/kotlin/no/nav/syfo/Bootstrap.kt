@@ -35,6 +35,7 @@ import no.nav.syfo.client.ClamAvClient
 import no.nav.syfo.client.EmottakSubscriptionClient
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
+import no.nav.syfo.db.Database
 import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
@@ -46,6 +47,7 @@ import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.util.JacksonKafkaSerializer
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
@@ -68,6 +70,7 @@ val secureLog = LoggerFactory.getLogger("secureLog")
 @DelicateCoroutinesApi
 fun main() {
     val env = Environment()
+    val database = Database(env)
 
     val serviceUser = VaultServiceUser()
 
@@ -158,9 +161,11 @@ fun main() {
 
     val virusScanService = VirusScanService(clamAvClient)
 
+    val duplicationCheckService = DuplicationCheckService(database)
+
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, serviceUser,
-        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService
+        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService, duplicationCheckService
     )
 
     applicationServer.start()
@@ -189,7 +194,8 @@ fun launchListeners(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     pale2ReglerClient: Pale2ReglerClient,
     bucketUploadService: BucketUploadService,
-    virusScanService: VirusScanService
+    virusScanService: VirusScanService,
+    duplicationCheckService: DuplicationCheckService
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
@@ -214,7 +220,8 @@ fun launchListeners(
                         aivenKafkaProducer = aivenKafkaProducer,
                         pale2ReglerClient = pale2ReglerClient,
                         bucketUploadService = bucketUploadService,
-                        virusScanService = virusScanService
+                        virusScanService = virusScanService,
+                        duplicationCheckService = duplicationCheckService
                     ).run(
                         inputconsumer = inputconsumer,
                         session = session,

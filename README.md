@@ -1,7 +1,8 @@
 [![Build status](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)
 
 # Prosessering av legeerklæringer (PALE)
-Application that receives Legeerklæringer from external systems, doing some validation, then pushing it to our internal systems.
+Application that receives Legeerklæringer from external systems, doing some validation, 
+then pushing it to our internal systems.
 
 
 ## FlowChart
@@ -38,7 +39,8 @@ This the high level flow of the application
 * JDK 17
 
 ### Getting github-package-registry packages NAV-IT
-Some packages used in this repo is uploaded to the GitHub Package Registry which requires authentication. It can, for example, be solved like this in Gradle:
+Some packages used in this repo is uploaded to the GitHub Package Registry which requires authentication. 
+It can, for example, be solved like this in Gradle:
 ```
 val githubUser: String by project
 val githubPassword: String by project
@@ -53,7 +55,8 @@ repositories {
 }
 ```
 
-`githubUser` and `githubPassword` can be put into a separate file `~/.gradle/gradle.properties` with the following content:
+`githubUser` and `githubPassword` can be put into a separate file `~/.gradle/gradle.properties` 
+with the following content:
 
 ```                                                     
 githubUser=x-access-token
@@ -84,7 +87,6 @@ Creating a docker image should be as simple as `docker build -t pale-2 .`
 
 #### Running a docker image
 `docker run --rm -it -p 8080:8080 pale-2`
-
 
 
 ### Upgrading the gradle wrapper

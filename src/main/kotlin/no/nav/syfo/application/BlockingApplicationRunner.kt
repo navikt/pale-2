@@ -10,7 +10,7 @@ import no.nav.syfo.Environment
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
-import no.nav.syfo.handlestatus.handleDuplicateSM2013Content
+import no.nav.syfo.handlestatus.handleDuplicateLegeerklaringContent
 import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
@@ -34,8 +34,9 @@ import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.secureLog
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
-import no.nav.syfo.services.sha256hashstring
-import no.nav.syfo.services.updateRedis
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
+import no.nav.syfo.services.duplicationcheck.sha256hashstring
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
@@ -72,7 +73,8 @@ class BlockingApplicationRunner(
     private val aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     private val pale2ReglerClient: Pale2ReglerClient,
     private val bucketUploadService: BucketUploadService,
-    private val virusScanService: VirusScanService
+    private val virusScanService: VirusScanService,
+    private val duplicationCheckService: DuplicationCheckService
 ) {
 
     suspend fun run(
@@ -151,18 +153,28 @@ class BlockingApplicationRunner(
                     )?.samhandlerPraksis?.tss_ident
 
                     val redisSha256String = jedis.get(sha256String)
+                    val duplicationServiceSha256String = duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
                     val redisEdiloggid = jedis.get(ediLoggId)
 
+                    val mottatDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
+                        .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()
+
+                    val duplicationCheckModel = DuplicationCheckModel(sha256String, ediLoggId, msgId, mottatDato)
+
                     if (redisSha256String != null) {
-                        handleDuplicateSM2013Content(
+                        log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
+                        handleDuplicateLegeerklaringContent(
                             session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisSha256String
+                            fellesformat, loggingMeta, env, redisSha256String, duplicationCheckService,
+                            duplicationCheckModel, ediLoggId, jedis, sha256String
                         )
                         continue@loop
                     } else if (redisEdiloggid != null) {
+                        log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
                         handleDuplicateEdiloggid(
                             session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisEdiloggid
+                            fellesformat, loggingMeta, env, redisEdiloggid, ediLoggId, jedis, sha256String,
+                            duplicationCheckService, duplicationCheckModel
                         )
                         continue@loop
                     } else {
@@ -174,21 +186,21 @@ class BlockingApplicationRunner(
                         if (pasient?.aktorId == null) {
                             handlePatientNotFoundInPDL(
                                 session, receiptProducer, fellesformat, ediLoggId, jedis,
-                                sha256String, env, loggingMeta
+                                sha256String, env, loggingMeta, duplicationCheckService, duplicationCheckModel
                             )
                             continue@loop
                         }
                         if (behandler?.aktorId == null) {
                             handleDoctorNotFoundInPDL(
                                 session, receiptProducer, fellesformat, ediLoggId, jedis,
-                                sha256String, env, loggingMeta
+                                sha256String, env, loggingMeta, duplicationCheckService, duplicationCheckModel
                             )
                             continue@loop
                         }
                         if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
                                 session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta
+                                ediLoggId, jedis, sha256String, env, loggingMeta, duplicationCheckService, duplicationCheckModel
                             )
                             continue@loop
                         }
@@ -212,15 +224,14 @@ class BlockingApplicationRunner(
                             legekontorOrgName = legekontorOrgName,
                             legekontorHerId = legekontorHerId,
                             legekontorReshId = legekontorReshId,
-                            mottattDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
-                                .withZoneSameInstant(
-                                    ZoneOffset.UTC
-                                ).toLocalDateTime(),
+                            mottattDato = mottatDato,
                             fellesformat = fellesformatText,
                             tssid = samhandlerPraksisTssId
                         )
 
-                        if (legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 || legeerklaring.sykdomsopplysninger.sykdomshistorie.length > 15000) {
+                        if (legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 ||
+                            legeerklaring.sykdomsopplysninger.sykdomshistorie.length > 15000
+                        ) {
                             handleTooLargeMessage(
                                 receivedLegeerklaering,
                                 loggingMeta,
@@ -228,7 +239,9 @@ class BlockingApplicationRunner(
                                 receiptProducer,
                                 fellesformat,
                                 ediLoggId,
-                                sha256String
+                                sha256String,
+                                duplicationCheckService,
+                                duplicationCheckModel
                             )
                             continue@loop
                         }
@@ -240,7 +253,8 @@ class BlockingApplicationRunner(
                             if (virusScanService.vedleggContainsVirus(vedlegg)) {
                                 handleVedleggContainsVirus(
                                     session, receiptProducer, fellesformat,
-                                    ediLoggId, jedis, sha256String, env, loggingMeta
+                                    ediLoggId, jedis, sha256String, env, loggingMeta, duplicationCheckService,
+                                    duplicationCheckModel
                                 )
                                 continue@loop
                             }
@@ -276,7 +290,11 @@ class BlockingApplicationRunner(
                                 aivenKafkaProducer = aivenKafkaProducer,
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName
+                                apprecQueueName = env.apprecQueueName,
+                                duplicationCheckService = duplicationCheckService,
+                                duplicationCheckModel = duplicationCheckModel,
+                                jedis = jedis,
+                                sha256String = sha256String
                             )
 
                             Status.INVALID -> handleStatusINVALID(
@@ -289,7 +307,12 @@ class BlockingApplicationRunner(
                                 topic = env.legeerklaringTopic,
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName,
-                                legeerklaeringId = legeerklaring.id
+                                legeerklaeringId = legeerklaring.id,
+                                duplicationCheckService = duplicationCheckService,
+                                duplicationCheckModel = duplicationCheckModel,
+                                ediLoggId = ediLoggId,
+                                jedis = jedis,
+                                sha256String = sha256String
                             )
                         }
 
@@ -305,7 +328,6 @@ class BlockingApplicationRunner(
                             StructuredArguments.keyValue("latency", currentRequestLatency),
                             fields(loggingMeta)
                         )
-                        updateRedis(jedis, ediLoggId, sha256String)
                     }
                 } catch (jedisException: JedisConnectionException) {
                     log.error(
@@ -334,7 +356,9 @@ class BlockingApplicationRunner(
         receiptProducer: MessageProducer,
         fellesformat: XMLEIFellesformat,
         ediLoggId: String,
-        sha256String: String
+        sha256String: String,
+        duplicationCheckService: DuplicationCheckService,
+        duplicationCheckModel: DuplicationCheckModel
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
@@ -362,7 +386,9 @@ class BlockingApplicationRunner(
             fritekstfelt = fritekstfelt,
             aivenKafkaProducer = aivenKafkaProducer,
             legeerklaringKafkaMessage = forkortetLegeerklaeringKafkaMessage,
-            legeerklaeringId = legeerklaering.id
+            legeerklaeringId = legeerklaering.id,
+            duplicationCheckService = duplicationCheckService,
+            duplicationCheckModel = duplicationCheckModel
         )
     }
 }
