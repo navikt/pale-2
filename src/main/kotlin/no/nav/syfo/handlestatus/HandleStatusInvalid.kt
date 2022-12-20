@@ -19,7 +19,6 @@ import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
-import redis.clients.jedis.Jedis
 import javax.jms.MessageProducer
 import javax.jms.Session
 
@@ -35,17 +34,14 @@ fun handleStatusINVALID(
     apprecQueueName: String,
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
+    duplicationCheckModel: DuplicationCheckModel
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         validationResult.ruleHits.map { it.toApprecCV() },
 
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        apprecQueueName, ediLoggId, jedis, sha256String
+        apprecQueueName
     )
     sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
 }
@@ -56,17 +52,13 @@ fun handleDuplicateLegeerklaringContent(
     fellesformat: XMLEIFellesformat,
     loggingMeta: LoggingMeta,
     env: Environment,
-    redisSha256String: String,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String
+    duplicationCheckModel: DuplicationCheckModel
 ) {
 
     log.warn(
         "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {}, {}",
-        keyValue("originalEdiLoggId", redisSha256String),
+        keyValue("originalEdiLoggId", duplicationCheckModel.mottakId),
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )
@@ -80,42 +72,7 @@ fun handleDuplicateLegeerklaringContent(
             )
         ),
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
-    )
-    INVALID_MESSAGE_NO_NOTICE.inc()
-}
-
-fun handleDuplicateEdiloggid(
-    session: Session,
-    receiptProducer: MessageProducer,
-    fellesformat: XMLEIFellesformat,
-    loggingMeta: LoggingMeta,
-    env: Environment,
-    redisEdiloggid: String,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
-    duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
-) {
-
-    log.warn(
-        "Melding med {} har samme ediLoggId som tidligere mottatt legeerklæring og er avvist som duplikat {}, {}",
-        keyValue("originalEdiLoggId", redisEdiloggid),
-        fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
-    )
-
-    sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
-        listOf(
-            createApprecError(
-                "Duplikat! Denne legeerklæringen har samme identifikator som en legeerklæring som er mottatt tidligere" +
-                    " og skal ikke sendes på nytt. Dersom dette ikke stemmer, kontakt din EPJ-leverandør"
-            )
-        ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        env.apprecQueueName
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
@@ -124,9 +81,6 @@ fun handlePatientNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
@@ -143,7 +97,7 @@ fun handlePatientNotFoundInPDL(
             createApprecError("Pasienten er ikkje registrert i folkeregisteret")
         ),
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        env.apprecQueueName
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
@@ -152,9 +106,6 @@ fun handleDoctorNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
@@ -173,7 +124,7 @@ fun handleDoctorNotFoundInPDL(
             )
         ),
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        env.apprecQueueName
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -183,9 +134,6 @@ fun handleFritekstfeltHarForMangeTegn(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
     env: Environment,
     loggingMeta: LoggingMeta,
     fritekstfelt: String,
@@ -209,7 +157,7 @@ fun handleFritekstfeltHarForMangeTegn(
             )
         ),
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        env.apprecQueueName
     )
 
     sendTilTopic(aivenKafkaProducer, env.legeerklaringTopic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
@@ -222,9 +170,6 @@ fun handleVedleggContainsVirus(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
@@ -244,7 +189,7 @@ fun handleVedleggContainsVirus(
             )
         ),
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        env.apprecQueueName
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -255,9 +200,6 @@ fun handleTestFnrInProd(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String,
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
@@ -282,7 +224,7 @@ fun handleTestFnrInProd(
             )
         ),
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        env.apprecQueueName
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()

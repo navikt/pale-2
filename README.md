@@ -10,22 +10,22 @@ This the high level flow of the application
 ```mermaid
   graph LR;
       EPJ---eMottak;
-      eMottak --- id1([PALE.INPUT]);
-      id1([PALE.INPUT]) ---> pale-2;
-      pale-2 ---> id2([PALE.INPUT]);
-      id2([PALE_2.INPUT_BOQ]) --->  id1([PALE.INPUT]);
-      pale-2 --- redis;
+      eMottak --- id2([PALE.INPUT]);
+      id2([PALE.INPUT]) ---> pale-2;
+      pale-2 <---> id1[(Database)];
+      pale-2 ---> id3([PALE_2.INPUT_BOQ]);
+      id3([PALE_2.INPUT_BOQ]) --->  id2([PALE.INPUT]);
       pale-2 --- Azure-AD;
       pale-2 --- PDL;
       pale-2 --- Kuhr-SAR;
       pale-2 --- eMottak-subscription;
       pale-2 --- GCP-Bucket;
       pale-2 --- pale-2-regler;
-      pale-2 ---> id3([FS06_ARENA]);
-      id3([FS06_ARENA]) ---> Arena;
+      pale-2 ---> id5([FS06_ARENA]);
+      id5([FS06_ARENA]) ---> Arena;
       pale-2 --- A[\teamsykmelding.legeerklaering/];
-      pale-2 --- id4([QA.P414.IU03_UTSENDING]);
-      id4([QA.P414.IU03_UTSENDING]) ---> eMottak;
+      pale-2 --- id6([QA.P414.IU03_UTSENDING]);
+      id6([QA.P414.IU03_UTSENDING]) ---> eMottak;
 ```
 
 ## Technologies used
@@ -33,6 +33,7 @@ This the high level flow of the application
 * Ktor
 * Gradle
 * Junit
+* Postgres
 
 #### Requirements
 

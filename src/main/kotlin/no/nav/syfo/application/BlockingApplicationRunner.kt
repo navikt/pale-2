@@ -9,7 +9,6 @@ import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.Environment
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
-import no.nav.syfo.handlestatus.handleDuplicateEdiloggid
 import no.nav.syfo.handlestatus.handleDuplicateLegeerklaringContent
 import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
@@ -54,8 +53,6 @@ import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
-import redis.clients.jedis.Jedis
-import redis.clients.jedis.exceptions.JedisConnectionException
 import java.io.StringReader
 import java.time.ZoneOffset
 import java.util.UUID
@@ -66,7 +63,6 @@ import javax.jms.TextMessage
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
-    private val jedis: Jedis,
     private val env: Environment,
     private val samhandlerService: SamhandlerService,
     private val pdlPersonService: PdlPersonService,
@@ -152,29 +148,19 @@ class BlockingApplicationRunner(
                         loggingMeta = loggingMeta
                     )?.samhandlerPraksis?.tss_ident
 
-                    val redisSha256String = jedis.get(sha256String)
                     val duplicationServiceSha256String = duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
-                    val redisEdiloggid = jedis.get(ediLoggId)
 
                     val mottatDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
                         .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()
 
                     val duplicationCheckModel = DuplicationCheckModel(sha256String, ediLoggId, msgId, mottatDato)
 
-                    if (redisSha256String != null) {
+                    if (duplicationServiceSha256String != null) {
                         log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
                         handleDuplicateLegeerklaringContent(
                             session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisSha256String, duplicationCheckService,
-                            duplicationCheckModel, ediLoggId, jedis, sha256String
-                        )
-                        continue@loop
-                    } else if (redisEdiloggid != null) {
-                        log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
-                        handleDuplicateEdiloggid(
-                            session, receiptProducer,
-                            fellesformat, loggingMeta, env, redisEdiloggid, ediLoggId, jedis, sha256String,
-                            duplicationCheckService, duplicationCheckModel
+                            fellesformat, loggingMeta, env, duplicationCheckService,
+                            duplicationCheckModel
                         )
                         continue@loop
                     } else {
@@ -185,22 +171,22 @@ class BlockingApplicationRunner(
 
                         if (pasient?.aktorId == null) {
                             handlePatientNotFoundInPDL(
-                                session, receiptProducer, fellesformat, ediLoggId, jedis,
-                                sha256String, env, loggingMeta, duplicationCheckService, duplicationCheckModel
+                                session, receiptProducer, fellesformat, env, loggingMeta,
+                                duplicationCheckService, duplicationCheckModel
                             )
                             continue@loop
                         }
                         if (behandler?.aktorId == null) {
                             handleDoctorNotFoundInPDL(
-                                session, receiptProducer, fellesformat, ediLoggId, jedis,
-                                sha256String, env, loggingMeta, duplicationCheckService, duplicationCheckModel
+                                session, receiptProducer, fellesformat, env, loggingMeta,
+                                duplicationCheckService, duplicationCheckModel
                             )
                             continue@loop
                         }
                         if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
-                                session, receiptProducer, fellesformat,
-                                ediLoggId, jedis, sha256String, env, loggingMeta, duplicationCheckService, duplicationCheckModel
+                                session, receiptProducer, fellesformat, env, loggingMeta,
+                                duplicationCheckService, duplicationCheckModel
                             )
                             continue@loop
                         }
@@ -238,8 +224,6 @@ class BlockingApplicationRunner(
                                 session,
                                 receiptProducer,
                                 fellesformat,
-                                ediLoggId,
-                                sha256String,
                                 duplicationCheckService,
                                 duplicationCheckModel
                             )
@@ -253,7 +237,7 @@ class BlockingApplicationRunner(
                             if (virusScanService.vedleggContainsVirus(vedlegg)) {
                                 handleVedleggContainsVirus(
                                     session, receiptProducer, fellesformat,
-                                    ediLoggId, jedis, sha256String, env, loggingMeta, duplicationCheckService,
+                                    env, loggingMeta, duplicationCheckService,
                                     duplicationCheckModel
                                 )
                                 continue@loop
@@ -292,9 +276,7 @@ class BlockingApplicationRunner(
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName,
                                 duplicationCheckService = duplicationCheckService,
-                                duplicationCheckModel = duplicationCheckModel,
-                                jedis = jedis,
-                                sha256String = sha256String
+                                duplicationCheckModel = duplicationCheckModel
                             )
 
                             Status.INVALID -> handleStatusINVALID(
@@ -309,10 +291,7 @@ class BlockingApplicationRunner(
                                 apprecQueueName = env.apprecQueueName,
                                 legeerklaeringId = legeerklaring.id,
                                 duplicationCheckService = duplicationCheckService,
-                                duplicationCheckModel = duplicationCheckModel,
-                                ediLoggId = ediLoggId,
-                                jedis = jedis,
-                                sha256String = sha256String
+                                duplicationCheckModel = duplicationCheckModel
                             )
                         }
 
@@ -329,15 +308,6 @@ class BlockingApplicationRunner(
                             fields(loggingMeta)
                         )
                     }
-                } catch (jedisException: JedisConnectionException) {
-                    log.error(
-                        "Exception caught, redis issue while handling message, sending to backout",
-                        jedisException
-                    )
-                    backoutProducer.send(message)
-                    MELDING_FEILET.inc()
-                    log.error("Setting applicationState.alive to false")
-                    applicationState.alive = false
                 } catch (e: Exception) {
                     log.error("Exception caught while handling message, sending to backout: ", e)
                     backoutProducer.send(message)
@@ -355,8 +325,6 @@ class BlockingApplicationRunner(
         session: Session,
         receiptProducer: MessageProducer,
         fellesformat: XMLEIFellesformat,
-        ediLoggId: String,
-        sha256String: String,
         duplicationCheckService: DuplicationCheckService,
         duplicationCheckModel: DuplicationCheckModel
     ) {
@@ -378,9 +346,6 @@ class BlockingApplicationRunner(
             session = session,
             receiptProducer = receiptProducer,
             fellesformat = fellesformat,
-            ediLoggId = ediLoggId,
-            jedis = jedis,
-            sha256String = sha256String,
             env = env,
             loggingMeta = loggingMeta,
             fritekstfelt = fritekstfelt,

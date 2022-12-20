@@ -54,7 +54,6 @@ import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import redis.clients.jedis.Jedis
 import java.io.FileInputStream
 import javax.jms.Session
 
@@ -65,7 +64,7 @@ val objectMapper: ObjectMapper = ObjectMapper()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
-val secureLog = LoggerFactory.getLogger("secureLog")
+val secureLog: Logger = LoggerFactory.getLogger("secureLog")
 
 @DelicateCoroutinesApi
 fun main() {
@@ -200,36 +199,31 @@ fun launchListeners(
     createListener(applicationState) {
         connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
             .use { connection ->
-                Jedis(env.redishost, 6379).use { jedis ->
-                    connection.start()
-                    val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
+                connection.start()
+                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-                    val inputconsumer = session.consumerForQueue(env.inputQueueName)
-                    val receiptProducer = session.producerForQueue(env.apprecQueueName)
-                    val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-                    val arenaProducer = session.producerForQueue(env.arenaQueueName)
+                val inputconsumer = session.consumerForQueue(env.inputQueueName)
+                val receiptProducer = session.producerForQueue(env.apprecQueueName)
+                val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+                val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
-                    jedis.auth(env.redisSecret)
-
-                    BlockingApplicationRunner(
-                        applicationState = applicationState,
-                        jedis = jedis,
-                        env = env,
-                        samhandlerService = samhandlerService,
-                        pdlPersonService = pdlPersonService,
-                        aivenKafkaProducer = aivenKafkaProducer,
-                        pale2ReglerClient = pale2ReglerClient,
-                        bucketUploadService = bucketUploadService,
-                        virusScanService = virusScanService,
-                        duplicationCheckService = duplicationCheckService
-                    ).run(
-                        inputconsumer = inputconsumer,
-                        session = session,
-                        receiptProducer = receiptProducer,
-                        backoutProducer = backoutProducer,
-                        arenaProducer = arenaProducer
-                    )
-                }
+                BlockingApplicationRunner(
+                    applicationState = applicationState,
+                    env = env,
+                    samhandlerService = samhandlerService,
+                    pdlPersonService = pdlPersonService,
+                    aivenKafkaProducer = aivenKafkaProducer,
+                    pale2ReglerClient = pale2ReglerClient,
+                    bucketUploadService = bucketUploadService,
+                    virusScanService = virusScanService,
+                    duplicationCheckService = duplicationCheckService
+                ).run(
+                    inputconsumer = inputconsumer,
+                    session = session,
+                    receiptProducer = receiptProducer,
+                    backoutProducer = backoutProducer,
+                    arenaProducer = arenaProducer
+                )
             }
     }
 }

@@ -53,7 +53,6 @@ spec:
   accessPolicy:
     outbound:
       rules:
-        - application: pale-2-redis
         - application: pale-2-regler
         - application: clamav
           namespace: clamav
@@ -63,7 +62,6 @@ spec:
   kafka:
     pool: nav-dev
   envFrom:
-    - secret: pale-2-redis-password
     - secret: srvpale2-secrets
     - secret: pale2-keystore-pwd
   filesFrom:

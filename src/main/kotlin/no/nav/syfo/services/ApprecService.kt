@@ -14,7 +14,6 @@ import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.apprecMarshaller
 import no.nav.syfo.util.get
 import no.nav.syfo.util.toString
-import redis.clients.jedis.Jedis
 import javax.jms.MessageProducer
 import javax.jms.Session
 
@@ -27,10 +26,7 @@ fun sendReceipt(
     duplicationCheckService: DuplicationCheckService,
     duplicationCheckModel: DuplicationCheckModel,
     loggingMeta: LoggingMeta,
-    apprecQueueName: String,
-    ediLoggId: String,
-    jedis: Jedis,
-    sha256String: String
+    apprecQueueName: String
 ) {
     receiptProducer.send(
         session.createTextMessage().apply {
@@ -45,5 +41,4 @@ fun sendReceipt(
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, StructuredArguments.fields(loggingMeta))
 
     duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
-    updateRedis(jedis, ediLoggId, sha256String)
 }
