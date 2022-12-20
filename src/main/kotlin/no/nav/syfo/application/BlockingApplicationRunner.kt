@@ -319,6 +319,7 @@ class BlockingApplicationRunner(
                             fields(loggingMeta)
                         )
                         updateRedis(jedis, ediLoggId, sha256String)
+                        duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
                     }
                 } catch (jedisException: JedisConnectionException) {
                     log.error(
