@@ -312,8 +312,7 @@ class BlockingApplicationRunner(
                                 duplicationCheckModel = duplicationCheckModel,
                                 ediLoggId = ediLoggId,
                                 jedis = jedis,
-                                sha256String = sha256String,
-                                env = env
+                                sha256String = sha256String
                             )
                         }
 

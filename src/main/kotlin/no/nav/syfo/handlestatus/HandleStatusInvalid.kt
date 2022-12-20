@@ -39,17 +39,14 @@ fun handleStatusINVALID(
     ediLoggId: String,
     jedis: Jedis,
     sha256String: String,
-    env: Environment,
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         validationResult.ruleHits.map { it.toApprecCV() },
 
         duplicationCheckService, duplicationCheckModel, loggingMeta,
-        env.apprecQueueName, ediLoggId, jedis, sha256String
+        apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
-
     sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
 }
 
@@ -85,7 +82,6 @@ fun handleDuplicateLegeerklaringContent(
         duplicationCheckService, duplicationCheckModel, loggingMeta,
         env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
@@ -121,7 +117,6 @@ fun handleDuplicateEdiloggid(
         duplicationCheckService, duplicationCheckModel, loggingMeta,
         env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
@@ -181,8 +176,6 @@ fun handleDoctorNotFoundInPDL(
         env.apprecQueueName, ediLoggId, jedis, sha256String
     )
 
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
 
@@ -219,8 +212,6 @@ fun handleFritekstfeltHarForMangeTegn(
         env.apprecQueueName, ediLoggId, jedis, sha256String
     )
 
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
-
     sendTilTopic(aivenKafkaProducer, env.legeerklaringTopic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
     log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
 
@@ -256,7 +247,6 @@ fun handleVedleggContainsVirus(
         env.apprecQueueName, ediLoggId, jedis, sha256String
     )
 
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
     INVALID_MESSAGE_NO_NOTICE.inc()
     VEDLEGG_VIRUS_COUNTER.inc()
 }
@@ -294,7 +284,6 @@ fun handleTestFnrInProd(
         duplicationCheckService, duplicationCheckModel, loggingMeta,
         env.apprecQueueName, ediLoggId, jedis, sha256String
     )
-    log.info("Apprec Receipt sent to {}, {}", env.apprecQueueName, fields(loggingMeta))
 
     INVALID_MESSAGE_NO_NOTICE.inc()
     TEST_FNR_IN_PROD.inc()

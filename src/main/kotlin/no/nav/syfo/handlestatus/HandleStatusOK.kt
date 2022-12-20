@@ -43,8 +43,6 @@ fun handleStatusOK(
         duplicationCheckModel, loggingMeta, apprecQueueName, ediLoggId, jedis, sha256String
     )
 
-    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
-
     sendArenaInfo(
         arenaProducer, session,
         tssId, ediLoggId, fnrLege, legeerklaring
