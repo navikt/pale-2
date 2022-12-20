@@ -14,7 +14,7 @@ internal class DuplicationCheckServiceTest {
     private val duplicationCheckService = DuplicationCheckService(TestDB.database)
 
     @BeforeEach
-    internal fun `Setup`() {
+    internal fun setup() {
         clearAllMocks()
     }
 

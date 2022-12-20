@@ -35,7 +35,7 @@ fun sendReceipt(
     receiptProducer.send(
         session.createTextMessage().apply {
             val apprec = createApprec(fellesformat, apprecStatus)
-            if (!apprecErrors.isNullOrEmpty()) {
+            if (apprecErrors.isNotEmpty()) {
                 apprec.get<XMLAppRec>().error.addAll(apprecErrors)
             }
             text = apprecMarshaller.toString(apprec)
