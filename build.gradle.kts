@@ -38,7 +38,7 @@ val annotationApiVersion = "1.3.5"
 val nettyCodecVersion = "4.1.86.Final"
 val flywayVersion = "9.3.0"
 val hikariVersion = "5.0.1"
-val postgresVersion = "42.5.0"
+val postgresVersion = "42.5.1"
 val embeddedPostgresVersion = "2.0.2"
 
 
