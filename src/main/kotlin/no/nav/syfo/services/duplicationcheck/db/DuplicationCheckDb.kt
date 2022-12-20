@@ -16,7 +16,7 @@ fun DatabaseInterface.persistSha256(duplicationCheckModel: DuplicationCheckModel
                 msg_id,
                 mottatt_date
                 )
-            values (?, ?, ?, ?)
+            values (?, ?, ?, ?) on conflict (sha256_legeerklaering) do nothing;
             """
         ).use { preparedStatement ->
             preparedStatement.setString(1, duplicationCheckModel.sha256Legeerklaering)
