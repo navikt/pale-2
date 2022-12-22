@@ -21,6 +21,7 @@ import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 import javax.jms.MessageProducer
 import javax.jms.Session
+import no.nav.syfo.metrics.DUPLICATE_LEGEERKLERING
 
 fun handleStatusINVALID(
     validationResult: ValidationResult,
@@ -75,6 +76,7 @@ fun handleDuplicateLegeerklaringContent(
         env.apprecQueueName
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
+    DUPLICATE_LEGEERKLERING.inc()
 }
 
 fun handlePatientNotFoundInPDL(
