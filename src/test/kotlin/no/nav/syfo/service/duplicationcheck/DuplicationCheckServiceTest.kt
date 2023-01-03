@@ -4,7 +4,6 @@ import io.mockk.clearAllMocks
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import no.nav.syfo.services.duplicationcheck.model.DuplikatsjekkModel
 import no.nav.syfo.util.TestDB
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,21 +26,17 @@ internal class DuplicationCheckServiceTest {
         val mottakId = "1231-213"
         val legeerklaringId = "1231-213-21312-s"
 
-        val duplikatsjekk = DuplikatsjekkModel(
-            sha256HealthInformation, mottakId, "12-33", LocalDateTime.now()
-        )
-
         val duplicationCheck = DuplicateCheck(
             legeerklaringId, sha256HealthInformation, mottakId, "12-33", LocalDateTime.now(), null
         )
 
-        duplicationCheckService.persistDuplicationCheck(duplikatsjekk, duplicationCheck)
-        val isDuplicat = duplicationCheckService.getDuplikatsjekk(sha256HealthInformation, mottakId)
+        duplicationCheckService.persistDuplicationCheck(duplicationCheck)
+        val isDuplicat = duplicationCheckService.getDuplicationCheck(sha256HealthInformation, mottakId)
 
-        assertEquals(isDuplicat?.sha256Legeerklaering, duplikatsjekk.sha256Legeerklaering)
-        assertEquals(isDuplicat?.mottakId, duplikatsjekk.mottakId)
-        assertEquals(isDuplicat?.msgId, duplikatsjekk.msgId)
-        assertEquals(isDuplicat?.mottattDate?.toLocalDate(), duplikatsjekk.mottattDate.toLocalDate())
+        assertEquals(isDuplicat?.sha256Legeerklaering, duplicationCheck.sha256Legeerklaering)
+        assertEquals(isDuplicat?.mottakId, duplicationCheck.mottakId)
+        assertEquals(isDuplicat?.msgId, duplicationCheck.msgId)
+        assertEquals(isDuplicat?.mottattDate?.toLocalDate(), duplicationCheck.mottattDate.toLocalDate())
     }
 
     @Test
@@ -51,15 +46,11 @@ internal class DuplicationCheckServiceTest {
         val legeerklaringId = "1231-213-21312-s3442355"
         val orgNumber = "234355"
 
-        val duplikatsjekk = DuplikatsjekkModel(
-            sha256HealthInformation, mottakId, "12-33", LocalDateTime.now()
-        )
-
         val duplicationCheck = DuplicateCheck(
             legeerklaringId, sha256HealthInformation, mottakId, "12-33", LocalDateTime.now(), orgNumber
         )
 
-        duplicationCheckService.persistDuplicationCheck(duplikatsjekk, duplicationCheck)
+        duplicationCheckService.persistDuplicationCheck(duplicationCheck)
         val isDuplicat = duplicationCheckService.getDuplicationCheck(sha256HealthInformation, mottakId)
 
         assertEquals(isDuplicat?.legeerklaringId, duplicationCheck.legeerklaringId)
@@ -80,12 +71,8 @@ internal class DuplicationCheckServiceTest {
             legeerklaringId, sha256Legeerklaering, mottakId, "12-33", LocalDateTime.now(), null
         )
 
-        val duplikatsjekk = DuplikatsjekkModel(
-            sha256Legeerklaering, mottakId, "12-33", LocalDateTime.now()
-        )
-
-        duplicationCheckService.persistDuplicationCheck(duplikatsjekk, duplicationCheck)
-        val isDuplicat = duplicationCheckService.getDuplikatsjekk("1231", "1334")
+        duplicationCheckService.persistDuplicationCheck(duplicationCheck)
+        val isDuplicat = duplicationCheckService.getDuplicationCheck("1231", "1334")
 
         assertEquals(null, isDuplicat)
     }

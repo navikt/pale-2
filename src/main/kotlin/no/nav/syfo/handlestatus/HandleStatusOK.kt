@@ -9,7 +9,6 @@ import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import no.nav.syfo.services.duplicationcheck.model.DuplikatsjekkModel
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
@@ -34,12 +33,11 @@ fun handleStatusOK(
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
     apprecQueueName: String,
     duplicationCheckService: DuplicationCheckService,
-    duplikatsjekkModel: DuplikatsjekkModel,
     duplicateCheck: DuplicateCheck,
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.ok, emptyList(), duplicationCheckService,
-        duplikatsjekkModel, duplicateCheck, loggingMeta, apprecQueueName
+        duplicateCheck, loggingMeta, apprecQueueName
     )
 
     sendArenaInfo(
