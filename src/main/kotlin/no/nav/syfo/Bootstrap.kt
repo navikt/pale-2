@@ -64,7 +64,7 @@ val objectMapper: ObjectMapper = ObjectMapper()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
-val secureLog: Logger = LoggerFactory.getLogger("secureLog")
+val secureLog: Logger = LoggerFactory.getLogger("securelog")
 
 @DelicateCoroutinesApi
 fun main() {

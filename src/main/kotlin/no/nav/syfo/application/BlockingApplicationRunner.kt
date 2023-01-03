@@ -35,7 +35,6 @@ import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import no.nav.syfo.services.duplicationcheck.model.DuplikatsjekkModel
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
@@ -61,6 +60,7 @@ import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
+import no.nav.syfo.services.duplicationcheck.model.Duplicate
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -141,26 +141,22 @@ class BlockingApplicationRunner(
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
-                    val duplicationServiceSha256String = duplicationCheckService.getDuplikatsjekk(sha256String, ediLoggId)
                     val duplicationCheckSha256String = duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
 
                     val mottatDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
                         .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()
 
-                    val duplikatsjekkModel = DuplikatsjekkModel(sha256String, ediLoggId, msgId, mottatDato)
                     val duplicateCheck = DuplicateCheck(
                         legeerklaringId, sha256String, ediLoggId,
                         msgId, mottatDato, legekontorOrgNr
                     )
 
-                    if (duplicationServiceSha256String != null) {
-                        if (duplicationCheckSha256String != null) {
-                            // TODO replace with if over after some days
-                        }
+                    if (duplicationCheckSha256String != null) {
+                        val duplicate = Duplicate(legeerklaringId,ediLoggId,msgId, mottatDato,
+                            duplicationCheckSha256String.legeerklaringId)
                         handleDuplicateLegeerklaringContent(
                             session, receiptProducer,
-                            fellesformat, loggingMeta, env, duplicationCheckService,
-                            duplikatsjekkModel, duplicateCheck
+                            fellesformat, loggingMeta, env, duplicationCheckService, duplicateCheck, duplicate
                         )
                         continue@loop
                     } else {
@@ -172,21 +168,21 @@ class BlockingApplicationRunner(
                         if (pasient?.aktorId == null) {
                             handlePatientNotFoundInPDL(
                                 session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplikatsjekkModel, duplicateCheck
+                                duplicationCheckService, duplicateCheck
                             )
                             continue@loop
                         }
                         if (behandler?.aktorId == null) {
                             handleDoctorNotFoundInPDL(
                                 session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplikatsjekkModel, duplicateCheck
+                                duplicationCheckService, duplicateCheck
                             )
                             continue@loop
                         }
                         if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
                                 session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplikatsjekkModel, duplicateCheck
+                                duplicationCheckService, duplicateCheck
                             )
                             continue@loop
                         }
@@ -235,7 +231,6 @@ class BlockingApplicationRunner(
                                 receiptProducer,
                                 fellesformat,
                                 duplicationCheckService,
-                                duplikatsjekkModel,
                                 duplicateCheck
                             )
                             continue@loop
@@ -248,8 +243,7 @@ class BlockingApplicationRunner(
                             if (virusScanService.vedleggContainsVirus(vedlegg)) {
                                 handleVedleggContainsVirus(
                                     session, receiptProducer, fellesformat,
-                                    env, loggingMeta, duplicationCheckService,
-                                    duplikatsjekkModel, duplicateCheck
+                                    env, loggingMeta, duplicationCheckService, duplicateCheck
                                 )
                                 continue@loop
                             }
@@ -287,7 +281,6 @@ class BlockingApplicationRunner(
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName,
                                 duplicationCheckService = duplicationCheckService,
-                                duplikatsjekkModel = duplikatsjekkModel,
                                 duplicateCheck = duplicateCheck
                             )
 
@@ -303,7 +296,6 @@ class BlockingApplicationRunner(
                                 apprecQueueName = env.apprecQueueName,
                                 legeerklaeringId = legeerklaring.id,
                                 duplicationCheckService = duplicationCheckService,
-                                duplikatsjekkModel = duplikatsjekkModel,
                                 duplicateCheck = duplicateCheck
                             )
                         }
@@ -339,7 +331,6 @@ class BlockingApplicationRunner(
         receiptProducer: MessageProducer,
         fellesformat: XMLEIFellesformat,
         duplicationCheckService: DuplicationCheckService,
-        duplikatsjekkModel: DuplikatsjekkModel,
         duplicateCheck: DuplicateCheck
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
@@ -367,7 +358,6 @@ class BlockingApplicationRunner(
             legeerklaringKafkaMessage = forkortetLegeerklaeringKafkaMessage,
             legeerklaeringId = legeerklaering.id,
             duplicationCheckService = duplicationCheckService,
-            duplikatsjekkModel = duplikatsjekkModel,
             duplicateCheck = duplicateCheck
         )
     }
