@@ -21,25 +21,6 @@ internal class DuplicationCheckServiceTest {
     }
 
     @Test
-    fun `Should return duplikatsjekk if sha256Legeerklaering is in database`() {
-        val sha256HealthInformation = "asdsad"
-        val mottakId = "1231-213"
-        val legeerklaringId = "1231-213-21312-s"
-
-        val duplicationCheck = DuplicateCheck(
-            legeerklaringId, sha256HealthInformation, mottakId, "12-33", LocalDateTime.now(), null
-        )
-
-        duplicationCheckService.persistDuplicationCheck(duplicationCheck)
-        val isDuplicat = duplicationCheckService.getDuplicationCheck(sha256HealthInformation, mottakId)
-
-        assertEquals(isDuplicat?.sha256Legeerklaering, duplicationCheck.sha256Legeerklaering)
-        assertEquals(isDuplicat?.mottakId, duplicationCheck.mottakId)
-        assertEquals(isDuplicat?.msgId, duplicationCheck.msgId)
-        assertEquals(isDuplicat?.mottattDate?.toLocalDate(), duplicationCheck.mottattDate.toLocalDate())
-    }
-
-    @Test
     fun `Should return duplicationCheck if sha256Legeerklaering is in database`() {
         val sha256HealthInformation = "asdsad"
         val mottakId = "1231-213"
