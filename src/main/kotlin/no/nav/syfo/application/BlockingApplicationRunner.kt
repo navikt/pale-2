@@ -34,7 +34,8 @@ import no.nav.syfo.secureLog
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
-import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
+import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
+import no.nav.syfo.services.duplicationcheck.model.DuplikatsjekkModel
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
@@ -118,10 +119,12 @@ class BlockingApplicationRunner(
                     val fnrLege = receiverBlock.avsenderFnrFraDigSignatur
                     val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
                     val legekontorReshId = extractOrganisationRashNumberFromSender(fellesformat)?.id
+                    val legeerklaringId = UUID.randomUUID().toString()
 
                     val requestLatency = REQUEST_TIME.startTimer()
 
                     val loggingMeta = LoggingMeta(
+                        legeerklaringId = legeerklaringId,
                         mottakId = receiverBlock.ediLoggId,
                         orgNr = extractOrganisationNumberFromSender(fellesformat)?.id,
                         msgId = msgHead.msgInfo.msgId
@@ -138,29 +141,26 @@ class BlockingApplicationRunner(
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
-                    val samhandlerPraksisTssId = samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
-                        fnrLege = fnrLege,
-                        legekontorOrgName = legekontorOrgName,
-                        legekontorOrgNumber = legekontorOrgNr,
-                        legekontorHerId = legekontorHerId,
-                        msgHead = msgHead,
-                        receiverBlock = receiverBlock,
-                        loggingMeta = loggingMeta
-                    )?.samhandlerPraksis?.tss_ident
-
-                    val duplicationServiceSha256String = duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
+                    val duplicationServiceSha256String = duplicationCheckService.getDuplikatsjekk(sha256String, ediLoggId)
+                    val duplicationCheckSha256String = duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
 
                     val mottatDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
                         .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()
 
-                    val duplicationCheckModel = DuplicationCheckModel(sha256String, ediLoggId, msgId, mottatDato)
+                    val duplikatsjekkModel = DuplikatsjekkModel(sha256String, ediLoggId, msgId, mottatDato)
+                    val duplicateCheck = DuplicateCheck(
+                        legeerklaringId, sha256String, ediLoggId,
+                        msgId, mottatDato, legekontorOrgNr
+                    )
 
                     if (duplicationServiceSha256String != null) {
-                        log.info("duplicationServiceSha256String: should not be null $duplicationServiceSha256String")
+                        if (duplicationCheckSha256String != null) {
+                            // TODO replace with if over after some days
+                        }
                         handleDuplicateLegeerklaringContent(
                             session, receiptProducer,
                             fellesformat, loggingMeta, env, duplicationCheckService,
-                            duplicationCheckModel
+                            duplikatsjekkModel, duplicateCheck
                         )
                         continue@loop
                     } else {
@@ -172,31 +172,41 @@ class BlockingApplicationRunner(
                         if (pasient?.aktorId == null) {
                             handlePatientNotFoundInPDL(
                                 session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplicationCheckModel
+                                duplicationCheckService, duplikatsjekkModel, duplicateCheck
                             )
                             continue@loop
                         }
                         if (behandler?.aktorId == null) {
                             handleDoctorNotFoundInPDL(
                                 session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplicationCheckModel
+                                duplicationCheckService, duplikatsjekkModel, duplicateCheck
                             )
                             continue@loop
                         }
                         if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
                                 session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplicationCheckModel
+                                duplicationCheckService, duplikatsjekkModel, duplicateCheck
                             )
                             continue@loop
                         }
 
                         val legeerklaring = legeerklaringxml.toLegeerklaring(
-                            legeerklaringId = UUID.randomUUID().toString(),
+                            legeerklaringId = legeerklaringId,
                             fellesformat = fellesformat,
                             signaturDato = msgHead.msgInfo.genDate,
                             behandlerNavn = behandler.navn.format()
                         )
+
+                        val samhandlerPraksisTssId = samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
+                            fnrLege = fnrLege,
+                            legekontorOrgName = legekontorOrgName,
+                            legekontorOrgNumber = legekontorOrgNr,
+                            legekontorHerId = legekontorHerId,
+                            msgHead = msgHead,
+                            receiverBlock = receiverBlock,
+                            loggingMeta = loggingMeta
+                        )?.samhandlerPraksis?.tss_ident
 
                         val receivedLegeerklaering = ReceivedLegeerklaering(
                             legeerklaering = legeerklaring,
@@ -225,7 +235,8 @@ class BlockingApplicationRunner(
                                 receiptProducer,
                                 fellesformat,
                                 duplicationCheckService,
-                                duplicationCheckModel
+                                duplikatsjekkModel,
+                                duplicateCheck
                             )
                             continue@loop
                         }
@@ -238,7 +249,7 @@ class BlockingApplicationRunner(
                                 handleVedleggContainsVirus(
                                     session, receiptProducer, fellesformat,
                                     env, loggingMeta, duplicationCheckService,
-                                    duplicationCheckModel
+                                    duplikatsjekkModel, duplicateCheck
                                 )
                                 continue@loop
                             }
@@ -276,7 +287,8 @@ class BlockingApplicationRunner(
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName,
                                 duplicationCheckService = duplicationCheckService,
-                                duplicationCheckModel = duplicationCheckModel
+                                duplikatsjekkModel = duplikatsjekkModel,
+                                duplicateCheck = duplicateCheck
                             )
 
                             Status.INVALID -> handleStatusINVALID(
@@ -291,7 +303,8 @@ class BlockingApplicationRunner(
                                 apprecQueueName = env.apprecQueueName,
                                 legeerklaeringId = legeerklaring.id,
                                 duplicationCheckService = duplicationCheckService,
-                                duplicationCheckModel = duplicationCheckModel
+                                duplikatsjekkModel = duplikatsjekkModel,
+                                duplicateCheck = duplicateCheck
                             )
                         }
 
@@ -326,7 +339,8 @@ class BlockingApplicationRunner(
         receiptProducer: MessageProducer,
         fellesformat: XMLEIFellesformat,
         duplicationCheckService: DuplicationCheckService,
-        duplicationCheckModel: DuplicationCheckModel
+        duplikatsjekkModel: DuplikatsjekkModel,
+        duplicateCheck: DuplicateCheck
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
@@ -353,7 +367,8 @@ class BlockingApplicationRunner(
             legeerklaringKafkaMessage = forkortetLegeerklaeringKafkaMessage,
             legeerklaeringId = legeerklaering.id,
             duplicationCheckService = duplicationCheckService,
-            duplicationCheckModel = duplicationCheckModel
+            duplikatsjekkModel = duplikatsjekkModel,
+            duplicateCheck = duplicateCheck
         )
     }
 }
