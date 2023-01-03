@@ -9,7 +9,8 @@ import no.nav.syfo.apprec.createApprec
 import no.nav.syfo.log
 import no.nav.syfo.metrics.APPREC_COUNTER
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
-import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
+import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
+import no.nav.syfo.services.duplicationcheck.model.DuplikatsjekkModel
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.apprecMarshaller
 import no.nav.syfo.util.get
@@ -24,7 +25,8 @@ fun sendReceipt(
     apprecStatus: ApprecStatus,
     apprecErrors: List<XMLCV> = listOf(),
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel,
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck,
     loggingMeta: LoggingMeta,
     apprecQueueName: String
 ) {
@@ -40,5 +42,5 @@ fun sendReceipt(
     APPREC_COUNTER.inc()
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, StructuredArguments.fields(loggingMeta))
 
-    duplicationCheckService.persistDuplicationCheck(duplicationCheckModel)
+    duplicationCheckService.persistDuplicationCheck(duplikatsjekkModel, duplicateCheck)
 }

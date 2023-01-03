@@ -23,7 +23,7 @@ internal class PdlServiceTest {
     private val accessTokenClientV2 = mockkClass(AccessTokenClientV2::class)
     private val pdlService = PdlPersonService(pdlClient, accessTokenClientV2, "littaScope")
 
-    private val loggingMeta = LoggingMeta("legeerklearingId", "journalpostId", "hendelsesId")
+    private val loggingMeta = LoggingMeta("legeerklearingId", "mottakid", "orgnummer", "msgid")
 
     @BeforeEach
     internal fun `Set up`() {

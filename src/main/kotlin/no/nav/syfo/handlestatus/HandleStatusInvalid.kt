@@ -8,6 +8,7 @@ import no.nav.syfo.Environment
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.toApprecCV
 import no.nav.syfo.log
+import no.nav.syfo.metrics.DUPLICATE_LEGEERKLERING
 import no.nav.syfo.metrics.FOR_MANGE_TEGN
 import no.nav.syfo.metrics.INVALID_MESSAGE_NO_NOTICE
 import no.nav.syfo.metrics.TEST_FNR_IN_PROD
@@ -15,13 +16,13 @@ import no.nav.syfo.metrics.VEDLEGG_VIRUS_COUNTER
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
-import no.nav.syfo.services.duplicationcheck.model.DuplicationCheckModel
+import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
+import no.nav.syfo.services.duplicationcheck.model.DuplikatsjekkModel
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 import javax.jms.MessageProducer
 import javax.jms.Session
-import no.nav.syfo.metrics.DUPLICATE_LEGEERKLERING
 
 fun handleStatusINVALID(
     validationResult: ValidationResult,
@@ -35,13 +36,14 @@ fun handleStatusINVALID(
     apprecQueueName: String,
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
     sendReceipt(
         session, receiptProducer, fellesformat, ApprecStatus.avvist,
         validationResult.ruleHits.map { it.toApprecCV() },
 
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         apprecQueueName
     )
     sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
@@ -54,12 +56,13 @@ fun handleDuplicateLegeerklaringContent(
     loggingMeta: LoggingMeta,
     env: Environment,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
 
     log.warn(
         "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {}, {}",
-        keyValue("originalEdiLoggId", duplicationCheckModel.mottakId),
+        keyValue("originalEdiLoggId", duplikatsjekkModel.mottakId),
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName)
     )
@@ -72,11 +75,13 @@ fun handleDuplicateLegeerklaringContent(
                     "Skal ikke sendes på nytt."
             )
         ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         env.apprecQueueName
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
     DUPLICATE_LEGEERKLERING.inc()
+    // TODO impl after some days
+    // duplicationCheckService.persistDuplication(duplicate)
 }
 
 fun handlePatientNotFoundInPDL(
@@ -86,7 +91,8 @@ fun handlePatientNotFoundInPDL(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
@@ -98,7 +104,7 @@ fun handlePatientNotFoundInPDL(
         listOf(
             createApprecError("Pasienten er ikkje registrert i folkeregisteret")
         ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         env.apprecQueueName
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -111,7 +117,8 @@ fun handleDoctorNotFoundInPDL(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}, {}",
@@ -125,7 +132,7 @@ fun handleDoctorNotFoundInPDL(
                 "Behandler er ikke registrert i folkeregisteret"
             )
         ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         env.apprecQueueName
     )
 
@@ -143,7 +150,8 @@ fun handleFritekstfeltHarForMangeTegn(
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
@@ -158,7 +166,7 @@ fun handleFritekstfeltHarForMangeTegn(
                     " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
             )
         ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         env.apprecQueueName
     )
 
@@ -175,7 +183,8 @@ fun handleVedleggContainsVirus(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus {}, {}",
@@ -190,7 +199,7 @@ fun handleVedleggContainsVirus(
                     "sjekk om vedleggene inneholder virus"
             )
         ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         env.apprecQueueName
     )
 
@@ -205,7 +214,8 @@ fun handleTestFnrInProd(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicationCheckModel: DuplicationCheckModel
+    duplikatsjekkModel: DuplikatsjekkModel,
+    duplicateCheck: DuplicateCheck
 ) {
     log.warn(
         "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}, {}",
@@ -225,7 +235,7 @@ fun handleTestFnrInProd(
                 "Dette fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
             )
         ),
-        duplicationCheckService, duplicationCheckModel, loggingMeta,
+        duplicationCheckService, duplikatsjekkModel, duplicateCheck, loggingMeta,
         env.apprecQueueName
     )
 
