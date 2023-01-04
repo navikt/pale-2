@@ -16,13 +16,13 @@ import no.nav.syfo.metrics.VEDLEGG_VIRUS_COUNTER
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 import javax.jms.MessageProducer
 import javax.jms.Session
-import no.nav.syfo.services.duplicationcheck.model.Duplicate
 
 fun handleStatusINVALID(
     validationResult: ValidationResult,

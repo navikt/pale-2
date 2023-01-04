@@ -29,7 +29,7 @@ val jfairyVersion = "0.6.5"
 val pale2CommonVersion = "1.7dbd229"
 val kafkaVersion = "3.2.3"
 val mockkVersion = "1.13.2"
-val kotlinVersion = "1.7.21"
+val kotlinVersion = "1.8.0"
 val googleCloudStorageVersion = "2.13.0"
 val jaxbImplVersion = "2.3.3"
 val wsApiVersion = "2.3.3"
@@ -42,7 +42,7 @@ val embeddedPostgresVersion = "2.0.2"
 
 
 plugins {
-    kotlin("jvm") version "1.7.21"
+    kotlin("jvm") version "1.8.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.diffplug.spotless") version "6.5.0"
     id("org.jmailen.kotlinter") version "3.10.0"

@@ -34,6 +34,7 @@ import no.nav.syfo.secureLog
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
 import no.nav.syfo.util.LoggingMeta
@@ -60,7 +61,6 @@ import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
-import no.nav.syfo.services.duplicationcheck.model.Duplicate
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -152,8 +152,10 @@ class BlockingApplicationRunner(
                     )
 
                     if (duplicationCheckSha256String != null) {
-                        val duplicate = Duplicate(legeerklaringId,ediLoggId,msgId, mottatDato,
-                            duplicationCheckSha256String.legeerklaringId)
+                        val duplicate = Duplicate(
+                            legeerklaringId, ediLoggId, msgId, mottatDato,
+                            duplicationCheckSha256String.legeerklaringId
+                        )
                         handleDuplicateLegeerklaringContent(
                             session, receiptProducer,
                             fellesformat, loggingMeta, env, duplicationCheckService, duplicateCheck, duplicate
