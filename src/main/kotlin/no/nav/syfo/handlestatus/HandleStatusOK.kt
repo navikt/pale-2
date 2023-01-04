@@ -7,6 +7,8 @@ import no.nav.syfo.client.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
@@ -29,10 +31,14 @@ fun handleStatusOK(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     topic: String,
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
-    apprecQueueName: String
+    apprecQueueName: String,
+    duplicationCheckService: DuplicationCheckService,
+    duplicateCheck: DuplicateCheck,
 ) {
-    sendReceipt(session, receiptProducer, fellesformat, ApprecStatus.ok)
-    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, fields(loggingMeta))
+    sendReceipt(
+        session, receiptProducer, fellesformat, ApprecStatus.ok, emptyList(), duplicationCheckService,
+        duplicateCheck, loggingMeta, apprecQueueName
+    )
 
     sendArenaInfo(
         arenaProducer, session,

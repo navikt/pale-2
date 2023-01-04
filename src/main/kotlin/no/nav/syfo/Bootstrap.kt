@@ -35,6 +35,7 @@ import no.nav.syfo.client.ClamAvClient
 import no.nav.syfo.client.EmottakSubscriptionClient
 import no.nav.syfo.client.Pale2ReglerClient
 import no.nav.syfo.client.SarClient
+import no.nav.syfo.db.Database
 import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
@@ -46,13 +47,13 @@ import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.services.SamhandlerService
 import no.nav.syfo.services.VirusScanService
+import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.util.JacksonKafkaSerializer
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import redis.clients.jedis.Jedis
 import java.io.FileInputStream
 import javax.jms.Session
 
@@ -63,11 +64,12 @@ val objectMapper: ObjectMapper = ObjectMapper()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
-val secureLog = LoggerFactory.getLogger("secureLog")
+val secureLog: Logger = LoggerFactory.getLogger("securelog")
 
 @DelicateCoroutinesApi
 fun main() {
     val env = Environment()
+    val database = Database(env)
 
     val serviceUser = VaultServiceUser()
 
@@ -158,9 +160,11 @@ fun main() {
 
     val virusScanService = VirusScanService(clamAvClient)
 
+    val duplicationCheckService = DuplicationCheckService(database)
+
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, serviceUser,
-        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService
+        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService, duplicationCheckService
     )
 
     applicationServer.start()
@@ -189,40 +193,37 @@ fun launchListeners(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     pale2ReglerClient: Pale2ReglerClient,
     bucketUploadService: BucketUploadService,
-    virusScanService: VirusScanService
+    virusScanService: VirusScanService,
+    duplicationCheckService: DuplicationCheckService
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
             .use { connection ->
-                Jedis(env.redishost, 6379).use { jedis ->
-                    connection.start()
-                    val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
+                connection.start()
+                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-                    val inputconsumer = session.consumerForQueue(env.inputQueueName)
-                    val receiptProducer = session.producerForQueue(env.apprecQueueName)
-                    val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-                    val arenaProducer = session.producerForQueue(env.arenaQueueName)
+                val inputconsumer = session.consumerForQueue(env.inputQueueName)
+                val receiptProducer = session.producerForQueue(env.apprecQueueName)
+                val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
+                val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
-                    jedis.auth(env.redisSecret)
-
-                    BlockingApplicationRunner(
-                        applicationState = applicationState,
-                        jedis = jedis,
-                        env = env,
-                        samhandlerService = samhandlerService,
-                        pdlPersonService = pdlPersonService,
-                        aivenKafkaProducer = aivenKafkaProducer,
-                        pale2ReglerClient = pale2ReglerClient,
-                        bucketUploadService = bucketUploadService,
-                        virusScanService = virusScanService
-                    ).run(
-                        inputconsumer = inputconsumer,
-                        session = session,
-                        receiptProducer = receiptProducer,
-                        backoutProducer = backoutProducer,
-                        arenaProducer = arenaProducer
-                    )
-                }
+                BlockingApplicationRunner(
+                    applicationState = applicationState,
+                    env = env,
+                    samhandlerService = samhandlerService,
+                    pdlPersonService = pdlPersonService,
+                    aivenKafkaProducer = aivenKafkaProducer,
+                    pale2ReglerClient = pale2ReglerClient,
+                    bucketUploadService = bucketUploadService,
+                    virusScanService = virusScanService,
+                    duplicationCheckService = duplicationCheckService
+                ).run(
+                    inputconsumer = inputconsumer,
+                    session = session,
+                    receiptProducer = receiptProducer,
+                    backoutProducer = backoutProducer,
+                    arenaProducer = arenaProducer
+                )
             }
     }
 }

@@ -11,7 +11,6 @@ data class Environment(
     override val mqChannelName: String = getEnvVar("MQ_CHANNEL_NAME"),
     val inputQueueName: String = getEnvVar("MQ_INPUT_QUEUE_NAME"),
     val apprecQueueName: String = getEnvVar("MQ_APPREC_QUEUE_NAME"),
-    val redishost: String = getEnvVar("REDIS_HOST", "pale-2-redis.teamsykmelding.svc.cluster.local"),
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
@@ -27,8 +26,12 @@ data class Environment(
     val legeerklaringTopic: String = "teamsykmelding.legeerklaering",
     val smgcpProxyUrl: String = getEnvVar("SMGCP_PROXY_URL"),
     val smgcpProxyScope: String = getEnvVar("SMGCP_PROXY_SCOPE"),
-    val redisSecret: String = getEnvVar("REDIS_PASSWORD"),
-    val clamAvEndpointUrl: String = getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.clamav.svc.cluster.local")
+    val clamAvEndpointUrl: String = getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.clamav.svc.cluster.local"),
+    val databaseUsername: String = getEnvVar("DB_USERNAME"),
+    val databasePassword: String = getEnvVar("DB_PASSWORD"),
+    val dbHost: String = getEnvVar("DB_HOST"),
+    val dbPort: String = getEnvVar("DB_PORT"),
+    val dbName: String = getEnvVar("DB_DATABASE")
 ) : MqConfig
 
 data class VaultServiceUser(

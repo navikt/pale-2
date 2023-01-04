@@ -1,6 +1,7 @@
 package no.nav.syfo.util
 
 data class LoggingMeta(
+    val legeerklaringId: String,
     val mottakId: String,
     val orgNr: String?,
     val msgId: String
