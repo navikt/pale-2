@@ -16,7 +16,7 @@ fun getVedlegg(fellesformat: XMLEIFellesformat): List<Vedlegg> {
         val type = it.refDoc.mimeType
 
         if (it.refDoc.content.any.size > 1) {
-            throw RuntimeException("Unnsuported content")
+            throw RuntimeException("Unsupported content")
         }
         val contentElement = it.refDoc.content.any.first() as Element
         val contentType = contentElement.localName
