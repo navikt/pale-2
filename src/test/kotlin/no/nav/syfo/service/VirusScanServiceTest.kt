@@ -14,6 +14,9 @@ import no.nav.syfo.vedlegg.model.Vedlegg
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.*
 
 internal class VirusScanServiceTest {
@@ -32,8 +35,8 @@ internal class VirusScanServiceTest {
                 ScanResult("normalFile", Status.OK),
                 ScanResult("eicar.com.txt", Status.FOUND)
             )
-        val contentImage = java.io.File("src/test/resources/doctor.jpeg").readBytes().contentToString()
-        val contentText: String = java.io.File("src/test/resources/base64EncodedData.txt").readText()
+        val contentImage = getFileContentAsString("src/test/resources/doctor.jpeg")
+        val contentText = getFileContentAsString("src/test/resources/base64EncodedData.txt")
 
         val vedleggBilde = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Bilde av lege")
         val vedleggText = Vedlegg(Content("Base64Container", contentText), "text/plain", "eicar.com")
@@ -52,10 +55,10 @@ internal class VirusScanServiceTest {
                 ScanResult("normalFile", Status.OK),
                 ScanResult("anotherNormalFile", Status.OK)
             )
-        val content = java.io.File("src/test/resources/doctor.jpeg").readBytes().contentToString()
+        val contentImage = getFileContentAsString("src/test/resources/doctor.jpeg")
 
-        val vedleggImage1 = Vedlegg(Content("Base64Container", content), "image/jpeg", "Et bilde fra lege")
-        val vedleggImage2 = Vedlegg(Content("Base64Container", content), "image/jpeg", "Et til bilde fra lege")
+        val vedleggImage1 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Et bilde fra lege")
+        val vedleggImage2 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Et til bilde fra lege")
 
         runBlocking {
             val vedleggContainsVirus =
@@ -71,10 +74,10 @@ internal class VirusScanServiceTest {
                 ScanResult("normalFile", Status.OK),
                 ScanResult("strangeFile", Status.ERROR)
             )
-        val content = java.io.File("src/test/resources/doctor.jpeg").readBytes().contentToString()
 
-        val vedleggImage1 = Vedlegg(Content("Base64Container", content), "image/jpeg", "Et bilde fra lege")
-        val vedleggImage2 = Vedlegg(Content("Base64Container", content), "image/jpeg", "Et til bilde fra lege")
+        val contentImage = getFileContentAsString("src/test/resources/doctor.jpeg")
+        val vedleggImage1 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Bilde av lege")
+        val vedleggImage2 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Samme lege")
 
         runBlocking {
             val vedleggContainsVirus =
@@ -85,9 +88,13 @@ internal class VirusScanServiceTest {
 
     @Test
     fun `Should return false when file size is lower than 300 megabytes`() {
-        val base64EncodedContent = java.io.File("src/test/resources/base64EncodedData.txt").readText()
+        val base64EncodedContent = getFileContentAsString("src/test/resources/base64EncodedData.txt")
         val vedlegg = Vedlegg(Content("Base64Container", base64EncodedContent), "image/jpeg", "image_of_file")
         val file = Base64.getMimeDecoder().decode(vedlegg.content.content)
         assertEquals(false, fileSizeLagerThan300MegaBytes(file))
+    }
+
+    fun getFileContentAsString(filepath: String): String {
+        return Files.readAllBytes(Paths.get(filepath)).toString(StandardCharsets.UTF_16)
     }
 }
