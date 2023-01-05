@@ -8,9 +8,7 @@ data class Vedlegg(
     val content: Content,
     val type: String,
     val description: String
-) {
-    val size = this.content.contentLength
-}
+)
 
 data class VedleggMessage(
     val vedlegg: Vedlegg,
@@ -21,9 +19,7 @@ data class VedleggMessage(
     val source: String = "pale-2"
 )
 
-data class Content(val contentType: String, val content: String) {
-    val contentLength = content.length
-}
+data class Content(val contentType: String, val content: String)
 
 data class BehandlerInfo(val fornavn: String?, val etternavn: String?, val fnr: String?)
 
