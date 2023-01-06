@@ -29,9 +29,11 @@ internal class VirusScanServiceTest {
 
     @Test
     fun `Should return true if result contains FOUND`() {
-        coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns listOf(
-            ScanResult("normalFile", Status.OK), ScanResult("eicar.com.txt", Status.FOUND)
-        )
+        coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
+            listOf(
+                ScanResult("normalFile", Status.OK),
+                ScanResult("eicar.com.txt", Status.FOUND)
+            )
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
         val contentText = base64Encode(getFileContent("src/test/resources/random.txt"))
 
@@ -39,39 +41,46 @@ internal class VirusScanServiceTest {
         val vedleggText = Vedlegg(Content("Base64Container", contentText), "text/plain", "eicar.com")
 
         runBlocking {
-            val vedleggContainsVirus = VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggBilde, vedleggText))
+            val vedleggContainsVirus =
+                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggBilde, vedleggText))
             assertEquals(true, vedleggContainsVirus)
         }
     }
 
     @Test
     fun `Should return false if result only contains OK`() {
-        coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns listOf(
-            ScanResult("normalFile", Status.OK), ScanResult("anotherNormalFile", Status.OK)
-        )
+        coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
+            listOf(
+                ScanResult("normalFile", Status.OK),
+                ScanResult("anotherNormalFile", Status.OK)
+            )
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
 
         val vedleggImage1 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Et bilde fra lege")
         val vedleggImage2 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Et til bilde fra lege")
 
         runBlocking {
-            val vedleggContainsVirus = VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
+            val vedleggContainsVirus =
+                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
             assertEquals(false, vedleggContainsVirus)
         }
     }
 
     @Test
     fun `Should return true if result contains ERROR`() {
-        coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns listOf(
-            ScanResult("normalFile", Status.OK), ScanResult("strangeFile", Status.ERROR)
-        )
+        coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
+            listOf(
+                ScanResult("normalFile", Status.OK),
+                ScanResult("strangeFile", Status.ERROR)
+            )
 
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
         val vedleggImage1 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Bilde av lege")
         val vedleggImage2 = Vedlegg(Content("Base64Container", contentImage), "image/jpeg", "Samme lege")
 
         runBlocking {
-            val vedleggContainsVirus = VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
+            val vedleggContainsVirus =
+                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
             assertEquals(true, vedleggContainsVirus)
         }
     }
