@@ -55,7 +55,7 @@ spec:
       rules:
         - application: pale-2-regler
         - application: clamav
-          namespace: clamav
+          namespace: nais-system
   vault:
     enabled: false
   webproxy: false
