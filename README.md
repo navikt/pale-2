@@ -95,6 +95,9 @@ Find the newest version of gradle here: https://gradle.org/releases/ Then run th
 
 ```./gradlew wrapper --gradle-version $gradleVersjon```
 
+### Guide to EPJ
+https://www.ehelse.no/Standardisering/standarder/legeerklaering-ved-arbeidsuforhet/_/attachment/inline/a0258ee2-d216-4698-8820-b8dea0585395:bb93e3d95d8a9bf59166f40ff870406036c49f64/Legeerkl%C3%A6ring%20ved%20arbeidsuf%C3%B8rhet%20(HIS%20808052008).pdf
+
 ### Contact
 
 This project is maintained by navikt/teamsykmelding
