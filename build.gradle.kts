@@ -5,14 +5,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val ktorVersion = "2.2.2"
+val ktorVersion = "2.2.3"
 val coroutinesVersion = "1.6.4"
 val prometheusVersion = "0.16.0"
 val junitJupiterVersion = "5.9.0"
 val kluentVersion = "1.68"
 val logbackVersion = "1.4.5"
 val logstashEncoderVersion = "7.2"
-val jacksonVersion = "2.14.1"
+val jacksonVersion = "2.14.2"
 val kithHodemeldingVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val fellesformatVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jaxwsApiVersion = "2.3.1"
@@ -26,10 +26,10 @@ val commonsTextVersion = "1.10.0"
 val javaTimeAdapterVersion = "1.1.3"
 val arenaInfoVersion = "2019.07.30-12-26-5c924ef4f04022bbb850aaf299eb8e4464c1ca6a"
 val jfairyVersion = "0.6.5"
-val pale2CommonVersion = "1.ad083ef"
+val pale2CommonVersion = "1.a94f960"
 val kafkaVersion = "3.2.3"
 val mockkVersion = "1.13.2"
-val kotlinVersion = "1.8.0"
+val kotlinVersion = "1.8.10"
 val googleCloudStorageVersion = "2.13.0"
 val jaxbImplVersion = "2.3.3"
 val wsApiVersion = "2.3.3"
@@ -41,7 +41,7 @@ val embeddedPostgresVersion = "2.0.2"
 
 
 plugins {
-    kotlin("jvm") version "1.8.0"
+    kotlin("jvm") version "1.8.10"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.diffplug.spotless") version "6.5.0"
     id("org.jmailen.kotlinter") version "3.10.0"
@@ -139,13 +139,9 @@ tasks {
     }
 
     withType<KotlinCompile> {
-
         kotlinOptions.jvmTarget = "17"
     }
 
-    withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
-    }
 
     withType<ShadowJar> {
         transform(ServiceFileTransformer::class.java) {
