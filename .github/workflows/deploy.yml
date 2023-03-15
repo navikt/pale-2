@@ -34,9 +34,9 @@ jobs:
           command: test
           args: --org=teamsykmelding --all-sub-projects --severity-threshold=high
   build-push-deploy:
-  permissions:
-    contents: "read"
-    id-token: "write"
+    permissions:
+      contents: "read"
+      id-token: "write"
     needs: [ snyk-test ]
     name: Checkout code and create docker tag
     runs-on: ubuntu-latest
@@ -82,6 +82,7 @@ jobs:
           APIKEY: ${{ secrets.NAIS_DEPLOY_APIKEY_TEAMSYKMELDING }}
           CLUSTER: dev-gcp
           RESOURCE: naiserator-dev.yaml
+          VAR: image=${{ steps.docker-build-push.outputs.image }}
       - name: Deploy to Prod
         uses: nais/deploy/actions/deploy@master
         env:
