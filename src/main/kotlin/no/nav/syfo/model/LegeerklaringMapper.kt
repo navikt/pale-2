@@ -17,7 +17,7 @@ fun Legeerklaring.toLegeerklaring(
     legeerklaringId: String,
     fellesformat: XMLEIFellesformat,
     signaturDato: LocalDateTime,
-    behandlerNavn: String
+    behandlerNavn: String,
 ) = Legeerklaering(
     id = legeerklaringId,
     arbeidsvurderingVedSykefravaer = legeerklaringGjelder[0].typeLegeerklaring.toInt() == LegeerklaeringType.Arbeidsevnevurdering.type,
@@ -31,21 +31,21 @@ fun Legeerklaring.toLegeerklaring(
             Henvisning(
                 tekst = it.spesifikasjon,
                 dato = it.henvistDato.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
-                antattVentetIUker = it.antattVentetid.toInt()
+                antattVentetIUker = it.antattVentetid.toInt(),
             )
         },
         behandling = planUtredBehandle?.henvistBehandling?.let {
             Henvisning(
                 tekst = it.spesifikasjon,
                 dato = it.henvistDato.toGregorianCalendar().toZonedDateTime().toLocalDateTime(),
-                antattVentetIUker = it.antattVentetid.toInt()
+                antattVentetIUker = it.antattVentetid.toInt(),
             )
         },
         utredningsplan = planUtredBehandle?.utredningsPlan,
         behandlingsplan = planUtredBehandle?.behandlingsPlan,
         vurderingAvTidligerePlan = planUtredBehandle?.nyVurdering,
         narSporreOmNyeLegeopplysninger = planUtredBehandle?.nyeLegeopplysninger,
-        videreBehandlingIkkeAktueltGrunn = planUtredBehandle?.ikkeVidereBehandling
+        videreBehandlingIkkeAktueltGrunn = planUtredBehandle?.ikkeVidereBehandling,
     ),
     forslagTilTiltak = ForslagTilTiltak(
         behov = forslagTiltak.aktueltTiltak.isNotEmpty(),
@@ -57,7 +57,7 @@ fun Legeerklaring.toLegeerklaring(
         friskmeldingTilArbeidsformidling = TypeTiltak.FriskemeldingTilArbeidsformidling in forslagTiltak.aktueltTiltak,
         andreTiltak = forslagTiltak.aktueltTiltak.find { it.typeTiltak == TypeTiltak.AndreTiltak.typeTiltak.toBigInteger() }?.hvilkeAndreTiltak,
         naermereOpplysninger = forslagTiltak.opplysninger,
-        tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak
+        tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak,
     ),
     funksjonsOgArbeidsevne = FunksjonsOgArbeidsevne(
         vurderingFunksjonsevne = vurderingFunksjonsevne.funksjonsevne,
@@ -77,13 +77,13 @@ fun Legeerklaring.toLegeerklaring(
         kanTaAnnetArbeidNa = vurderingFunksjonsevne.vurderingArbeidsevne?.narTaAnnetArbeid?.toInt() == 1,
         kanTaAnnetArbeidEtterBehandling = vurderingFunksjonsevne.vurderingArbeidsevne?.narTaAnnetArbeid?.toInt() == 2,
         kanIkkeGjenopptaNaverendeArbeid = vurderingFunksjonsevne.vurderingArbeidsevne?.ikkeGjore,
-        kanIkkeTaAnnetArbeid = vurderingFunksjonsevne.vurderingArbeidsevne?.hensynAnnetYrke
+        kanIkkeTaAnnetArbeid = vurderingFunksjonsevne.vurderingArbeidsevne?.hensynAnnetYrke,
     ),
     prognose = Prognose(
         vilForbedreArbeidsevne = prognose.bedreArbeidsevne?.toInt() == 1,
         anslattVarighetSykdom = prognose.antattVarighet,
         anslattVarighetFunksjonsnedsetting = prognose.varighetFunksjonsnedsettelse,
-        anslattVarighetNedsattArbeidsevne = prognose.varighetNedsattArbeidsevne
+        anslattVarighetNedsattArbeidsevne = prognose.varighetNedsattArbeidsevne,
     ),
     arsakssammenheng = arsakssammenhengLegeerklaring,
     andreOpplysninger = andreOpplysninger?.opplysning,
@@ -92,7 +92,7 @@ fun Legeerklaring.toLegeerklaring(
         skalKontakteArbeidsgiver = KontaktType.Arbeidsgiver in kontakt,
         skalKontakteBasisgruppe = KontaktType.Basisgruppe in kontakt,
         kontakteAnnenInstans = kontakt.find { it.kontakt?.toInt() == KontaktType.AnnenInstans.type }?.annenInstans,
-        onskesKopiAvVedtak = andreOpplysninger?.onskesKopi?.let { it.toInt() == 1 } ?: false
+        onskesKopiAvVedtak = andreOpplysninger?.onskesKopi?.let { it.toInt() == 1 } ?: false,
     ),
     tilbakeholdInnhold = when (forbeholdLegeerklaring?.tilbakeholdInnhold?.toInt()) {
         2 -> true
@@ -106,9 +106,9 @@ fun Legeerklaring.toLegeerklaring(
         postnummer = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.postalCode,
         poststed = fellesformat.get<XMLMsgHead>().msgInfo.sender.organisation.address?.city,
         signatur = "",
-        tlfNummer = extractTlfFromHealthcareProfessional(fellesformat.get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional) ?: ""
+        tlfNummer = extractTlfFromHealthcareProfessional(fellesformat.get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional) ?: "",
     ),
-    signaturDato = signaturDato
+    signaturDato = signaturDato,
 )
 
 fun Pasientopplysninger.toPasient(): Pasient {
@@ -122,10 +122,14 @@ fun Pasientopplysninger.toPasient(): Pasient {
         navKontor = patient.trygdekontor,
         adresse = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.streetAddress,
         postnummer = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.postalCode.let {
-            if (it == null || it.isEmpty()) null else try {
-                it.trim().toInt()
-            } catch (e: Exception) {
+            if (it == null || it.isEmpty()) {
                 null
+            } else {
+                try {
+                    it.trim().toInt()
+                } catch (e: Exception) {
+                    null
+                }
             }
         },
         poststed = patient.personAdr.firstOrNull()?.postalAddress?.firstOrNull()?.city,
@@ -134,14 +138,18 @@ fun Pasientopplysninger.toPasient(): Pasient {
             navn = patient.arbeidsforhold?.virksomhet?.virksomhetsBetegnelse,
             adresse = postalAddress?.streetAddress,
             postnummer = postalAddress?.postalCode.let {
-                if (it == null || it.isEmpty()) null else try {
-                    it.trim().toInt()
-                } catch (e: Exception) {
+                if (it == null || it.isEmpty()) {
                     null
+                } else {
+                    try {
+                        it.trim().toInt()
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
             },
-            poststed = postalAddress?.city
-        )
+            poststed = postalAddress?.city,
+        ),
     )
 }
 
@@ -152,7 +160,7 @@ fun mapLegeerklaeringToSykdomDiagnose(diagnose: DiagnoseArbeidsuforhet): Sykdoms
     sykdomshistorie = diagnose.symptomerBehandling,
     statusPresens = diagnose.statusPresens,
     borNavKontoretVurdereOmDetErEnYrkesskade = diagnose.vurderingYrkesskade?.borVurderes?.toInt() == 1,
-    yrkesSkadeDato = diagnose.vurderingYrkesskade.skadeDato?.toGregorianCalendar()?.toZonedDateTime()?.toLocalDateTime()
+    yrkesSkadeDato = diagnose.vurderingYrkesskade.skadeDato?.toGregorianCalendar()?.toZonedDateTime()?.toLocalDateTime(),
 )
 
 fun mapEnkeltDiagnoseToDiagnose(enkeltdiagnose: Enkeltdiagnose?): Diagnose =
@@ -162,7 +170,7 @@ enum class LegeerklaeringType(val type: Int) {
     Arbeidsevnevurdering(1),
     Arbeidsavklaringspenger(2),
     YrkesrettetAttfoering(3),
-    Ufoerepensjon(4)
+    Ufoerepensjon(4),
 }
 
 enum class TypeTiltak(val typeTiltak: Int) {
@@ -172,21 +180,21 @@ enum class TypeTiltak(val typeTiltak: Int) {
     HjelpemidlerArbeidsplass(4),
     Arbeidsavklaringspenger(5),
     FriskemeldingTilArbeidsformidling(6),
-    AndreTiltak(7)
+    AndreTiltak(7),
 }
 
 enum class ArbeidssituasjonType(val type: Int) {
     InntektsgivendeArbeid(1),
     Hjemmearbeidende(2),
     Student(3),
-    Annet(4)
+    Annet(4),
 }
 
 enum class KontaktType(val type: Int) {
     BehandlendeLege(1),
     Arbeidsgiver(2),
     Basisgruppe(4),
-    AnnenInstans(5)
+    AnnenInstans(5),
 }
 
 operator fun Iterable<Arbeidssituasjon>.contains(arbeidssituasjonType: ArbeidssituasjonType): Boolean =

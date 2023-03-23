@@ -78,7 +78,7 @@ fun main() {
     val applicationState = ApplicationState()
     val applicationEngine = createApplicationEngine(
         env,
-        applicationState
+        applicationState,
     )
 
     val applicationServer = ApplicationServer(applicationEngine, applicationState)
@@ -164,7 +164,7 @@ fun main() {
 
     launchListeners(
         applicationState, env, samhandlerService, pdlPersonService, serviceUser,
-        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService, duplicationCheckService
+        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService, duplicationCheckService,
     )
 
     applicationServer.start()
@@ -194,7 +194,7 @@ fun launchListeners(
     pale2ReglerClient: Pale2ReglerClient,
     bucketUploadService: BucketUploadService,
     virusScanService: VirusScanService,
-    duplicationCheckService: DuplicationCheckService
+    duplicationCheckService: DuplicationCheckService,
 ) {
     createListener(applicationState) {
         connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
@@ -216,13 +216,13 @@ fun launchListeners(
                     pale2ReglerClient = pale2ReglerClient,
                     bucketUploadService = bucketUploadService,
                     virusScanService = virusScanService,
-                    duplicationCheckService = duplicationCheckService
+                    duplicationCheckService = duplicationCheckService,
                 ).run(
                     inputconsumer = inputconsumer,
                     session = session,
                     receiptProducer = receiptProducer,
                     backoutProducer = backoutProducer,
-                    arenaProducer = arenaProducer
+                    arenaProducer = arenaProducer,
                 )
             }
     }

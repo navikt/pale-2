@@ -16,7 +16,7 @@ internal class LegeerklaringMapperTest {
     @Test
     internal fun `Tester mapping fra fellesformat til Legeerklaring format`() {
         val felleformatLe = fellesformatUnmarshaller.unmarshal(
-            StringReader(getFileAsString("src/test/resources/fellesformat_le.xml"))
+            StringReader(getFileAsString("src/test/resources/fellesformat_le.xml")),
         ) as XMLEIFellesformat
         val legeerklaringxml = extractLegeerklaering(felleformatLe)
 
@@ -24,7 +24,7 @@ internal class LegeerklaringMapperTest {
             legeerklaringId = UUID.randomUUID().toString(),
             fellesformat = felleformatLe,
             signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0),
-            behandlerNavn = "Navn Navnesen"
+            behandlerNavn = "Navn Navnesen",
         )
 
         assertEquals(false, legeerklaering.arbeidsvurderingVedSykefravaer)
@@ -113,7 +113,7 @@ internal class LegeerklaringMapperTest {
     @Test
     internal fun `Tester mapping fra fellesformat til Legeerklaring format hvis navn mangler`() {
         val felleformatLe = fellesformatUnmarshaller.unmarshal(
-            StringReader(getFileAsString("src/test/resources/fellesformat_le_utennavn.xml"))
+            StringReader(getFileAsString("src/test/resources/fellesformat_le_utennavn.xml")),
         ) as XMLEIFellesformat
         val legeerklaringxml = extractLegeerklaering(felleformatLe)
 
@@ -121,7 +121,7 @@ internal class LegeerklaringMapperTest {
             legeerklaringId = UUID.randomUUID().toString(),
             fellesformat = felleformatLe,
             signaturDato = LocalDateTime.of(2017, 11, 5, 0, 0, 0),
-            behandlerNavn = "Navn Navnesen"
+            behandlerNavn = "Navn Navnesen",
         )
         assertEquals("Navn Navnesen", legeerklaering.signatur.navn)
     }

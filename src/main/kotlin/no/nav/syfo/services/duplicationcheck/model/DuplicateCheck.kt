@@ -8,5 +8,5 @@ data class DuplicateCheck(
     val mottakId: String,
     val msgId: String,
     val mottattDate: LocalDateTime,
-    val orgNumber: String?
+    val orgNumber: String?,
 )

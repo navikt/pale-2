@@ -25,17 +25,17 @@ fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): X
         any.add(
             XMLMottakenhetBlokk().apply {
                 ediLoggId = fellesformat.get<XMLMottakenhetBlokk>().ediLoggId
-                ebRole = PaleConstant.ebRoleNav.string
-                ebService = PaleConstant.ebServiceLegemelding.string
-                ebAction = PaleConstant.ebActionSvarmelding.string
-            }
+                ebRole = PaleConstant.EBROLENAV.description
+                ebService = PaleConstant.EBSERVICELEGEMELDING.description
+                ebAction = PaleConstant.EBACTIONSVARMELDING.description
+            },
         )
         any.add(
             XMLAppRec().apply {
                 msgType = XMLCS().apply {
-                    v = PaleConstant.apprec.string
+                    v = PaleConstant.APPREC.description
                 }
-                miGversion = PaleConstant.apprecVersionV1_0.string
+                miGversion = PaleConstant.APPRECVERSIONV1_0.description
                 genDate = LocalDateTime.now()
                 id = fellesformat.get<XMLMottakenhetBlokk>().ediLoggId
 
@@ -60,7 +60,7 @@ fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): X
                     issueDate = fellesformat.get<XMLMsgHead>().msgInfo.genDate
                     id = fellesformat.get<XMLMsgHead>().msgInfo.msgId
                 }
-            }
+            },
         )
     }
 }

@@ -13,13 +13,13 @@ import java.security.MessageDigest
 
 class DuplicationCheckService(private val database: DatabaseInterface) {
     fun persistDuplicationCheck(
-        duplicateCheck: DuplicateCheck
+        duplicateCheck: DuplicateCheck,
     ) {
         database.persistDuplicateCheck(duplicateCheck)
     }
 
     fun persistDuplication(
-        duplicate: Duplicate
+        duplicate: Duplicate,
     ) {
         database.persistDuplicate(duplicate)
     }
@@ -31,7 +31,7 @@ class DuplicationCheckService(private val database: DatabaseInterface) {
             return duplicationCheckSha256Legeerklaering
         } else {
             val duplicationCheckMottakId = getLatestDuplicationCheck(
-                database.extractDuplicateCheckByMottakId(mottakId)
+                database.extractDuplicateCheckByMottakId(mottakId),
             )
             if (duplicationCheckMottakId != null) {
                 return duplicationCheckMottakId

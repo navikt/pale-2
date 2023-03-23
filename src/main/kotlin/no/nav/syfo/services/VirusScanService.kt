@@ -8,7 +8,7 @@ import no.nav.syfo.vedlegg.model.Vedlegg
 import java.util.Base64
 
 class VirusScanService(
-    private val clamAvClient: ClamAvClient
+    private val clamAvClient: ClamAvClient,
 ) {
 
     suspend fun vedleggContainsVirus(vedlegg: List<Vedlegg>): Boolean {

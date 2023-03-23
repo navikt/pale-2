@@ -20,7 +20,7 @@ class Pale2ReglerClient(
     private val endpointUrl: String,
     private val client: HttpClient,
     private val accessTokenClientV2: AccessTokenClientV2,
-    private val resourceId: String
+    private val resourceId: String,
 ) {
     suspend fun executeRuleValidation(payload: ReceivedLegeerklaering, loggingMeta: LoggingMeta): ValidationResult {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
@@ -34,8 +34,9 @@ class Pale2ReglerClient(
             return httpResponse.body<ValidationResult>()
         } else {
             log.error(
-                "Pale-2-regler svarte med feilkode {} for {}", httpResponse.status,
-                StructuredArguments.fields(loggingMeta)
+                "Pale-2-regler svarte med feilkode {} for {}",
+                httpResponse.status,
+                StructuredArguments.fields(loggingMeta),
             )
             throw IOException("Pale-2-regler  svarte med feilkode ${httpResponse.status}")
         }

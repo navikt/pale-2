@@ -15,7 +15,7 @@ suspend inline fun <reified T> retry(
     vararg legalExceptions: KClass<out Throwable> = arrayOf(IOException::class),
     retryIntervals: Array<Long> = arrayOf(500, 1000, 3000, 5000, 10000),
     exceptionCausedByDepth: Int = 3,
-    crossinline block: suspend () -> T
+    crossinline block: suspend () -> T,
 ): T {
     for (interval in retryIntervals) {
         try {

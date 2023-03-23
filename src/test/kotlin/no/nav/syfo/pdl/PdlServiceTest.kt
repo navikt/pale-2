@@ -32,7 +32,6 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Hent person fra pdl uten fortrolig adresse`() {
-
         coEvery { pdlClient.getPerson(any(), any()) } returns getPdlResponse()
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
@@ -61,11 +60,12 @@ internal class PdlServiceTest {
         coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
             ResponseData(
                 hentPerson = HentPerson(
-                    navn = emptyList(), adressebeskyttelse = null
+                    navn = emptyList(),
+                    adressebeskyttelse = null,
                 ),
-                hentIdenter = HentIdenter(emptyList())
+                hentIdenter = HentIdenter(emptyList()),
             ),
-            errors = null
+            errors = null,
         )
 
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
@@ -81,11 +81,12 @@ internal class PdlServiceTest {
         coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
             ResponseData(
                 hentPerson = HentPerson(
-                    navn = null, adressebeskyttelse = null
+                    navn = null,
+                    adressebeskyttelse = null,
                 ),
-                hentIdenter = HentIdenter(listOf(PdlIdent(ident = "987654321", gruppe = "foo")))
+                hentIdenter = HentIdenter(listOf(PdlIdent(ident = "987654321", gruppe = "foo"))),
             ),
-            errors = null
+            errors = null,
         )
 
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
@@ -102,11 +103,11 @@ internal class PdlServiceTest {
             ResponseData(
                 hentPerson = HentPerson(
                     navn = listOf(Navn("fornavn", "mellomnavn", "etternavn")),
-                    adressebeskyttelse = null
+                    adressebeskyttelse = null,
                 ),
-                hentIdenter = HentIdenter(emptyList())
+                hentIdenter = HentIdenter(emptyList()),
             ),
-            errors = null
+            errors = null,
         )
 
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"

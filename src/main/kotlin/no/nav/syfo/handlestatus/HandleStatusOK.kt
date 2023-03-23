@@ -36,13 +36,17 @@ fun handleStatusOK(
     duplicateCheck: DuplicateCheck,
 ) {
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.ok, emptyList(), duplicationCheckService,
-        duplicateCheck, loggingMeta, apprecQueueName
+        session, receiptProducer, fellesformat, ApprecStatus.OK, emptyList(), duplicationCheckService,
+        duplicateCheck, loggingMeta, apprecQueueName,
     )
 
     sendArenaInfo(
-        arenaProducer, session,
-        tssId, ediLoggId, fnrLege, legeerklaring
+        arenaProducer,
+        session,
+        tssId,
+        ediLoggId,
+        fnrLege,
+        legeerklaring,
     )
     log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
@@ -55,12 +59,12 @@ fun sendArenaInfo(
     tssId: String?,
     mottakid: String,
     fnrbehandler: String,
-    legeerklaring: Legeerklaering
+    legeerklaring: Legeerklaering,
 ) = producer.send(
     session.createTextMessage().apply {
         val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring)
         text = arenaMarshaller.toString(info)
-    }
+    },
 )
 
 fun sendTilTopic(
@@ -68,7 +72,7 @@ fun sendTilTopic(
     topic: String,
     legeerklaeringKafkaMessage: LegeerklaeringKafkaMessage,
     legeerklaeringId: String,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
 ) {
     try {
         aivenKafkaProducer.send(ProducerRecord(topic, legeerklaeringId, legeerklaeringKafkaMessage)).get()

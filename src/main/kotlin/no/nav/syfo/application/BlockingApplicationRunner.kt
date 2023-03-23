@@ -71,7 +71,7 @@ class BlockingApplicationRunner(
     private val pale2ReglerClient: Pale2ReglerClient,
     private val bucketUploadService: BucketUploadService,
     private val virusScanService: VirusScanService,
-    private val duplicationCheckService: DuplicationCheckService
+    private val duplicationCheckService: DuplicationCheckService,
 ) {
 
     suspend fun run(
@@ -79,7 +79,7 @@ class BlockingApplicationRunner(
         session: Session,
         receiptProducer: MessageProducer,
         backoutProducer: MessageProducer,
-        arenaProducer: MessageProducer
+        arenaProducer: MessageProducer,
     ) {
         wrapExceptions {
             loop@ while (applicationState.ready) {
@@ -127,7 +127,7 @@ class BlockingApplicationRunner(
                         legeerklaringId = legeerklaringId,
                         mottakId = receiverBlock.ediLoggId,
                         orgNr = extractOrganisationNumberFromSender(fellesformat)?.id,
-                        msgId = msgHead.msgInfo.msgId
+                        msgId = msgHead.msgInfo.msgId,
                     )
 
                     log.info("Received message, {}", fields(loggingMeta))
@@ -136,7 +136,7 @@ class BlockingApplicationRunner(
                         "Received message for pasient fnr {}, lege fnr: {}, {}",
                         fnrPasient,
                         fnrLege,
-                        fields(loggingMeta)
+                        fields(loggingMeta),
                     )
 
                     INCOMING_MESSAGE_COUNTER.inc()
@@ -147,18 +147,31 @@ class BlockingApplicationRunner(
                         .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()
 
                     val duplicateCheck = DuplicateCheck(
-                        legeerklaringId, sha256String, ediLoggId,
-                        msgId, mottatDato, legekontorOrgNr
+                        legeerklaringId,
+                        sha256String,
+                        ediLoggId,
+                        msgId,
+                        mottatDato,
+                        legekontorOrgNr,
                     )
 
                     if (duplicationCheckSha256String != null) {
                         val duplicate = Duplicate(
-                            legeerklaringId, ediLoggId, msgId, mottatDato,
-                            duplicationCheckSha256String.legeerklaringId
+                            legeerklaringId,
+                            ediLoggId,
+                            msgId,
+                            mottatDato,
+                            duplicationCheckSha256String.legeerklaringId,
                         )
                         handleDuplicateLegeerklaringContent(
-                            session, receiptProducer,
-                            fellesformat, loggingMeta, env, duplicationCheckService, duplicateCheck, duplicate
+                            session,
+                            receiptProducer,
+                            fellesformat,
+                            loggingMeta,
+                            env,
+                            duplicationCheckService,
+                            duplicateCheck,
+                            duplicate,
                         )
                         continue@loop
                     } else {
@@ -169,22 +182,37 @@ class BlockingApplicationRunner(
 
                         if (pasient?.aktorId == null) {
                             handlePatientNotFoundInPDL(
-                                session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplicateCheck
+                                session,
+                                receiptProducer,
+                                fellesformat,
+                                env,
+                                loggingMeta,
+                                duplicationCheckService,
+                                duplicateCheck,
                             )
                             continue@loop
                         }
                         if (behandler?.aktorId == null) {
                             handleDoctorNotFoundInPDL(
-                                session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplicateCheck
+                                session,
+                                receiptProducer,
+                                fellesformat,
+                                env,
+                                loggingMeta,
+                                duplicationCheckService,
+                                duplicateCheck,
                             )
                             continue@loop
                         }
                         if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
                             handleTestFnrInProd(
-                                session, receiptProducer, fellesformat, env, loggingMeta,
-                                duplicationCheckService, duplicateCheck
+                                session,
+                                receiptProducer,
+                                fellesformat,
+                                env,
+                                loggingMeta,
+                                duplicationCheckService,
+                                duplicateCheck,
                             )
                             continue@loop
                         }
@@ -193,7 +221,7 @@ class BlockingApplicationRunner(
                             legeerklaringId = legeerklaringId,
                             fellesformat = fellesformat,
                             signaturDato = msgHead.msgInfo.genDate,
-                            behandlerNavn = behandler.navn.format()
+                            behandlerNavn = behandler.navn.format(),
                         )
 
                         val samhandlerPraksisTssId = samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
@@ -203,7 +231,7 @@ class BlockingApplicationRunner(
                             legekontorHerId = legekontorHerId,
                             msgHead = msgHead,
                             receiverBlock = receiverBlock,
-                            loggingMeta = loggingMeta
+                            loggingMeta = loggingMeta,
                         )?.samhandlerPraksis?.tss_ident
 
                         val receivedLegeerklaering = ReceivedLegeerklaering(
@@ -220,7 +248,7 @@ class BlockingApplicationRunner(
                             legekontorReshId = legekontorReshId,
                             mottattDato = mottatDato,
                             fellesformat = fellesformatText,
-                            tssid = samhandlerPraksisTssId
+                            tssid = samhandlerPraksisTssId,
                         )
 
                         if (legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 ||
@@ -233,7 +261,7 @@ class BlockingApplicationRunner(
                                 receiptProducer,
                                 fellesformat,
                                 duplicationCheckService,
-                                duplicateCheck
+                                duplicateCheck,
                             )
                             continue@loop
                         }
@@ -244,8 +272,13 @@ class BlockingApplicationRunner(
                         if (vedlegg.isNotEmpty()) {
                             if (virusScanService.vedleggContainsVirus(vedlegg)) {
                                 handleVedleggContainsVirus(
-                                    session, receiptProducer, fellesformat,
-                                    env, loggingMeta, duplicationCheckService, duplicateCheck
+                                    session,
+                                    receiptProducer,
+                                    fellesformat,
+                                    env,
+                                    loggingMeta,
+                                    duplicationCheckService,
+                                    duplicateCheck,
                                 )
                                 continue@loop
                             }
@@ -256,7 +289,7 @@ class BlockingApplicationRunner(
                                 vedlegg = vedlegg,
                                 legeerklaering = receivedLegeerklaering,
                                 xmleiFellesformat = fellesformat,
-                                loggingMeta = loggingMeta
+                                loggingMeta = loggingMeta,
                             )
                         } else {
                             emptyList()
@@ -283,7 +316,7 @@ class BlockingApplicationRunner(
                                 legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
                                 apprecQueueName = env.apprecQueueName,
                                 duplicationCheckService = duplicationCheckService,
-                                duplicateCheck = duplicateCheck
+                                duplicateCheck = duplicateCheck,
                             )
 
                             Status.INVALID -> handleStatusINVALID(
@@ -298,7 +331,7 @@ class BlockingApplicationRunner(
                                 apprecQueueName = env.apprecQueueName,
                                 legeerklaeringId = legeerklaring.id,
                                 duplicationCheckService = duplicationCheckService,
-                                duplicateCheck = duplicateCheck
+                                duplicateCheck = duplicateCheck,
                             )
                         }
 
@@ -309,10 +342,10 @@ class BlockingApplicationRunner(
                             StructuredArguments.keyValue("status", validationResult.status),
                             StructuredArguments.keyValue(
                                 "ruleHits",
-                                validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName }
+                                validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName },
                             ),
                             StructuredArguments.keyValue("latency", currentRequestLatency),
-                            fields(loggingMeta)
+                            fields(loggingMeta),
                         )
                     }
                 } catch (e: Exception) {
@@ -333,7 +366,7 @@ class BlockingApplicationRunner(
         receiptProducer: MessageProducer,
         fellesformat: XMLEIFellesformat,
         duplicationCheckService: DuplicationCheckService,
-        duplicateCheck: DuplicateCheck
+        duplicateCheck: DuplicateCheck,
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
@@ -344,7 +377,7 @@ class BlockingApplicationRunner(
             receivedLegeerklaering.copy(legeerklaering = legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger))
         val uploadForkortetLegeerklaering = bucketUploadService.uploadLegeerklaering(
             forkortetReceivedLegeerklaering,
-            loggingMeta
+            loggingMeta,
         )
         val forkortetLegeerklaeringKafkaMessage =
             LegeerklaeringKafkaMessage(uploadForkortetLegeerklaering, validationResult, emptyList())
@@ -360,7 +393,7 @@ class BlockingApplicationRunner(
             legeerklaringKafkaMessage = forkortetLegeerklaeringKafkaMessage,
             legeerklaeringId = legeerklaering.id,
             duplicationCheckService = duplicationCheckService,
-            duplicateCheck = duplicateCheck
+            duplicateCheck = duplicateCheck,
         )
     }
 }
@@ -383,9 +416,9 @@ fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
                     "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
                     "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
                     "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                    Status.INVALID
-                )
-            )
+                    Status.INVALID,
+                ),
+            ),
         )
     } else if (sykdomsopplysninger.statusPresens.length > 15000) {
         ValidationResult(
@@ -395,9 +428,9 @@ fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
                     "FOR_MANGE_TEGN_STATUSPRESENS",
                     "Punkt 2.6 Status presens har mer enn 15 000 tegn",
                     "Punkt 2.6 Status presens har mer enn 15 000 tegn",
-                    Status.INVALID
-                )
-            )
+                    Status.INVALID,
+                ),
+            ),
         )
     } else {
         ValidationResult(
@@ -407,9 +440,9 @@ fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
                     "FOR_MANGE_TEGN_SYMPTOMER",
                     "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
                     "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                    Status.INVALID
-                )
-            )
+                    Status.INVALID,
+                ),
+            ),
         )
     }
 
@@ -417,7 +450,7 @@ fun getForkortedeSykdomsopplysninger(sykdomsopplysninger: Sykdomsopplysninger) =
     if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
         sykdomsopplysninger.copy(
             statusPresens = "FOR STOR",
-            sykdomshistorie = "FOR STOR"
+            sykdomshistorie = "FOR STOR",
         )
     } else if (sykdomsopplysninger.statusPresens.length > 15000) {
         sykdomsopplysninger.copy(statusPresens = "FOR STOR")

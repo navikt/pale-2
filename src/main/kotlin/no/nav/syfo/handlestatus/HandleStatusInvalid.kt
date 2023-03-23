@@ -36,13 +36,13 @@ fun handleStatusINVALID(
     apprecQueueName: String,
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
-    duplicateCheck: DuplicateCheck
+    duplicateCheck: DuplicateCheck,
 ) {
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         validationResult.ruleHits.map { it.toApprecCV() },
 
-        duplicationCheckService, duplicateCheck, loggingMeta, apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, apprecQueueName,
     )
     sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
 }
@@ -55,25 +55,24 @@ fun handleDuplicateLegeerklaringContent(
     env: Environment,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
-    duplicate: Duplicate
+    duplicate: Duplicate,
 ) {
-
     log.warn(
         "Melding med {} har samme innhold som tidligere mottatt legeerklæring og er avvist som duplikat {}, {}",
         keyValue("originalEdiLoggId", duplicateCheck.mottakId),
         fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
+        keyValue("avvistAv", env.applicationName),
     )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Duplikat! - Denne legeerklæringen er mottatt tidligere. " +
-                    "Skal ikke sendes på nytt."
-            )
+                    "Skal ikke sendes på nytt.",
+            ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
     DUPLICATE_LEGEERKLERING.inc()
@@ -88,19 +87,19 @@ fun handlePatientNotFoundInPDL(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicateCheck: DuplicateCheck
+    duplicateCheck: DuplicateCheck,
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi pasienten ikke finnes i folkeregisteret {} {}",
         fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
+        keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         listOf(
-            createApprecError("Pasienten er ikkje registrert i folkeregisteret")
+            createApprecError("Pasienten er ikkje registrert i folkeregisteret"),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
@@ -112,21 +111,21 @@ fun handleDoctorNotFoundInPDL(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicateCheck: DuplicateCheck
+    duplicateCheck: DuplicateCheck,
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi legen ikke finnes i folkeregisteret {}, {}",
         fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
+        keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         listOf(
             createApprecError(
-                "Behandler er ikke registrert i folkeregisteret"
-            )
+                "Behandler er ikke registrert i folkeregisteret",
+            ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -143,22 +142,22 @@ fun handleFritekstfeltHarForMangeTegn(
     legeerklaringKafkaMessage: LegeerklaeringKafkaMessage,
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
-    duplicateCheck: DuplicateCheck
+    duplicateCheck: DuplicateCheck,
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
         fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
+        keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Legeerklæringen er avvist fordi den inneholder for mange tegn: " +
-                    " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. "
-            )
+                    " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. ",
+            ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
     )
 
     sendTilTopic(aivenKafkaProducer, env.legeerklaringTopic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
@@ -174,22 +173,22 @@ fun handleVedleggContainsVirus(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicateCheck: DuplicateCheck
+    duplicateCheck: DuplicateCheck,
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus {}, {}",
         fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
+        keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus" +
-                    "sjekk om vedleggene inneholder virus"
-            )
+                    "sjekk om vedleggene inneholder virus",
+            ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -203,27 +202,27 @@ fun handleTestFnrInProd(
     env: Environment,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
-    duplicateCheck: DuplicateCheck
+    duplicateCheck: DuplicateCheck,
 ) {
     log.warn(
         "Legeerklæring avvist: Testfødselsnummer er kommet inn i produksjon! {}, {}",
         fields(loggingMeta),
-        keyValue("avvistAv", env.applicationName)
+        keyValue("avvistAv", env.applicationName),
     )
 
     log.warn(
         "Avsender fodselsnummer er registert i Helsepersonellregisteret (HPR), {}",
-        fields(loggingMeta)
+        fields(loggingMeta),
     )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.avvist,
+        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
         listOf(
             createApprecError(
-                "Dette fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon"
-            )
+                "Dette fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon",
+            ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName
+        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()

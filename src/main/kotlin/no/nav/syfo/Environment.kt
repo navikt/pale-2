@@ -31,12 +31,12 @@ data class Environment(
     val databasePassword: String = getEnvVar("DB_PASSWORD"),
     val dbHost: String = getEnvVar("DB_HOST"),
     val dbPort: String = getEnvVar("DB_PORT"),
-    val dbName: String = getEnvVar("DB_DATABASE")
+    val dbName: String = getEnvVar("DB_DATABASE"),
 ) : MqConfig
 
 data class VaultServiceUser(
     val serviceuserUsername: String = getEnvVar("SERVICEUSER_USERNAME"),
-    val serviceuserPassword: String = getEnvVar("SERVICEUSER_PASSWORD")
+    val serviceuserPassword: String = getEnvVar("SERVICEUSER_PASSWORD"),
 )
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =

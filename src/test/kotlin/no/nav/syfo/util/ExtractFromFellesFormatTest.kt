@@ -10,9 +10,8 @@ class ExtractFromFellesFormatTest {
 
     @Test
     internal fun `Tester henting av telefonnummer fra telecom`() {
-
         val felleformatLe = fellesformatUnmarshaller.unmarshal(
-            StringReader(getFileAsString("src/test/resources/fellesformat_le.xml"))
+            StringReader(getFileAsString("src/test/resources/fellesformat_le.xml")),
         ) as XMLEIFellesformat
         val healthcareProfessional =
             felleformatLe.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional

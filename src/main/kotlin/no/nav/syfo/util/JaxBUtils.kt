@@ -17,7 +17,7 @@ import javax.xml.bind.Unmarshaller
 val fellesformatJaxBContext: JAXBContext = JAXBContext.newInstance(
     XMLEIFellesformat::class.java,
     XMLMsgHead::class.java,
-    Legeerklaring::class.java
+    Legeerklaring::class.java,
 )
 val fellesformatUnmarshaller: Unmarshaller = fellesformatJaxBContext.createUnmarshaller().apply {
     setAdapter(LocalDateTimeXmlAdapter::class.java, XMLDateTimeAdapter())

@@ -11,7 +11,7 @@ import java.util.Base64
 
 class ClamAvClient(
     private val httpClient: HttpClient,
-    private val endpointUrl: String
+    private val endpointUrl: String,
 ) {
     suspend fun virusScanVedlegg(vedleggList: List<Vedlegg>): List<ScanResult> {
         val httpResponse =
@@ -20,14 +20,15 @@ class ClamAvClient(
                 formData = formData {
                     vedleggList.forEachIndexed { index, vedlegg ->
                         append(
-                            "file$index", Base64.getMimeDecoder().decode(vedlegg.content.content),
+                            "file$index",
+                            Base64.getMimeDecoder().decode(vedlegg.content.content),
                             Headers.build {
                                 append(HttpHeaders.ContentType, vedlegg.content.contentType)
                                 append(HttpHeaders.ContentDisposition, "filename=${vedlegg.description}")
-                            }
+                            },
                         )
                     }
-                }
+                },
             )
         return httpResponse.body<List<ScanResult>>()
     }

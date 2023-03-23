@@ -20,7 +20,7 @@ class SarClient(
     private val endpointUrl: String,
     private val accessTokenClientV2: AccessTokenClientV2,
     private val resourceId: String,
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
 ) {
     suspend fun getSamhandler(ident: String, msgId: String): List<Samhandler> {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
@@ -44,7 +44,7 @@ data class Samhandler(
     val godkjent_egenandel_refusjon: String,
     val godkjent_for_fil: String,
     val endringslogg_tidspunkt_siste: Date?,
-    val samh_praksis: List<SamhandlerPraksis>
+    val samh_praksis: List<SamhandlerPraksis>,
 )
 
 data class SamhandlerPraksis(
@@ -77,7 +77,7 @@ data class SamhandlerPraksis(
     val samh_praksis_type_kode: String?,
     val samh_id: String,
     val samh_praksis_id: String,
-    val samh_praksis_periode: List<SamhandlerPeriode>
+    val samh_praksis_periode: List<SamhandlerPeriode>,
 )
 
 data class SamhandlerPeriode(
@@ -85,7 +85,7 @@ data class SamhandlerPeriode(
     val gyldig_fra: Date,
     val gyldig_til: Date?,
     val samh_praksis_id: String,
-    val samh_praksis_periode_id: String
+    val samh_praksis_periode_id: String,
 )
 
 data class SamhandlerPraksisMatch(val samhandlerPraksis: SamhandlerPraksis, val percentageMatch: Double)
@@ -109,9 +109,8 @@ fun findBestSamhandlerPraksisEmottak(
     samhandlere: List<Samhandler>,
     orgNumber: String?,
     herId: String?,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
 ): SamhandlerPraksisMatch? {
-
     val aktiveSamhandlere = samhandlere.flatMap { it.samh_praksis }
         .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
 
@@ -123,7 +122,7 @@ fun findBestSamhandlerPraksisEmottak(
             log.info(
                 "Fant samhandler basert på herid. herid: $herId, {}, {}",
                 keyValue("praksis Informasjon", samhandlere.formaterPraksis()),
-                StructuredArguments.fields(loggingMeta)
+                StructuredArguments.fields(loggingMeta),
             )
             return SamhandlerPraksisMatch(samhandlerByHerId, 100.0)
         }
@@ -137,7 +136,7 @@ fun findBestSamhandlerPraksisEmottak(
             log.info(
                 "Fant samhandler basert på orgNumber. orgNumber: $orgNumber, {}, {}",
                 keyValue("praksis Informasjon", samhandlere.formaterPraksis()),
-                StructuredArguments.fields(loggingMeta)
+                StructuredArguments.fields(loggingMeta),
             )
             return SamhandlerPraksisMatch(samhandlerByOrgNumber, 100.0)
         }
@@ -151,7 +150,7 @@ fun findBestSamhandlerPraksis(
     orgName: String,
     herId: String?,
     orgNumber: String?,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
 ): SamhandlerPraksisMatch? {
     val aktiveSamhandlere = samhandlere.flatMap { it.samh_praksis }
         .filter { praksis -> praksis.samh_praksis_status_kode == "aktiv" }
@@ -161,7 +160,7 @@ fun findBestSamhandlerPraksis(
             "Fant ingen aktive samhandlere. {}  Meta: {}, {} ",
             keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
             keyValue("antall praksiser", samhandlere.size),
-            StructuredArguments.fields(loggingMeta)
+            StructuredArguments.fields(loggingMeta),
         )
     }
 
@@ -173,7 +172,7 @@ fun findBestSamhandlerPraksis(
             log.info(
                 "Fant samhandler basert på herid. herid: $herId, {}, {}",
                 keyValue("praksis Informasjo", samhandlere.formaterPraksis()),
-                StructuredArguments.fields(loggingMeta)
+                StructuredArguments.fields(loggingMeta),
             )
             return SamhandlerPraksisMatch(samhandlerByHerId, 100.0)
         }
@@ -187,7 +186,7 @@ fun findBestSamhandlerPraksis(
             log.info(
                 "Fant samhandler basert på orgNumber. orgNumber: $orgNumber, {}, {}",
                 keyValue("praksis Informasjon", samhandlere.formaterPraksis()),
-                StructuredArguments.fields(loggingMeta)
+                StructuredArguments.fields(loggingMeta),
             )
             return SamhandlerPraksisMatch(samhandlerByOrgNumber, 100.0)
         }
@@ -211,7 +210,7 @@ fun findBestSamhandlerPraksis(
             inaktiveSamhandlerMatchingPaaOrganisjonsNavn,
             70.0,
             orgName,
-            loggingMeta
+            loggingMeta,
         )
     }
 
@@ -239,7 +238,7 @@ fun filtererBortSamhanlderPraksiserPaaProsentMatch(
     samhandlerPraksis: SamhandlerPraksisMatch?,
     prosentMatch: Double,
     orgName: String,
-    loggingMeta: LoggingMeta
+    loggingMeta: LoggingMeta,
 ): SamhandlerPraksisMatch? {
     return if (samhandlerPraksis != null && samhandlerPraksis.percentageMatch >= prosentMatch) {
         log.info(
@@ -251,7 +250,7 @@ fun filtererBortSamhanlderPraksiserPaaProsentMatch(
                 "Samhandler praksis type: ${samhandlerPraksis.samhandlerPraksis.samh_praksis_type_kode} " +
                 "Prosent match:${samhandlerPraksis.percentageMatch} %, basert på legeerklæringens organisjons navn: $orgName " +
                 "{}",
-            StructuredArguments.fields(loggingMeta)
+            StructuredArguments.fields(loggingMeta),
         )
         samhandlerPraksis
     } else {

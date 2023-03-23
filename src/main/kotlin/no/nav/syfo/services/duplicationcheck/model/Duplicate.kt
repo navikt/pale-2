@@ -7,5 +7,5 @@ data class Duplicate(
     val mottakId: String,
     val msgId: String,
     val mottattDate: LocalDateTime,
-    val duplicateLegeerklaringId: String
+    val duplicateLegeerklaringId: String,
 )

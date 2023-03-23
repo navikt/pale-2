@@ -7,7 +7,7 @@ import no.nav.syfo.util.get
 data class Vedlegg(
     val content: Content,
     val type: String,
-    val description: String
+    val description: String,
 )
 
 data class VedleggMessage(
@@ -16,7 +16,7 @@ data class VedleggMessage(
     val pasientAktorId: String,
     val msgId: String,
     val pasientFnr: String,
-    val source: String = "pale-2"
+    val source: String = "pale-2",
 )
 
 data class Content(val contentType: String, val content: String)
@@ -29,6 +29,6 @@ fun XMLEIFellesformat.getBehandlerInfo(fnr: String): BehandlerInfo {
     return BehandlerInfo(
         fornavn = fornavn,
         etternavn = etternavn,
-        fnr = fnr
+        fnr = fnr,
     )
 }

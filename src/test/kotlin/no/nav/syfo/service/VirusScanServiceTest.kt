@@ -32,7 +32,7 @@ internal class VirusScanServiceTest {
         coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
             listOf(
                 ScanResult("normalFile", Status.OK),
-                ScanResult("eicar.com.txt", Status.FOUND)
+                ScanResult("eicar.com.txt", Status.FOUND),
             )
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
         val contentText = base64Encode(getFileContent("src/test/resources/random.txt"))
@@ -52,7 +52,7 @@ internal class VirusScanServiceTest {
         coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
             listOf(
                 ScanResult("normalFile", Status.OK),
-                ScanResult("anotherNormalFile", Status.OK)
+                ScanResult("anotherNormalFile", Status.OK),
             )
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
 
@@ -71,7 +71,7 @@ internal class VirusScanServiceTest {
         coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
             listOf(
                 ScanResult("normalFile", Status.OK),
-                ScanResult("strangeFile", Status.ERROR)
+                ScanResult("strangeFile", Status.ERROR),
             )
 
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))

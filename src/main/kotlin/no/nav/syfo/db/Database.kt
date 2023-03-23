@@ -37,7 +37,7 @@ class Database(private val env: Environment, retries: Long = 30, sleepTime: Long
                         isAutoCommit = false
                         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
                         validate()
-                    }
+                    },
                 )
                 connected = true
             } catch (ex: HikariPool.PoolInitializationException) {
@@ -61,8 +61,9 @@ class Database(private val env: Environment, retries: Long = 30, sleepTime: Long
     private fun runFlywayMigrations() = Flyway.configure().run {
         locations("db")
         dataSource(
-            "jdbc:postgresql://${env.dbHost}:${env.dbPort}/${env.dbName}", env.databaseUsername,
-            env.databasePassword
+            "jdbc:postgresql://${env.dbHost}:${env.dbPort}/${env.dbName}",
+            env.databaseUsername,
+            env.databasePassword,
         )
         load().migrate()
     }

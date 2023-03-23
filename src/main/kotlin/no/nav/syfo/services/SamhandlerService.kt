@@ -15,7 +15,7 @@ import no.nav.syfo.util.LoggingMeta
 
 class SamhandlerService(
     private val kuhrSarClient: SarClient,
-    private val emottakSubscriptionClient: EmottakSubscriptionClient
+    private val emottakSubscriptionClient: EmottakSubscriptionClient,
 ) {
 
     suspend fun findSamhandlerPraksisAndHandleEmottakSubscription(
@@ -25,7 +25,7 @@ class SamhandlerService(
         legekontorHerId: String?,
         msgHead: XMLMsgHead,
         receiverBlock: XMLMottakenhetBlokk,
-        loggingMeta: LoggingMeta
+        loggingMeta: LoggingMeta,
     ): SamhandlerPraksisMatch? {
         val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
 
@@ -35,7 +35,7 @@ class SamhandlerService(
             legekontorHerId,
             receiverBlock,
             msgHead,
-            loggingMeta
+            loggingMeta,
         )
 
         return findBestSamhandlerPraksis(
@@ -43,7 +43,7 @@ class SamhandlerService(
             legekontorOrgName,
             legekontorHerId,
             legekontorOrgNumber,
-            loggingMeta
+            loggingMeta,
         )
     }
 
@@ -53,7 +53,7 @@ class SamhandlerService(
         legekontorHerId: String?,
         receiverBlock: XMLMottakenhetBlokk,
         msgHead: XMLMsgHead,
-        loggingMeta: LoggingMeta
+        loggingMeta: LoggingMeta,
     ) {
         val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
 
@@ -61,13 +61,13 @@ class SamhandlerService(
             samhandlerInfo,
             legekontorOrgNumber,
             legekontorHerId,
-            loggingMeta
+            loggingMeta,
         )
 
         if (samhandlerPraksisMatchEmottak?.percentageMatch != null && samhandlerPraksisMatchEmottak.percentageMatch == 999.0) {
             log.info(
                 "SamhandlerPraksis is found but is FALE or FALO, subscription_emottak is not created, {}",
-                StructuredArguments.fields(loggingMeta)
+                StructuredArguments.fields(loggingMeta),
             )
             IKKE_OPPDATERT_PARTNERREG.inc()
         } else {
@@ -86,7 +86,7 @@ class SamhandlerService(
                         msgHead,
                         receiverBlock,
                         msgHead.msgInfo.msgId,
-                        loggingMeta
+                        loggingMeta,
                     )
                 } else {
                     if (!receiverBlock.partnerReferanse.isNullOrEmpty() &&
@@ -94,12 +94,12 @@ class SamhandlerService(
                     ) {
                         log.info(
                             "PartnerReferanse is empty or blank, subscription_emottak is not created, {}",
-                            StructuredArguments.fields(loggingMeta)
+                            StructuredArguments.fields(loggingMeta),
                         )
                     } else {
                         log.info(
                             "SamhandlerPraksis is Legevakt, subscription_emottak is not created, {}",
-                            StructuredArguments.fields(loggingMeta)
+                            StructuredArguments.fields(loggingMeta),
                         )
                     }
                     IKKE_OPPDATERT_PARTNERREG.inc()

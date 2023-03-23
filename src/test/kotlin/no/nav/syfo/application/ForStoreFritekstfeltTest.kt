@@ -17,7 +17,7 @@ internal class ForStoreFritekstfeltTest {
             sykdomshistorie = "historie",
             statusPresens = "test1".repeat(3002),
             borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null
+            yrkesSkadeDato = null,
         )
 
         val fritekstfelt = getFritekstfelt(sykdomsopplysninger)
@@ -33,11 +33,11 @@ internal class ForStoreFritekstfeltTest {
                         "FOR_MANGE_TEGN_STATUSPRESENS",
                         "Punkt 2.6 Status presens har mer enn 15 000 tegn",
                         "Punkt 2.6 Status presens har mer enn 15 000 tegn",
-                        Status.INVALID
-                    )
-                )
+                        Status.INVALID,
+                    ),
+                ),
             ),
-            validationResults
+            validationResults,
         )
         assertEquals(
             Sykdomsopplysninger(
@@ -47,9 +47,9 @@ internal class ForStoreFritekstfeltTest {
                 sykdomshistorie = "historie",
                 statusPresens = "FOR STOR",
                 borNavKontoretVurdereOmDetErEnYrkesskade = false,
-                yrkesSkadeDato = null
+                yrkesSkadeDato = null,
             ),
-            forkortedeSykdomsopplysninger
+            forkortedeSykdomsopplysninger,
         )
     }
 
@@ -62,7 +62,7 @@ internal class ForStoreFritekstfeltTest {
             sykdomshistorie = "test1".repeat(3002),
             statusPresens = "statusPresens",
             borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null
+            yrkesSkadeDato = null,
         )
 
         val fritekstfelt = getFritekstfelt(sykdomsopplysninger)
@@ -78,11 +78,11 @@ internal class ForStoreFritekstfeltTest {
                         "FOR_MANGE_TEGN_SYMPTOMER",
                         "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
                         "Punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                        Status.INVALID
-                    )
-                )
+                        Status.INVALID,
+                    ),
+                ),
             ),
-            validationResults
+            validationResults,
         )
         assertEquals(
             Sykdomsopplysninger(
@@ -92,9 +92,9 @@ internal class ForStoreFritekstfeltTest {
                 sykdomshistorie = "FOR STOR",
                 statusPresens = "statusPresens",
                 borNavKontoretVurdereOmDetErEnYrkesskade = false,
-                yrkesSkadeDato = null
+                yrkesSkadeDato = null,
             ),
-            forkortedeSykdomsopplysninger
+            forkortedeSykdomsopplysninger,
         )
     }
 
@@ -107,7 +107,7 @@ internal class ForStoreFritekstfeltTest {
             sykdomshistorie = "test1".repeat(3002),
             statusPresens = "test1".repeat(3002),
             borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null
+            yrkesSkadeDato = null,
         )
 
         val fritekstfelt = getFritekstfelt(sykdomsopplysninger)
@@ -123,11 +123,11 @@ internal class ForStoreFritekstfeltTest {
                         "FOR_MANGE_TEGN_STATUSPRESENS_SYMPTOMER",
                         "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
                         "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling har mer enn 15 000 tegn",
-                        Status.INVALID
-                    )
-                )
+                        Status.INVALID,
+                    ),
+                ),
             ),
-            validationResults
+            validationResults,
         )
 
         assertEquals(
@@ -138,9 +138,9 @@ internal class ForStoreFritekstfeltTest {
                 sykdomshistorie = "FOR STOR",
                 statusPresens = "FOR STOR",
                 borNavKontoretVurdereOmDetErEnYrkesskade = false,
-                yrkesSkadeDato = null
+                yrkesSkadeDato = null,
             ),
-            forkortedeSykdomsopplysninger
+            forkortedeSykdomsopplysninger,
         )
     }
 }

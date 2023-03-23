@@ -26,7 +26,7 @@ fun sendReceipt(
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
     loggingMeta: LoggingMeta,
-    apprecQueueName: String
+    apprecQueueName: String,
 ) {
     receiptProducer.send(
         session.createTextMessage().apply {
@@ -35,7 +35,7 @@ fun sendReceipt(
                 apprec.get<XMLAppRec>().error.addAll(apprecErrors)
             }
             text = apprecMarshaller.toString(apprec)
-        }
+        },
     )
     APPREC_COUNTER.inc()
     log.info("Apprec Receipt sent to {}, {}", apprecQueueName, StructuredArguments.fields(loggingMeta))

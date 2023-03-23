@@ -9,11 +9,11 @@ fun createArenaInfo(
     tssId: String?,
     mottakid: String,
     fnrbehandler: String,
-    legeerklaering: Legeerklaering
+    legeerklaering: Legeerklaering,
 ): ArenaEiaInfo = ArenaEiaInfo().apply {
     ediloggId = mottakid
-    hendelseStatus = PaleConstant.tilvurdering.string
-    version = PaleConstant.versjon2_0.string
+    hendelseStatus = PaleConstant.TILVURDERING.description
+    version = PaleConstant.VERSJON2.description
     skjemaType = "LE"
     mappeType = findMappeTypeInLegeerklaering(legeerklaering)
     pasientData = ArenaEiaInfo.PasientData().apply {
@@ -32,7 +32,7 @@ fun createArenaInfo(
                 meldingsNr = 245.toBigInteger()
                 meldingsTekst = "Legeerklæring er mottatt."
                 meldingsType = "3"
-            }
+            },
         )
     }
 }
@@ -47,15 +47,15 @@ fun Pasient.formatName(): String =
 fun findMappeTypeInLegeerklaering(legeerklaering: Legeerklaering): String =
     when {
         legeerklaering.uforepensjon -> {
-            PaleConstant.mappetypeUP.string
+            PaleConstant.MAPPRETYPEUP.description
         }
         legeerklaering.yrkesrettetAttforing -> {
-            PaleConstant.mappetypeYA.string
+            PaleConstant.MAPPRETYPEYA.description
         }
         legeerklaering.arbeidsavklaringspenger -> {
-            PaleConstant.mappetypeRP.string
+            PaleConstant.MAPPRETYPERP.description
         }
         else -> {
-            PaleConstant.mappetypeSP.string
+            PaleConstant.MAPPRETYPESP.description
         }
     }

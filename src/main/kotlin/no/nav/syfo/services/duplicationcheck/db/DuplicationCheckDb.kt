@@ -20,7 +20,7 @@ fun DatabaseInterface.persistDuplicateCheck(duplicateCheck: DuplicateCheck) {
                 org_number
                 )
             values (?, ?, ?, ?, ?, ?);
-            """
+            """,
         ).use { preparedStatement ->
             preparedStatement.setString(1, duplicateCheck.legeerklaringId)
             preparedStatement.setString(2, duplicateCheck.sha256Legeerklaering)
@@ -46,7 +46,7 @@ fun DatabaseInterface.persistDuplicate(duplicate: Duplicate) {
                 duplicate_legeerklaring_id
                 )
             values (?, ?, ?, ?, ?);
-            """
+            """,
         ).use { preparedStatement ->
             preparedStatement.setString(1, duplicate.legeerklaringId)
             preparedStatement.setString(2, duplicate.mottakId)
@@ -66,7 +66,7 @@ fun DatabaseInterface.extractDuplicationCheckBySha256Legeerklaering(sha256Legeer
                  select * 
                  from duplicatecheck 
                  where sha256_legeerklaering=?;
-                """
+                """,
         ).use { preparedStatement ->
             preparedStatement.setString(1, sha256Legeerklaering)
             return preparedStatement.executeQuery().toList { toDuplicateCheck() }.firstOrNull()
@@ -81,7 +81,7 @@ fun DatabaseInterface.extractDuplicateCheckByMottakId(mottakId: String): List<Du
                  select * 
                  from duplicatecheck 
                  where mottak_id=?;
-                """
+                """,
         ).use { preparedStatement ->
             preparedStatement.setString(1, mottakId)
             return preparedStatement.executeQuery().toList { toDuplicateCheck() }
@@ -96,5 +96,5 @@ fun ResultSet.toDuplicateCheck(): DuplicateCheck =
         mottakId = getString("mottak_id"),
         msgId = getString("msg_id"),
         mottattDate = getTimestamp("mottatt_date").toLocalDateTime(),
-        orgNumber = getString("org_number")
+        orgNumber = getString("org_number"),
     )

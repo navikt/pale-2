@@ -20,7 +20,7 @@ class EmottakSubscriptionClient(
     private val endpointUrl: String,
     private val accessTokenClientV2: AccessTokenClientV2,
     private val resourceId: String,
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
 ) {
     // This functionality is only necessary due to sending out dialogMelding and oppfølgingsplan to doctor
     suspend fun startSubscription(
@@ -28,13 +28,13 @@ class EmottakSubscriptionClient(
         msgHead: XMLMsgHead,
         receiverBlock: XMLMottakenhetBlokk,
         msgId: String,
-        loggingMeta: LoggingMeta
+        loggingMeta: LoggingMeta,
     ) {
         log.info("Oppdate subscription emottak for {}", StructuredArguments.fields(loggingMeta))
         retry(
             callName = "start_subscription_emottak",
             retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
-            legalExceptions = arrayOf(Exception::class)
+            legalExceptions = arrayOf(Exception::class),
         ) {
             val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
             httpClient.post("$endpointUrl/emottak/startsubscription") {
@@ -45,8 +45,8 @@ class EmottakSubscriptionClient(
                     StartSubscriptionRequest(
                         tssIdent = samhandlerPraksis.tss_ident,
                         sender = convertSenderToBase64(msgHead.msgInfo.sender),
-                        partnerreferanse = receiverBlock.partnerReferanse.toInt()
-                    )
+                        partnerreferanse = receiverBlock.partnerReferanse.toInt(),
+                    ),
                 )
             }
         }
@@ -62,7 +62,7 @@ class EmottakSubscriptionClient(
 data class StartSubscriptionRequest(
     val tssIdent: String,
     val sender: ByteArray,
-    val partnerreferanse: Int
+    val partnerreferanse: Int,
 )
 
 fun samhandlerpraksisIsLegevakt(samhandlerPraksis: SamhandlerPraksis): Boolean =

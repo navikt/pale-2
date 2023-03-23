@@ -18,13 +18,13 @@ import java.util.UUID
 class BucketUploadService(
     private val legeerklaringBucketName: String,
     private val bucketName: String,
-    private val storage: Storage
+    private val storage: Storage,
 ) {
     fun uploadVedlegg(
         vedlegg: List<Vedlegg>,
         legeerklaering: ReceivedLegeerklaering,
         xmleiFellesformat: XMLEIFellesformat,
-        loggingMeta: LoggingMeta
+        loggingMeta: LoggingMeta,
     ): List<String> {
         log.info("Laster opp ${vedlegg.size} vedlegg", StructuredArguments.fields(loggingMeta))
         return vedlegg.map {
@@ -33,7 +33,7 @@ class BucketUploadService(
                 msgId = legeerklaering.msgId,
                 personNrPasient = legeerklaering.personNrPasient,
                 behandlerInfo = xmleiFellesformat.getBehandlerInfo(legeerklaering.personNrLege),
-                pasientAktoerId = legeerklaering.pasientAktoerId
+                pasientAktoerId = legeerklaering.pasientAktoerId,
             )
         }.map { createVedlegg(legeerklaering.legeerklaering.id, it, loggingMeta) }
     }
@@ -50,20 +50,20 @@ class BucketUploadService(
         msgId: String,
         personNrPasient: String,
         behandlerInfo: BehandlerInfo,
-        pasientAktoerId: String
+        pasientAktoerId: String,
     ): VedleggMessage {
         return VedleggMessage(
             vedlegg = vedlegg,
             msgId = msgId,
             pasientFnr = personNrPasient,
             behandler = behandlerInfo,
-            pasientAktorId = pasientAktoerId
+            pasientAktorId = pasientAktoerId,
         )
     }
 
     fun uploadLegeerklaering(
         legeerklaering: ReceivedLegeerklaering,
-        loggingMeta: LoggingMeta
+        loggingMeta: LoggingMeta,
     ): String {
         log.info("Laster opp legerklæring {}", StructuredArguments.fields(loggingMeta))
         val msgId = legeerklaering.msgId

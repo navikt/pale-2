@@ -28,7 +28,12 @@ internal class DuplicationCheckServiceTest {
         val orgNumber = "234355"
 
         val duplicationCheck = DuplicateCheck(
-            legeerklaringId, sha256HealthInformation, mottakId, "12-33", LocalDateTime.now(), orgNumber
+            legeerklaringId,
+            sha256HealthInformation,
+            mottakId,
+            "12-33",
+            LocalDateTime.now(),
+            orgNumber,
         )
 
         duplicationCheckService.persistDuplicationCheck(duplicationCheck)
@@ -49,7 +54,12 @@ internal class DuplicationCheckServiceTest {
         val legeerklaringId = "1231-213-21312-s123124-1sv443"
 
         val duplicationCheck = DuplicateCheck(
-            legeerklaringId, sha256Legeerklaering, mottakId, "12-33", LocalDateTime.now(), null
+            legeerklaringId,
+            sha256Legeerklaering,
+            mottakId,
+            "12-33",
+            LocalDateTime.now(),
+            null,
         )
 
         duplicationCheckService.persistDuplicationCheck(duplicationCheck)
@@ -66,7 +76,11 @@ internal class DuplicationCheckServiceTest {
         val duplicateLegeerklaringId = "1231-213-21312-s1324-1sv443"
 
         val duplicate = Duplicate(
-            legeerklaringId, sha256Legeerklaering, mottakId, LocalDateTime.now(), duplicateLegeerklaringId
+            legeerklaringId,
+            sha256Legeerklaering,
+            mottakId,
+            LocalDateTime.now(),
+            duplicateLegeerklaringId,
         )
 
         Assertions.assertDoesNotThrow { duplicationCheckService.persistDuplication(duplicate) }
