@@ -9,6 +9,7 @@ import no.nav.syfo.client.ScanResult
 import no.nav.syfo.client.Status
 import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.fileSizeLagerThan300MegaBytes
+import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.vedlegg.model.Content
 import no.nav.syfo.vedlegg.model.Vedlegg
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -21,6 +22,7 @@ import java.util.Base64
 internal class VirusScanServiceTest {
 
     private val clamAvClientMock = mockkClass(ClamAvClient::class)
+    private val loggingMeta = LoggingMeta("legeerklearingId", "mottakid", "orgnummer", "msgid")
 
     @BeforeEach
     internal fun `Set up`() {
@@ -42,7 +44,7 @@ internal class VirusScanServiceTest {
 
         runBlocking {
             val vedleggContainsVirus =
-                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggBilde, vedleggText))
+                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggBilde, vedleggText), loggingMeta)
             assertEquals(true, vedleggContainsVirus)
         }
     }
@@ -61,7 +63,7 @@ internal class VirusScanServiceTest {
 
         runBlocking {
             val vedleggContainsVirus =
-                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
+                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2), loggingMeta)
             assertEquals(false, vedleggContainsVirus)
         }
     }
@@ -80,7 +82,7 @@ internal class VirusScanServiceTest {
 
         runBlocking {
             val vedleggContainsVirus =
-                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2))
+                VirusScanService(clamAvClientMock).vedleggContainsVirus(listOf(vedleggImage1, vedleggImage2), loggingMeta)
             assertEquals(true, vedleggContainsVirus)
         }
     }
@@ -90,7 +92,7 @@ internal class VirusScanServiceTest {
         val base64EncodedContent = base64Encode(getFileContent("src/test/resources/random.txt"))
         val vedlegg = Vedlegg(Content("Base64Container", base64EncodedContent), "image/jpeg", "image_of_file")
         val file = Base64.getMimeDecoder().decode(vedlegg.content.content)
-        assertEquals(false, fileSizeLagerThan300MegaBytes(file))
+        assertEquals(false, fileSizeLagerThan300MegaBytes(file, loggingMeta))
     }
 
     private fun getFileContent(filepath: String): ByteArray = Files.readAllBytes(Paths.get(filepath))

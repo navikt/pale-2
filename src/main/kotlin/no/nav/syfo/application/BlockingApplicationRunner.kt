@@ -270,7 +270,7 @@ class BlockingApplicationRunner(
                             pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
 
                         if (vedlegg.isNotEmpty()) {
-                            if (virusScanService.vedleggContainsVirus(vedlegg)) {
+                            if (virusScanService.vedleggContainsVirus(vedlegg, loggingMeta)) {
                                 handleVedleggContainsVirus(
                                     session,
                                     receiptProducer,
