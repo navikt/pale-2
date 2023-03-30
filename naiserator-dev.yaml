@@ -57,6 +57,8 @@ spec:
         - application: clamav
           namespace: nais-system
       external:
+        - host: smgcp-proxy.dev-fss-pub.nais.io
+        - host: pdl-api.dev-fss-pub.nais.io
         - host: b27apvl222.preprod.local
           ports:
             - name: mq
