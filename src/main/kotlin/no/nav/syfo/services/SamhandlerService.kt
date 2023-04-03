@@ -4,6 +4,7 @@ import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.client.EmottakSubscriptionClient
+import no.nav.syfo.client.Samhandler
 import no.nav.syfo.client.SamhandlerPraksisMatch
 import no.nav.syfo.client.SarClient
 import no.nav.syfo.client.findBestSamhandlerPraksis
@@ -11,6 +12,8 @@ import no.nav.syfo.client.findBestSamhandlerPraksisEmottak
 import no.nav.syfo.client.samhandlerpraksisIsLegevakt
 import no.nav.syfo.log
 import no.nav.syfo.metrics.IKKE_OPPDATERT_PARTNERREG
+import no.nav.syfo.objectMapper
+import no.nav.syfo.secureLog
 import no.nav.syfo.util.LoggingMeta
 
 class SamhandlerService(
@@ -29,8 +32,10 @@ class SamhandlerService(
     ): SamhandlerPraksisMatch? {
         val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
 
+        secureLog.info("samhandlerInfo: ${objectMapper.writeValueAsString(samhandlerInfo)} {}", StructuredArguments.fields(loggingMeta))
+
         handleEmottakSubscription(
-            fnrLege,
+            samhandlerInfo,
             legekontorOrgNumber,
             legekontorHerId,
             receiverBlock,
@@ -48,15 +53,13 @@ class SamhandlerService(
     }
 
     suspend fun handleEmottakSubscription(
-        fnrLege: String,
+        samhandlerInfo: List<Samhandler>,
         legekontorOrgNumber: String?,
         legekontorHerId: String?,
         receiverBlock: XMLMottakenhetBlokk,
         msgHead: XMLMsgHead,
         loggingMeta: LoggingMeta,
     ) {
-        val samhandlerInfo = kuhrSarClient.getSamhandler(fnrLege, msgHead.msgInfo.msgId)
-
         val samhandlerPraksisMatchEmottak = findBestSamhandlerPraksisEmottak(
             samhandlerInfo,
             legekontorOrgNumber,
