@@ -17,7 +17,7 @@ This the high level flow of the application
       id3([PALE_2.INPUT_BOQ]) -->  id2([PALE.INPUT])
       pale-2 --- Azure-AD
       pale-2 --- PDL
-      pale-2 --- Kuhr-SAR
+      pale-2 --- smtss
       pale-2 --- eMottak-subscription
       pale-2 --- GCP-Bucket
       pale-2 --- pale-2-regler

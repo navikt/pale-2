@@ -227,12 +227,10 @@ class BlockingApplicationRunner(
                         val samhandlerPraksisTssId = samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
                             fnrLege = fnrLege,
                             legekontorOrgName = legekontorOrgName,
-                            legekontorOrgNumber = legekontorOrgNr,
-                            legekontorHerId = legekontorHerId,
-                            msgHead = msgHead,
                             receiverBlock = receiverBlock,
+                            msgHead = msgHead,
                             loggingMeta = loggingMeta,
-                        )?.samhandlerPraksis?.tss_ident
+                        )
 
                         val receivedLegeerklaering = ReceivedLegeerklaering(
                             legeerklaering = legeerklaring,

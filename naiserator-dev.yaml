@@ -56,6 +56,7 @@ spec:
         - application: pale-2-regler
         - application: clamav
           namespace: nais-system
+        - application: smtss
       external:
         - host: smgcp-proxy.dev-fss-pub.nais.io
         - host: pdl-api.dev-fss-pub.nais.io

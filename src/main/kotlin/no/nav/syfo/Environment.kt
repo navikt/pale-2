@@ -32,6 +32,8 @@ data class Environment(
     val dbHost: String = getEnvVar("DB_HOST"),
     val dbPort: String = getEnvVar("DB_PORT"),
     val dbName: String = getEnvVar("DB_DATABASE"),
+    val smtssApiUrl: String = "http://smtss",
+    val smtssApiScope: String = getEnvVar("SMTSS_API_SCOPE"),
 ) : MqConfig
 
 data class VaultServiceUser(
