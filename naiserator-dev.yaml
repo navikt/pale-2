@@ -113,3 +113,5 @@ spec:
       value: api://dev-gcp.teamsykmelding.pale-2-regler/.default
     - name: MQ_KEYSTORE_PATH
       value: /var/run/keystore/pale2-keystore.jks
+    - name: SMTSS_API_SCOPE
+      value: api://dev-gcp.teamsykmelding.smtss/.default
