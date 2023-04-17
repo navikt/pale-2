@@ -24,7 +24,7 @@ class EmottakSubscriptionClient(
 ) {
     // This functionality is only necessary due to sending out dialogMelding and oppfølgingsplan to doctor
     suspend fun startSubscription(
-        samhandlerPraksis: SamhandlerPraksis,
+        tssIdent: String,
         msgHead: XMLMsgHead,
         receiverBlock: XMLMottakenhetBlokk,
         msgId: String,
@@ -43,7 +43,7 @@ class EmottakSubscriptionClient(
                 header("Nav-Call-Id", msgId)
                 setBody(
                     StartSubscriptionRequest(
-                        tssIdent = samhandlerPraksis.tss_ident,
+                        tssIdent = tssIdent,
                         sender = convertSenderToBase64(msgHead.msgInfo.sender),
                         partnerreferanse = receiverBlock.partnerReferanse.toInt(),
                     ),
@@ -64,9 +64,3 @@ data class StartSubscriptionRequest(
     val sender: ByteArray,
     val partnerreferanse: Int,
 )
-
-fun samhandlerpraksisIsLegevakt(samhandlerPraksis: SamhandlerPraksis): Boolean =
-    !samhandlerPraksis.samh_praksis_type_kode.isNullOrEmpty() && (
-        samhandlerPraksis.samh_praksis_type_kode == "LEVA" ||
-            samhandlerPraksis.samh_praksis_type_kode == "LEKO"
-        )

@@ -56,6 +56,7 @@ spec:
         - application: pale-2-regler
         - application: clamav
           namespace: nais-system
+        - application: smtss
       external:
         - host: smgcp-proxy.prod-fss-pub.nais.io
         - host: pdl-api.prod-fss-pub.nais.io
@@ -112,3 +113,5 @@ spec:
       value: api://prod-gcp.teamsykmelding.pale-2-regler/.default
     - name: MQ_KEYSTORE_PATH
       value: /var/run/keystore/pale2-keystore.jks
+    - name: SMTSS_API_SCOPE
+      value: api://prod-gcp.teamsykmelding.smtss/.default

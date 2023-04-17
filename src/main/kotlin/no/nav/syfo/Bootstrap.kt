@@ -34,7 +34,7 @@ import no.nav.syfo.client.AccessTokenClientV2
 import no.nav.syfo.client.ClamAvClient
 import no.nav.syfo.client.EmottakSubscriptionClient
 import no.nav.syfo.client.Pale2ReglerClient
-import no.nav.syfo.client.SarClient
+import no.nav.syfo.client.SmtssClient
 import no.nav.syfo.db.Database
 import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
@@ -134,13 +134,13 @@ fun main() {
     val accessTokenClientV2 =
         AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithRetry)
 
-    val sarClient = SarClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
     val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
     val emottakSubscriptionClient =
         EmottakSubscriptionClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
 
-    val samhandlerService = SamhandlerService(sarClient, emottakSubscriptionClient)
+    val smtssClient = SmtssClient(env.smtssApiUrl, accessTokenClientV2, env.smtssApiScope, httpClient)
+    val samhandlerService = SamhandlerService(smtssClient, emottakSubscriptionClient)
 
     val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig()
         .toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
