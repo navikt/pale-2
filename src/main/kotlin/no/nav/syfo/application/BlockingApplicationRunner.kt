@@ -230,6 +230,7 @@ class BlockingApplicationRunner(
                             receiverBlock = receiverBlock,
                             msgHead = msgHead,
                             loggingMeta = loggingMeta,
+                            legeerklaringId = legeerklaringId,
                         )
 
                         val receivedLegeerklaering = ReceivedLegeerklaering(

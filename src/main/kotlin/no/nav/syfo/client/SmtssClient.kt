@@ -23,6 +23,7 @@ class SmtssClient(
         samhandlerFnr: String,
         samhandlerOrgName: String,
         loggingMeta: LoggingMeta,
+        legeerklaringId: String,
     ): String? {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
         val httpResponse = httpClient.get("$endpointUrl/api/v1/samhandler/emottak") {
@@ -30,6 +31,7 @@ class SmtssClient(
             parameter("samhandlerFnr", samhandlerFnr)
             parameter("samhandlerOrgName", samhandlerOrgName)
             header("Authorization", "Bearer $accessToken")
+            header("requestId", legeerklaringId)
         }
         return if (httpResponse.status == HttpStatusCode.OK) {
             httpResponse.body<TSSident>().tssid
@@ -47,6 +49,7 @@ class SmtssClient(
         samhandlerFnr: String,
         samhandlerOrgName: String,
         loggingMeta: LoggingMeta,
+        legeerklaringId: String,
     ): String? {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
         val httpResponse = httpClient.get("$endpointUrl/api/v1/samhandler/infotrygd") {
@@ -55,6 +58,7 @@ class SmtssClient(
             parameter("samhandlerFnr", samhandlerFnr)
             parameter("samhandlerOrgName", samhandlerOrgName)
             header("Authorization", "Bearer $accessToken")
+            header("requestId", legeerklaringId)
         }
         return if (httpResponse.status == HttpStatusCode.OK) {
             val tssid = httpResponse.body<TSSident>().tssid

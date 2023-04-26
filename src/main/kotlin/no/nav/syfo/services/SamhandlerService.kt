@@ -20,8 +20,9 @@ class SamhandlerService(
         msgHead: XMLMsgHead,
         receiverBlock: XMLMottakenhetBlokk,
         loggingMeta: LoggingMeta,
+        legeerklaringId: String,
     ): String? {
-        val tssIdEmottak = smtssClient.findBestTssIdEmottak(fnrLege, legekontorOrgName, loggingMeta)
+        val tssIdEmottak = smtssClient.findBestTssIdEmottak(fnrLege, legekontorOrgName, loggingMeta, legeerklaringId)
 
         handleEmottakSubscription(
             tssIdEmottak,
@@ -34,7 +35,7 @@ class SamhandlerService(
             return tssIdEmottak
         }
 
-        return smtssClient.findBestTssInfotrygdId(fnrLege, legekontorOrgName, loggingMeta)
+        return smtssClient.findBestTssInfotrygdId(fnrLege, legekontorOrgName, loggingMeta, legeerklaringId)
     }
 
     suspend fun handleEmottakSubscription(
