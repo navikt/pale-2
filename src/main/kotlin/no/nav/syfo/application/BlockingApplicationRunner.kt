@@ -48,6 +48,7 @@ import no.nav.syfo.util.extractSenderOrganisationName
 import no.nav.syfo.util.fellesformatMarshaller
 import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.get
+import no.nav.syfo.util.getLocalDateTime
 import no.nav.syfo.util.getVedlegg
 import no.nav.syfo.util.removeVedleggFromFellesformat
 import no.nav.syfo.util.toString
@@ -220,7 +221,7 @@ class BlockingApplicationRunner(
                         val legeerklaring = legeerklaringxml.toLegeerklaring(
                             legeerklaringId = legeerklaringId,
                             fellesformat = fellesformat,
-                            signaturDato = msgHead.msgInfo.genDate,
+                            signaturDato = getLocalDateTime(msgHead.msgInfo.genDate),
                             behandlerNavn = behandler.navn.format(),
                         )
 

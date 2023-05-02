@@ -36,7 +36,7 @@ fun createApprec(fellesformat: XMLEIFellesformat, apprecStatus: ApprecStatus): X
                     v = PaleConstant.APPREC.description
                 }
                 miGversion = PaleConstant.APPRECVERSIONV1_0.description
-                genDate = LocalDateTime.now()
+                genDate = LocalDateTime.now().toString()
                 id = fellesformat.get<XMLMottakenhetBlokk>().ediLoggId
 
                 sender = XMLAppRec.Sender().apply {
