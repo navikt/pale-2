@@ -17,6 +17,8 @@ class PdlClient(
 ) {
     private val temaHeader = "TEMA"
     private val tema = "SYM"
+    private val behandlingsnummerHeader = "Behandlingsnummer"
+    private val behandlingsnummer = "B229"
 
     suspend fun getPerson(fnr: String, accestoken: String): GetPersonResponse {
         val getPersonRequest = GetPersonRequest(query = graphQlQuery, variables = GetPersonVariables(ident = fnr))
@@ -29,6 +31,7 @@ class PdlClient(
             header(HttpHeaders.Authorization, "Bearer $accestoken")
             header(temaHeader, tema)
             header(HttpHeaders.ContentType, "application/json")
+            header(behandlingsnummerHeader, behandlingsnummer)
         }.body()
     }
 }
