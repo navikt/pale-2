@@ -55,6 +55,7 @@ import no.nav.syfo.util.toString
 import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
+import org.xml.sax.InputSource
 import java.io.StringReader
 import java.time.ZoneOffset
 import java.util.UUID
@@ -62,6 +63,9 @@ import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
 import javax.jms.TextMessage
+import javax.xml.parsers.SAXParserFactory
+import javax.xml.transform.Source
+import javax.xml.transform.sax.SAXSource
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -95,8 +99,7 @@ class BlockingApplicationRunner(
                         is TextMessage -> message.text
                         else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
                     }
-                    val fellesformat =
-                        fellesformatUnmarshaller.unmarshal(StringReader(inputMessageText)) as XMLEIFellesformat
+                    val fellesformat = safeUnmarshal(inputMessageText)
 
                     val vedlegg = getVedlegg(fellesformat)
                     if (vedlegg.isNotEmpty()) {
@@ -460,3 +463,16 @@ fun getForkortedeSykdomsopplysninger(sykdomsopplysninger: Sykdomsopplysninger) =
 
 fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
     fellesformatMarshaller.toString(fellesformat)
+
+private fun safeUnmarshal(inputMessageText: String): XMLEIFellesformat {
+    // Disable XXE
+    val spf: SAXParserFactory = SAXParserFactory.newInstance()
+    spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+    spf.isNamespaceAware = true
+
+    val xmlSource: Source = SAXSource(
+        spf.newSAXParser().xmlReader,
+        InputSource(StringReader(inputMessageText)),
+    )
+    return fellesformatUnmarshaller.unmarshal(xmlSource) as XMLEIFellesformat
+}
