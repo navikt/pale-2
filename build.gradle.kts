@@ -37,7 +37,7 @@ val embeddedPostgresVersion = "2.0.4"
 
 
 plugins {
-    kotlin("jvm") version "1.8.21"
+    kotlin("jvm") version "1.8.22"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("org.jmailen.kotlinter") version "3.15.0"
 }
