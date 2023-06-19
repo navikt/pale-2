@@ -10,19 +10,18 @@ spec:
     sqlInstances:
       - name: pale-2-instance
         type: POSTGRES_14
-        tier: db-custom-1-3840
         databases:
           - name: pale-2
             envVarPrefix: DB
         diskAutoresize: true
-        highAvailability: true
+        highAvailability: false
         diskType: SSD
         insights:
           enabled: true
   image: {{ image }}
   replicas:
-    min: 2
-    max: 4
+    min: 1
+    max: 1
     cpuThresholdPercentage: 90
   port: 8080
   liveness:
@@ -44,7 +43,7 @@ spec:
       cpu: 500m
       memory: 1Gi
     requests:
-      cpu: 200m
+      cpu: 50m
       memory: 768Mi
   azure:
     application:
