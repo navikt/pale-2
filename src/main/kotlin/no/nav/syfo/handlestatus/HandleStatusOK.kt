@@ -1,5 +1,7 @@
 package no.nav.syfo.handlestatus
 
+import javax.jms.MessageProducer
+import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.apprec.ApprecStatus
@@ -15,8 +17,6 @@ import no.nav.syfo.util.arenaMarshaller
 import no.nav.syfo.util.toString
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
-import javax.jms.MessageProducer
-import javax.jms.Session
 
 fun handleStatusOK(
     session: Session,
@@ -36,8 +36,15 @@ fun handleStatusOK(
     duplicateCheck: DuplicateCheck,
 ) {
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.OK, emptyList(), duplicationCheckService,
-        duplicateCheck, loggingMeta, apprecQueueName,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.OK,
+        emptyList(),
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        apprecQueueName,
     )
 
     sendArenaInfo(
@@ -50,7 +57,13 @@ fun handleStatusOK(
     )
     log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
-    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaring.id, loggingMeta)
+    sendTilTopic(
+        aivenKafkaProducer,
+        topic,
+        legeerklaringKafkaMessage,
+        legeerklaring.id,
+        loggingMeta
+    )
 }
 
 fun sendArenaInfo(
@@ -60,12 +73,13 @@ fun sendArenaInfo(
     mottakid: String,
     fnrbehandler: String,
     legeerklaring: Legeerklaering,
-) = producer.send(
-    session.createTextMessage().apply {
-        val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring)
-        text = arenaMarshaller.toString(info)
-    },
-)
+) =
+    producer.send(
+        session.createTextMessage().apply {
+            val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring)
+            text = arenaMarshaller.toString(info)
+        },
+    )
 
 fun sendTilTopic(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
@@ -75,7 +89,9 @@ fun sendTilTopic(
     loggingMeta: LoggingMeta,
 ) {
     try {
-        aivenKafkaProducer.send(ProducerRecord(topic, legeerklaeringId, legeerklaeringKafkaMessage)).get()
+        aivenKafkaProducer
+            .send(ProducerRecord(topic, legeerklaeringId, legeerklaeringKafkaMessage))
+            .get()
         log.info("Melding med id $legeerklaeringId sendt til kafka topic {}", topic)
     } catch (e: Exception) {
         log.error("Noe gikk galt ved sending til ok-topic, {}, {}", e.message, fields(loggingMeta))

@@ -9,12 +9,12 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import java.io.IOException
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.log
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.util.LoggingMeta
-import java.io.IOException
 
 class Pale2ReglerClient(
     private val endpointUrl: String,
@@ -22,14 +22,18 @@ class Pale2ReglerClient(
     private val accessTokenClientV2: AccessTokenClientV2,
     private val resourceId: String,
 ) {
-    suspend fun executeRuleValidation(payload: ReceivedLegeerklaering, loggingMeta: LoggingMeta): ValidationResult {
+    suspend fun executeRuleValidation(
+        payload: ReceivedLegeerklaering,
+        loggingMeta: LoggingMeta
+    ): ValidationResult {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
-        val httpResponse = client.post("$endpointUrl/v1/rules/validate") {
-            contentType(ContentType.Application.Json)
-            accept(ContentType.Application.Json)
-            header("Authorization", "Bearer $accessToken")
-            setBody(payload)
-        }
+        val httpResponse =
+            client.post("$endpointUrl/v1/rules/validate") {
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+                header("Authorization", "Bearer $accessToken")
+                setBody(payload)
+            }
         if (httpResponse.status == HttpStatusCode.OK) {
             return httpResponse.body<ValidationResult>()
         } else {

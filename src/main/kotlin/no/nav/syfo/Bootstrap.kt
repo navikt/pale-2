@@ -20,6 +20,8 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.network.sockets.SocketTimeoutException
 import io.ktor.serialization.jackson.jackson
 import io.prometheus.client.hotspot.DefaultExports
+import java.io.FileInputStream
+import javax.jms.Session
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -54,13 +56,12 @@ import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.FileInputStream
-import javax.jms.Session
 
-val objectMapper: ObjectMapper = ObjectMapper()
-    .registerModule(JavaTimeModule())
-    .registerKotlinModule()
-    .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+val objectMapper: ObjectMapper =
+    ObjectMapper()
+        .registerModule(JavaTimeModule())
+        .registerKotlinModule()
+        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
@@ -73,13 +74,16 @@ fun main() {
 
     val serviceUser = VaultServiceUser()
 
-    MqTlsUtils.getMqTlsConfig().forEach { key, value -> System.setProperty(key as String, value as String) }
+    MqTlsUtils.getMqTlsConfig().forEach { key, value ->
+        System.setProperty(key as String, value as String)
+    }
 
     val applicationState = ApplicationState()
-    val applicationEngine = createApplicationEngine(
-        env,
-        applicationState,
-    )
+    val applicationEngine =
+        createApplicationEngine(
+            env,
+            applicationState,
+        )
 
     val applicationServer = ApplicationServer(applicationEngine, applicationState)
 
@@ -97,7 +101,8 @@ fun main() {
         HttpResponseValidator {
             handleResponseExceptionWithRequest { exception, _ ->
                 when (exception) {
-                    is SocketTimeoutException -> throw ServiceUnavailableException(exception.message)
+                    is SocketTimeoutException ->
+                        throw ServiceUnavailableException(exception.message)
                 }
             }
         }
@@ -113,7 +118,9 @@ fun main() {
                 }
                 retryIf(maxRetries) { request, response ->
                     if (response.status.value.let { it in 500..599 }) {
-                        log.warn("Retrying for statuscode ${response.status.value}, for url ${request.url}")
+                        log.warn(
+                            "Retrying for statuscode ${response.status.value}, for url ${request.url}"
+                        )
                         true
                     } else {
                         false
@@ -132,29 +139,52 @@ fun main() {
     val httpClientWithRetry = HttpClient(Apache, retryConfig)
 
     val accessTokenClientV2 =
-        AccessTokenClientV2(env.aadAccessTokenV2Url, env.clientIdV2, env.clientSecretV2, httpClientWithRetry)
+        AccessTokenClientV2(
+            env.aadAccessTokenV2Url,
+            env.clientIdV2,
+            env.clientSecretV2,
+            httpClientWithRetry
+        )
 
-    val pdlPersonService = PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
+    val pdlPersonService =
+        PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
 
     val emottakSubscriptionClient =
-        EmottakSubscriptionClient(env.smgcpProxyUrl, accessTokenClientV2, env.smgcpProxyScope, httpClientWithRetry)
+        EmottakSubscriptionClient(
+            env.smgcpProxyUrl,
+            accessTokenClientV2,
+            env.smgcpProxyScope,
+            httpClientWithRetry
+        )
 
-    val smtssClient = SmtssClient(env.smtssApiUrl, accessTokenClientV2, env.smtssApiScope, httpClient)
+    val smtssClient =
+        SmtssClient(env.smtssApiUrl, accessTokenClientV2, env.smtssApiScope, httpClient)
     val samhandlerService = SamhandlerService(smtssClient, emottakSubscriptionClient)
 
-    val aivenKakfaProducerConfig = KafkaUtils.getAivenKafkaConfig()
-        .toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
-    val aivenKafkaProducer = KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
+    val aivenKakfaProducerConfig =
+        KafkaUtils.getAivenKafkaConfig()
+            .toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
+    val aivenKafkaProducer =
+        KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
 
     val pale2ReglerClient =
-        Pale2ReglerClient(env.pale2ReglerEndpointURL, httpClientWithRetry, accessTokenClientV2, env.pale2ReglerApiScope)
+        Pale2ReglerClient(
+            env.pale2ReglerEndpointURL,
+            httpClientWithRetry,
+            accessTokenClientV2,
+            env.pale2ReglerApiScope
+        )
 
     val paleVedleggStorageCredentials: Credentials =
         GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/pale2-google-creds.json"))
     val paleVedleggStorage: Storage =
         StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
     val paleVedleggBucketUploadService =
-        BucketUploadService(env.legeerklaeringBucketName, env.paleVedleggBucketName, paleVedleggStorage)
+        BucketUploadService(
+            env.legeerklaeringBucketName,
+            env.paleVedleggBucketName,
+            paleVedleggStorage
+        )
 
     val clamAvClient = ClamAvClient(httpClientWithRetry, env.clamAvEndpointUrl)
 
@@ -163,15 +193,26 @@ fun main() {
     val duplicationCheckService = DuplicationCheckService(database)
 
     launchListeners(
-        applicationState, env, samhandlerService, pdlPersonService, serviceUser,
-        aivenKafkaProducer, pale2ReglerClient, paleVedleggBucketUploadService, virusScanService, duplicationCheckService,
+        applicationState,
+        env,
+        samhandlerService,
+        pdlPersonService,
+        serviceUser,
+        aivenKafkaProducer,
+        pale2ReglerClient,
+        paleVedleggBucketUploadService,
+        virusScanService,
+        duplicationCheckService,
     )
 
     applicationServer.start()
 }
 
 @DelicateCoroutinesApi
-fun createListener(applicationState: ApplicationState, action: suspend CoroutineScope.() -> Unit): Job =
+fun createListener(
+    applicationState: ApplicationState,
+    action: suspend CoroutineScope.() -> Unit
+): Job =
     GlobalScope.launch {
         try {
             action()
@@ -197,7 +238,8 @@ fun launchListeners(
     duplicationCheckService: DuplicationCheckService,
 ) {
     createListener(applicationState) {
-        connectionFactory(env).createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
+        connectionFactory(env)
+            .createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
             .use { connection ->
                 connection.start()
                 val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
@@ -208,22 +250,23 @@ fun launchListeners(
                 val arenaProducer = session.producerForQueue(env.arenaQueueName)
 
                 BlockingApplicationRunner(
-                    applicationState = applicationState,
-                    env = env,
-                    samhandlerService = samhandlerService,
-                    pdlPersonService = pdlPersonService,
-                    aivenKafkaProducer = aivenKafkaProducer,
-                    pale2ReglerClient = pale2ReglerClient,
-                    bucketUploadService = bucketUploadService,
-                    virusScanService = virusScanService,
-                    duplicationCheckService = duplicationCheckService,
-                ).run(
-                    inputconsumer = inputconsumer,
-                    session = session,
-                    receiptProducer = receiptProducer,
-                    backoutProducer = backoutProducer,
-                    arenaProducer = arenaProducer,
-                )
+                        applicationState = applicationState,
+                        env = env,
+                        samhandlerService = samhandlerService,
+                        pdlPersonService = pdlPersonService,
+                        aivenKafkaProducer = aivenKafkaProducer,
+                        pale2ReglerClient = pale2ReglerClient,
+                        bucketUploadService = bucketUploadService,
+                        virusScanService = virusScanService,
+                        duplicationCheckService = duplicationCheckService,
+                    )
+                    .run(
+                        inputconsumer = inputconsumer,
+                        session = session,
+                        receiptProducer = receiptProducer,
+                        backoutProducer = backoutProducer,
+                        arenaProducer = arenaProducer,
+                    )
             }
     }
 }

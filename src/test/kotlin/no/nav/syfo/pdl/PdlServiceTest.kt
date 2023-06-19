@@ -46,7 +46,8 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når person ikke finnes`() {
-        coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(ResponseData(null, null), errors = null)
+        coEvery { pdlClient.getPerson(any(), any()) } returns
+            GetPersonResponse(ResponseData(null, null), errors = null)
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
         runBlocking {
@@ -57,16 +58,18 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når navn er tom liste`() {
-        coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
-            ResponseData(
-                hentPerson = HentPerson(
-                    navn = emptyList(),
-                    adressebeskyttelse = null,
+        coEvery { pdlClient.getPerson(any(), any()) } returns
+            GetPersonResponse(
+                ResponseData(
+                    hentPerson =
+                        HentPerson(
+                            navn = emptyList(),
+                            adressebeskyttelse = null,
+                        ),
+                    hentIdenter = HentIdenter(emptyList()),
                 ),
-                hentIdenter = HentIdenter(emptyList()),
-            ),
-            errors = null,
-        )
+                errors = null,
+            )
 
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
@@ -78,16 +81,19 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når navn ikke finnes`() {
-        coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
-            ResponseData(
-                hentPerson = HentPerson(
-                    navn = null,
-                    adressebeskyttelse = null,
+        coEvery { pdlClient.getPerson(any(), any()) } returns
+            GetPersonResponse(
+                ResponseData(
+                    hentPerson =
+                        HentPerson(
+                            navn = null,
+                            adressebeskyttelse = null,
+                        ),
+                    hentIdenter =
+                        HentIdenter(listOf(PdlIdent(ident = "987654321", gruppe = "foo"))),
                 ),
-                hentIdenter = HentIdenter(listOf(PdlIdent(ident = "987654321", gruppe = "foo"))),
-            ),
-            errors = null,
-        )
+                errors = null,
+            )
 
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 
@@ -99,16 +105,18 @@ internal class PdlServiceTest {
 
     @Test
     internal fun `Skal feile når identer ikke finnes`() {
-        coEvery { pdlClient.getPerson(any(), any()) } returns GetPersonResponse(
-            ResponseData(
-                hentPerson = HentPerson(
-                    navn = listOf(Navn("fornavn", "mellomnavn", "etternavn")),
-                    adressebeskyttelse = null,
+        coEvery { pdlClient.getPerson(any(), any()) } returns
+            GetPersonResponse(
+                ResponseData(
+                    hentPerson =
+                        HentPerson(
+                            navn = listOf(Navn("fornavn", "mellomnavn", "etternavn")),
+                            adressebeskyttelse = null,
+                        ),
+                    hentIdenter = HentIdenter(emptyList()),
                 ),
-                hentIdenter = HentIdenter(emptyList()),
-            ),
-            errors = null,
-        )
+                errors = null,
+            )
 
         coEvery { accessTokenClientV2.getAccessTokenV2(any()) } returns "token"
 

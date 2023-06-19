@@ -22,7 +22,13 @@ class SamhandlerService(
         loggingMeta: LoggingMeta,
         legeerklaringId: String,
     ): String? {
-        val tssIdEmottak = smtssClient.findBestTssIdEmottak(fnrLege, legekontorOrgName, loggingMeta, legeerklaringId)
+        val tssIdEmottak =
+            smtssClient.findBestTssIdEmottak(
+                fnrLege,
+                legekontorOrgName,
+                loggingMeta,
+                legeerklaringId
+            )
 
         handleEmottakSubscription(
             tssIdEmottak,
@@ -35,7 +41,12 @@ class SamhandlerService(
             return tssIdEmottak
         }
 
-        return smtssClient.findBestTssInfotrygdId(fnrLege, legekontorOrgName, loggingMeta, legeerklaringId)
+        return smtssClient.findBestTssInfotrygdId(
+            fnrLege,
+            legekontorOrgName,
+            loggingMeta,
+            legeerklaringId
+        )
     }
 
     suspend fun handleEmottakSubscription(
@@ -51,7 +62,10 @@ class SamhandlerService(
             )
             IKKE_OPPDATERT_PARTNERREG.inc()
         } else {
-            if (!receiverBlock.partnerReferanse.isNullOrEmpty() && receiverBlock.partnerReferanse.isNotBlank()) {
+            if (
+                !receiverBlock.partnerReferanse.isNullOrEmpty() &&
+                    receiverBlock.partnerReferanse.isNotBlank()
+            ) {
                 emottakSubscriptionClient.startSubscription(
                     tssIdEmottak,
                     msgHead,

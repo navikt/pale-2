@@ -3,10 +3,10 @@ package no.nav.syfo.util
 import io.mockk.every
 import io.mockk.mockk
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
+import java.sql.Connection
 import no.nav.syfo.Environment
 import no.nav.syfo.db.Database
 import no.nav.syfo.db.DatabaseInterface
-import java.sql.Connection
 
 class TestDB private constructor() {
 

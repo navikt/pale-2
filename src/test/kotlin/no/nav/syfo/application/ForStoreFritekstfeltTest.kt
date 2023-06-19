@@ -10,15 +10,16 @@ import org.junit.jupiter.api.Test
 internal class ForStoreFritekstfeltTest {
     @Test
     internal fun `For stor statusPresens gir riktige verdier`() {
-        val sykdomsopplysninger = Sykdomsopplysninger(
-            hoveddiagnose = null,
-            bidiagnose = emptyList(),
-            arbeidsuforFra = null,
-            sykdomshistorie = "historie",
-            statusPresens = "test1".repeat(3002),
-            borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null,
-        )
+        val sykdomsopplysninger =
+            Sykdomsopplysninger(
+                hoveddiagnose = null,
+                bidiagnose = emptyList(),
+                arbeidsuforFra = null,
+                sykdomshistorie = "historie",
+                statusPresens = "test1".repeat(3002),
+                borNavKontoretVurdereOmDetErEnYrkesskade = false,
+                yrkesSkadeDato = null,
+            )
 
         val fritekstfelt = getFritekstfelt(sykdomsopplysninger)
         val validationResults = getValidationResult(sykdomsopplysninger)
@@ -55,15 +56,16 @@ internal class ForStoreFritekstfeltTest {
 
     @Test
     internal fun `For stor sykdomshistorie gir riktige verdier`() {
-        val sykdomsopplysninger = Sykdomsopplysninger(
-            hoveddiagnose = null,
-            bidiagnose = emptyList(),
-            arbeidsuforFra = null,
-            sykdomshistorie = "test1".repeat(3002),
-            statusPresens = "statusPresens",
-            borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null,
-        )
+        val sykdomsopplysninger =
+            Sykdomsopplysninger(
+                hoveddiagnose = null,
+                bidiagnose = emptyList(),
+                arbeidsuforFra = null,
+                sykdomshistorie = "test1".repeat(3002),
+                statusPresens = "statusPresens",
+                borNavKontoretVurdereOmDetErEnYrkesskade = false,
+                yrkesSkadeDato = null,
+            )
 
         val fritekstfelt = getFritekstfelt(sykdomsopplysninger)
         val validationResults = getValidationResult(sykdomsopplysninger)
@@ -100,21 +102,25 @@ internal class ForStoreFritekstfeltTest {
 
     @Test
     internal fun `For stor statusPresens og sykdomshistorie gir riktige verdier`() {
-        val sykdomsopplysninger = Sykdomsopplysninger(
-            hoveddiagnose = null,
-            bidiagnose = emptyList(),
-            arbeidsuforFra = null,
-            sykdomshistorie = "test1".repeat(3002),
-            statusPresens = "test1".repeat(3002),
-            borNavKontoretVurdereOmDetErEnYrkesskade = false,
-            yrkesSkadeDato = null,
-        )
+        val sykdomsopplysninger =
+            Sykdomsopplysninger(
+                hoveddiagnose = null,
+                bidiagnose = emptyList(),
+                arbeidsuforFra = null,
+                sykdomshistorie = "test1".repeat(3002),
+                statusPresens = "test1".repeat(3002),
+                borNavKontoretVurdereOmDetErEnYrkesskade = false,
+                yrkesSkadeDato = null,
+            )
 
         val fritekstfelt = getFritekstfelt(sykdomsopplysninger)
         val validationResults = getValidationResult(sykdomsopplysninger)
         val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(sykdomsopplysninger)
 
-        assertEquals("Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling", fritekstfelt)
+        assertEquals(
+            "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling",
+            fritekstfelt
+        )
         assertEquals(
             ValidationResult(
                 Status.INVALID,

@@ -10,32 +10,36 @@ fun createArenaInfo(
     mottakid: String,
     fnrbehandler: String,
     legeerklaering: Legeerklaering,
-): ArenaEiaInfo = ArenaEiaInfo().apply {
-    ediloggId = mottakid
-    hendelseStatus = PaleConstant.TILVURDERING.description
-    version = PaleConstant.VERSJON2.description
-    skjemaType = "LE"
-    mappeType = findMappeTypeInLegeerklaering(legeerklaering)
-    pasientData = ArenaEiaInfo.PasientData().apply {
-        fnr = legeerklaering.pasient.fnr
-        tkNummer = ""
+): ArenaEiaInfo =
+    ArenaEiaInfo().apply {
+        ediloggId = mottakid
+        hendelseStatus = PaleConstant.TILVURDERING.description
+        version = PaleConstant.VERSJON2.description
+        skjemaType = "LE"
+        mappeType = findMappeTypeInLegeerklaering(legeerklaering)
+        pasientData =
+            ArenaEiaInfo.PasientData().apply {
+                fnr = legeerklaering.pasient.fnr
+                tkNummer = ""
+            }
+        legeData =
+            ArenaEiaInfo.LegeData().apply {
+                navn = legeerklaering.pasient.formatName()
+                fnr = fnrbehandler
+                tssid = tssId
+            }
+        eiaData =
+            ArenaEiaInfo.EiaData().apply {
+                systemSvar.add(
+                    ArenaEiaInfo.EiaData.SystemSvar().apply {
+                        meldingsPrioritet = 4.toBigInteger()
+                        meldingsNr = 245.toBigInteger()
+                        meldingsTekst = "Legeerklæring er mottatt."
+                        meldingsType = "3"
+                    },
+                )
+            }
     }
-    legeData = ArenaEiaInfo.LegeData().apply {
-        navn = legeerklaering.pasient.formatName()
-        fnr = fnrbehandler
-        tssid = tssId
-    }
-    eiaData = ArenaEiaInfo.EiaData().apply {
-        systemSvar.add(
-            ArenaEiaInfo.EiaData.SystemSvar().apply {
-                meldingsPrioritet = 4.toBigInteger()
-                meldingsNr = 245.toBigInteger()
-                meldingsTekst = "Legeerklæring er mottatt."
-                meldingsType = "3"
-            },
-        )
-    }
-}
 
 fun Pasient.formatName(): String =
     if (mellomnavn == null) {

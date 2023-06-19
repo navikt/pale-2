@@ -1,5 +1,7 @@
 package no.nav.syfo.handlestatus
 
+import javax.jms.MessageProducer
+import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.apprecV1.XMLCV
@@ -21,8 +23,6 @@ import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
-import javax.jms.MessageProducer
-import javax.jms.Session
 
 fun handleStatusINVALID(
     validationResult: ValidationResult,
@@ -39,12 +39,23 @@ fun handleStatusINVALID(
     duplicateCheck: DuplicateCheck,
 ) {
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         validationResult.ruleHits.map { it.toApprecCV() },
-
-        duplicationCheckService, duplicateCheck, loggingMeta, apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        apprecQueueName,
     )
-    sendTilTopic(aivenKafkaProducer, topic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
+    sendTilTopic(
+        aivenKafkaProducer,
+        topic,
+        legeerklaringKafkaMessage,
+        legeerklaeringId,
+        loggingMeta
+    )
 }
 
 fun handleDuplicateLegeerklaringContent(
@@ -65,14 +76,20 @@ fun handleDuplicateLegeerklaringContent(
     )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Duplikat! - Denne legeerklæringen er mottatt tidligere. " +
                     "Skal ikke sendes på nytt.",
             ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
     DUPLICATE_LEGEERKLERING.inc()
@@ -95,11 +112,17 @@ fun handlePatientNotFoundInPDL(
         keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         listOf(
             createApprecError("Pasienten er ikkje registrert i folkeregisteret"),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
     )
     INVALID_MESSAGE_NO_NOTICE.inc()
 }
@@ -119,13 +142,19 @@ fun handleDoctorNotFoundInPDL(
         keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Behandler er ikke registrert i folkeregisteret",
             ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -150,17 +179,29 @@ fun handleFritekstfeltHarForMangeTegn(
         keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Legeerklæringen er avvist fordi den inneholder for mange tegn: " +
                     " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. ",
             ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
     )
 
-    sendTilTopic(aivenKafkaProducer, env.legeerklaringTopic, legeerklaringKafkaMessage, legeerklaeringId, loggingMeta)
+    sendTilTopic(
+        aivenKafkaProducer,
+        env.legeerklaringTopic,
+        legeerklaringKafkaMessage,
+        legeerklaeringId,
+        loggingMeta
+    )
     log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
 
     FOR_MANGE_TEGN.inc()
@@ -181,14 +222,20 @@ fun handleVedleggContainsVirus(
         keyValue("avvistAv", env.applicationName),
     )
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Legeerklæringen er avvist fordi eit eller flere vedlegg kan potensielt inneholde virus" +
                     "sjekk om vedleggene inneholder virus",
             ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
@@ -216,21 +263,28 @@ fun handleTestFnrInProd(
     )
 
     sendReceipt(
-        session, receiptProducer, fellesformat, ApprecStatus.AVVIST,
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
         listOf(
             createApprecError(
                 "Dette fødselsnummeret tilhører en testbruker og skal ikke brukes i produksjon",
             ),
         ),
-        duplicationCheckService, duplicateCheck, loggingMeta, env.apprecQueueName,
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
     )
 
     INVALID_MESSAGE_NO_NOTICE.inc()
     TEST_FNR_IN_PROD.inc()
 }
 
-fun createApprecError(textToTreater: String): XMLCV = XMLCV().apply {
-    dn = textToTreater
-    v = "2.16.578.1.12.4.1.1.8221"
-    s = "X99"
-}
+fun createApprecError(textToTreater: String): XMLCV =
+    XMLCV().apply {
+        dn = textToTreater
+        v = "2.16.578.1.12.4.1.1.8221"
+        s = "X99"
+    }

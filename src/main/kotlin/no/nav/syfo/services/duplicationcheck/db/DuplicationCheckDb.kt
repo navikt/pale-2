@@ -1,16 +1,17 @@
 package no.nav.syfo.services.duplicationcheck.db
 
+import java.sql.ResultSet
+import java.sql.Timestamp
 import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.toList
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import java.sql.ResultSet
-import java.sql.Timestamp
 
 fun DatabaseInterface.persistDuplicateCheck(duplicateCheck: DuplicateCheck) {
     connection.use { connection ->
-        connection.prepareStatement(
-            """
+        connection
+            .prepareStatement(
+                """
             insert into duplicatecheck(
                 legeerklaring_id,
                 sha256_legeerklaering,
@@ -21,23 +22,25 @@ fun DatabaseInterface.persistDuplicateCheck(duplicateCheck: DuplicateCheck) {
                 )
             values (?, ?, ?, ?, ?, ?);
             """,
-        ).use { preparedStatement ->
-            preparedStatement.setString(1, duplicateCheck.legeerklaringId)
-            preparedStatement.setString(2, duplicateCheck.sha256Legeerklaering)
-            preparedStatement.setString(3, duplicateCheck.mottakId)
-            preparedStatement.setString(4, duplicateCheck.msgId)
-            preparedStatement.setTimestamp(5, Timestamp.valueOf(duplicateCheck.mottattDate))
-            preparedStatement.setString(6, duplicateCheck.orgNumber)
-            preparedStatement.executeUpdate()
-        }
+            )
+            .use { preparedStatement ->
+                preparedStatement.setString(1, duplicateCheck.legeerklaringId)
+                preparedStatement.setString(2, duplicateCheck.sha256Legeerklaering)
+                preparedStatement.setString(3, duplicateCheck.mottakId)
+                preparedStatement.setString(4, duplicateCheck.msgId)
+                preparedStatement.setTimestamp(5, Timestamp.valueOf(duplicateCheck.mottattDate))
+                preparedStatement.setString(6, duplicateCheck.orgNumber)
+                preparedStatement.executeUpdate()
+            }
         connection.commit()
     }
 }
 
 fun DatabaseInterface.persistDuplicate(duplicate: Duplicate) {
     connection.use { connection ->
-        connection.prepareStatement(
-            """
+        connection
+            .prepareStatement(
+                """
             insert into duplicate(
                 legeerklaring_id,
                 mottak_id,
@@ -47,45 +50,52 @@ fun DatabaseInterface.persistDuplicate(duplicate: Duplicate) {
                 )
             values (?, ?, ?, ?, ?);
             """,
-        ).use { preparedStatement ->
-            preparedStatement.setString(1, duplicate.legeerklaringId)
-            preparedStatement.setString(2, duplicate.mottakId)
-            preparedStatement.setString(3, duplicate.msgId)
-            preparedStatement.setTimestamp(4, Timestamp.valueOf(duplicate.mottattDate))
-            preparedStatement.setString(5, duplicate.duplicateLegeerklaringId)
-            preparedStatement.executeUpdate()
-        }
+            )
+            .use { preparedStatement ->
+                preparedStatement.setString(1, duplicate.legeerklaringId)
+                preparedStatement.setString(2, duplicate.mottakId)
+                preparedStatement.setString(3, duplicate.msgId)
+                preparedStatement.setTimestamp(4, Timestamp.valueOf(duplicate.mottattDate))
+                preparedStatement.setString(5, duplicate.duplicateLegeerklaringId)
+                preparedStatement.executeUpdate()
+            }
         connection.commit()
     }
 }
 
-fun DatabaseInterface.extractDuplicationCheckBySha256Legeerklaering(sha256Legeerklaering: String): DuplicateCheck? {
+fun DatabaseInterface.extractDuplicationCheckBySha256Legeerklaering(
+    sha256Legeerklaering: String
+): DuplicateCheck? {
     connection.use { connection ->
-        connection.prepareStatement(
-            """
+        connection
+            .prepareStatement(
+                """
                  select * 
                  from duplicatecheck 
                  where sha256_legeerklaering=?;
                 """,
-        ).use { preparedStatement ->
-            preparedStatement.setString(1, sha256Legeerklaering)
-            return preparedStatement.executeQuery().toList { toDuplicateCheck() }.firstOrNull()
-        }
+            )
+            .use { preparedStatement ->
+                preparedStatement.setString(1, sha256Legeerklaering)
+                return preparedStatement.executeQuery().toList { toDuplicateCheck() }.firstOrNull()
+            }
     }
 }
 
 fun DatabaseInterface.extractDuplicateCheckByMottakId(mottakId: String): List<DuplicateCheck> {
     connection.use { connection ->
-        connection.prepareStatement(
-            """
+        connection
+            .prepareStatement(
+                """
                  select * 
                  from duplicatecheck 
                  where mottak_id=?;
                 """,
-        ).use { preparedStatement ->
-            preparedStatement.setString(1, mottakId)
-            return preparedStatement.executeQuery().toList { toDuplicateCheck() }
-        }
+            )
+            .use { preparedStatement ->
+                preparedStatement.setString(1, mottakId)
+                return preparedStatement.executeQuery().toList { toDuplicateCheck() }
+            }
     }
 }
 

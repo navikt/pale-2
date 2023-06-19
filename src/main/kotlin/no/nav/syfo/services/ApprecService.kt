@@ -1,5 +1,7 @@
 package no.nav.syfo.services
 
+import javax.jms.MessageProducer
+import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.apprecV1.XMLCV
@@ -14,8 +16,6 @@ import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.apprecMarshaller
 import no.nav.syfo.util.get
 import no.nav.syfo.util.toString
-import javax.jms.MessageProducer
-import javax.jms.Session
 
 fun sendReceipt(
     session: Session,
@@ -38,7 +38,11 @@ fun sendReceipt(
         },
     )
     APPREC_COUNTER.inc()
-    log.info("Apprec Receipt sent to {}, {}", apprecQueueName, StructuredArguments.fields(loggingMeta))
+    log.info(
+        "Apprec Receipt sent to {}, {}",
+        apprecQueueName,
+        StructuredArguments.fields(loggingMeta)
+    )
 
     duplicationCheckService.persistDuplicationCheck(duplicateCheck)
 }

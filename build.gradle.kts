@@ -34,12 +34,13 @@ val flywayVersion = "9.19.4"
 val hikariVersion = "5.0.1"
 val postgresVersion = "42.6.0"
 val embeddedPostgresVersion = "2.0.4"
+val ktfmtVersion = "0.44"
 
 
 plugins {
     kotlin("jvm") version "1.8.22"
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("org.jmailen.kotlinter") version "3.15.0"
+    id("com.diffplug.spotless") version "6.19.0"
 }
 
 val githubUser: String by project
@@ -154,7 +155,10 @@ tasks {
         }
     }
 
-    "check" {
-        dependsOn("formatKotlin")
+    spotless {
+        kotlin { ktfmt(ktfmtVersion).kotlinlangStyle() }
+        check {
+            dependsOn("spotlessApply")
+        }
     }
 }

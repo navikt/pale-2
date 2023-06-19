@@ -1,5 +1,15 @@
 package no.nav.syfo.application
 
+import java.io.StringReader
+import java.time.ZoneOffset
+import java.util.UUID
+import javax.jms.MessageConsumer
+import javax.jms.MessageProducer
+import javax.jms.Session
+import javax.jms.TextMessage
+import javax.xml.parsers.SAXParserFactory
+import javax.xml.transform.Source
+import javax.xml.transform.sax.SAXSource
 import kotlinx.coroutines.delay
 import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.fields
@@ -56,16 +66,6 @@ import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.xml.sax.InputSource
-import java.io.StringReader
-import java.time.ZoneOffset
-import java.util.UUID
-import javax.jms.MessageConsumer
-import javax.jms.MessageProducer
-import javax.jms.Session
-import javax.jms.TextMessage
-import javax.xml.parsers.SAXParserFactory
-import javax.xml.transform.Source
-import javax.xml.transform.sax.SAXSource
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -95,10 +95,14 @@ class BlockingApplicationRunner(
                 }
 
                 try {
-                    val inputMessageText = when (message) {
-                        is TextMessage -> message.text
-                        else -> throw RuntimeException("Incoming message needs to be a byte message or text message")
-                    }
+                    val inputMessageText =
+                        when (message) {
+                            is TextMessage -> message.text
+                            else ->
+                                throw RuntimeException(
+                                    "Incoming message needs to be a byte message or text message"
+                                )
+                        }
                     val fellesformat = safeUnmarshal(inputMessageText)
 
                     val vedlegg = getVedlegg(fellesformat)
@@ -106,10 +110,11 @@ class BlockingApplicationRunner(
                         VEDLEGG_COUNTER.inc()
                         removeVedleggFromFellesformat(fellesformat)
                     }
-                    val fellesformatText = when (vedlegg.isNotEmpty()) {
-                        true -> fellesformatMarshaller.toString(fellesformat)
-                        false -> inputMessageText
-                    }
+                    val fellesformatText =
+                        when (vedlegg.isNotEmpty()) {
+                            true -> fellesformatMarshaller.toString(fellesformat)
+                            false -> inputMessageText
+                        }
 
                     val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
                     val msgHead = fellesformat.get<XMLMsgHead>()
@@ -127,12 +132,13 @@ class BlockingApplicationRunner(
 
                     val requestLatency = REQUEST_TIME.startTimer()
 
-                    val loggingMeta = LoggingMeta(
-                        legeerklaringId = legeerklaringId,
-                        mottakId = receiverBlock.ediLoggId,
-                        orgNr = extractOrganisationNumberFromSender(fellesformat)?.id,
-                        msgId = msgHead.msgInfo.msgId,
-                    )
+                    val loggingMeta =
+                        LoggingMeta(
+                            legeerklaringId = legeerklaringId,
+                            mottakId = receiverBlock.ediLoggId,
+                            orgNr = extractOrganisationNumberFromSender(fellesformat)?.id,
+                            msgId = msgHead.msgInfo.msgId,
+                        )
 
                     log.info("Received message, {}", fields(loggingMeta))
 
@@ -145,28 +151,35 @@ class BlockingApplicationRunner(
 
                     INCOMING_MESSAGE_COUNTER.inc()
 
-                    val duplicationCheckSha256String = duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
+                    val duplicationCheckSha256String =
+                        duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
 
-                    val mottatDato = receiverBlock.mottattDatotid.toGregorianCalendar().toZonedDateTime()
-                        .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime()
+                    val mottatDato =
+                        receiverBlock.mottattDatotid
+                            .toGregorianCalendar()
+                            .toZonedDateTime()
+                            .withZoneSameInstant(ZoneOffset.UTC)
+                            .toLocalDateTime()
 
-                    val duplicateCheck = DuplicateCheck(
-                        legeerklaringId,
-                        sha256String,
-                        ediLoggId,
-                        msgId,
-                        mottatDato,
-                        legekontorOrgNr,
-                    )
-
-                    if (duplicationCheckSha256String != null) {
-                        val duplicate = Duplicate(
+                    val duplicateCheck =
+                        DuplicateCheck(
                             legeerklaringId,
+                            sha256String,
                             ediLoggId,
                             msgId,
                             mottatDato,
-                            duplicationCheckSha256String.legeerklaringId,
+                            legekontorOrgNr,
                         )
+
+                    if (duplicationCheckSha256String != null) {
+                        val duplicate =
+                            Duplicate(
+                                legeerklaringId,
+                                ediLoggId,
+                                msgId,
+                                mottatDato,
+                                duplicationCheckSha256String.legeerklaringId,
+                            )
                         handleDuplicateLegeerklaringContent(
                             session,
                             receiptProducer,
@@ -221,41 +234,45 @@ class BlockingApplicationRunner(
                             continue@loop
                         }
 
-                        val legeerklaring = legeerklaringxml.toLegeerklaring(
-                            legeerklaringId = legeerklaringId,
-                            fellesformat = fellesformat,
-                            signaturDato = getLocalDateTime(msgHead.msgInfo.genDate),
-                            behandlerNavn = behandler.navn.format(),
-                        )
+                        val legeerklaring =
+                            legeerklaringxml.toLegeerklaring(
+                                legeerklaringId = legeerklaringId,
+                                fellesformat = fellesformat,
+                                signaturDato = getLocalDateTime(msgHead.msgInfo.genDate),
+                                behandlerNavn = behandler.navn.format(),
+                            )
 
-                        val samhandlerPraksisTssId = samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
-                            fnrLege = fnrLege,
-                            legekontorOrgName = legekontorOrgName,
-                            receiverBlock = receiverBlock,
-                            msgHead = msgHead,
-                            loggingMeta = loggingMeta,
-                            legeerklaringId = legeerklaringId,
-                        )
+                        val samhandlerPraksisTssId =
+                            samhandlerService.findSamhandlerPraksisAndHandleEmottakSubscription(
+                                fnrLege = fnrLege,
+                                legekontorOrgName = legekontorOrgName,
+                                receiverBlock = receiverBlock,
+                                msgHead = msgHead,
+                                loggingMeta = loggingMeta,
+                                legeerklaringId = legeerklaringId,
+                            )
 
-                        val receivedLegeerklaering = ReceivedLegeerklaering(
-                            legeerklaering = legeerklaring,
-                            personNrPasient = fnrPasient,
-                            pasientAktoerId = pasient.aktorId,
-                            personNrLege = fnrLege,
-                            legeAktoerId = behandler.aktorId,
-                            navLogId = ediLoggId,
-                            msgId = msgId,
-                            legekontorOrgNr = legekontorOrgNr,
-                            legekontorOrgName = legekontorOrgName,
-                            legekontorHerId = legekontorHerId,
-                            legekontorReshId = legekontorReshId,
-                            mottattDato = mottatDato,
-                            fellesformat = fellesformatText,
-                            tssid = samhandlerPraksisTssId,
-                        )
+                        val receivedLegeerklaering =
+                            ReceivedLegeerklaering(
+                                legeerklaering = legeerklaring,
+                                personNrPasient = fnrPasient,
+                                pasientAktoerId = pasient.aktorId,
+                                personNrLege = fnrLege,
+                                legeAktoerId = behandler.aktorId,
+                                navLogId = ediLoggId,
+                                msgId = msgId,
+                                legekontorOrgNr = legekontorOrgNr,
+                                legekontorOrgName = legekontorOrgName,
+                                legekontorHerId = legekontorHerId,
+                                legekontorReshId = legekontorReshId,
+                                mottattDato = mottatDato,
+                                fellesformat = fellesformatText,
+                                tssid = samhandlerPraksisTssId,
+                            )
 
-                        if (legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 ||
-                            legeerklaring.sykdomsopplysninger.sykdomshistorie.length > 15000
+                        if (
+                            legeerklaring.sykdomsopplysninger.statusPresens.length > 15000 ||
+                                legeerklaring.sykdomsopplysninger.sykdomshistorie.length > 15000
                         ) {
                             handleTooLargeMessage(
                                 receivedLegeerklaering,
@@ -270,7 +287,10 @@ class BlockingApplicationRunner(
                         }
 
                         val validationResult =
-                            pale2ReglerClient.executeRuleValidation(receivedLegeerklaering, loggingMeta)
+                            pale2ReglerClient.executeRuleValidation(
+                                receivedLegeerklaering,
+                                loggingMeta
+                            )
 
                         if (vedlegg.isNotEmpty()) {
                             if (virusScanService.vedleggContainsVirus(vedlegg, loggingMeta)) {
@@ -287,55 +307,64 @@ class BlockingApplicationRunner(
                             }
                         }
 
-                        val vedleggListe: List<String> = if (vedlegg.isNotEmpty()) {
-                            bucketUploadService.uploadVedlegg(
-                                vedlegg = vedlegg,
-                                legeerklaering = receivedLegeerklaering,
-                                xmleiFellesformat = fellesformat,
-                                loggingMeta = loggingMeta,
-                            )
-                        } else {
-                            emptyList()
-                        }
+                        val vedleggListe: List<String> =
+                            if (vedlegg.isNotEmpty()) {
+                                bucketUploadService.uploadVedlegg(
+                                    vedlegg = vedlegg,
+                                    legeerklaering = receivedLegeerklaering,
+                                    xmleiFellesformat = fellesformat,
+                                    loggingMeta = loggingMeta,
+                                )
+                            } else {
+                                emptyList()
+                            }
 
                         val uploadLegeerklaering =
-                            bucketUploadService.uploadLegeerklaering(receivedLegeerklaering, loggingMeta)
+                            bucketUploadService.uploadLegeerklaering(
+                                receivedLegeerklaering,
+                                loggingMeta
+                            )
                         val legeerklaeringKafkaMessage =
-                            LegeerklaeringKafkaMessage(uploadLegeerklaering, validationResult, vedleggListe)
+                            LegeerklaeringKafkaMessage(
+                                uploadLegeerklaering,
+                                validationResult,
+                                vedleggListe
+                            )
 
                         when (validationResult.status) {
-                            Status.OK -> handleStatusOK(
-                                session = session,
-                                receiptProducer = receiptProducer,
-                                fellesformat = fellesformat,
-                                arenaProducer = arenaProducer,
-                                tssId = samhandlerPraksisTssId,
-                                ediLoggId = ediLoggId,
-                                fnrLege = fnrLege,
-                                legeerklaring = legeerklaring,
-                                loggingMeta = loggingMeta,
-                                aivenKafkaProducer = aivenKafkaProducer,
-                                topic = env.legeerklaringTopic,
-                                legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName,
-                                duplicationCheckService = duplicationCheckService,
-                                duplicateCheck = duplicateCheck,
-                            )
-
-                            Status.INVALID -> handleStatusINVALID(
-                                validationResult = validationResult,
-                                session = session,
-                                receiptProducer = receiptProducer,
-                                fellesformat = fellesformat,
-                                loggingMeta = loggingMeta,
-                                aivenKafkaProducer = aivenKafkaProducer,
-                                topic = env.legeerklaringTopic,
-                                legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
-                                apprecQueueName = env.apprecQueueName,
-                                legeerklaeringId = legeerklaring.id,
-                                duplicationCheckService = duplicationCheckService,
-                                duplicateCheck = duplicateCheck,
-                            )
+                            Status.OK ->
+                                handleStatusOK(
+                                    session = session,
+                                    receiptProducer = receiptProducer,
+                                    fellesformat = fellesformat,
+                                    arenaProducer = arenaProducer,
+                                    tssId = samhandlerPraksisTssId,
+                                    ediLoggId = ediLoggId,
+                                    fnrLege = fnrLege,
+                                    legeerklaring = legeerklaring,
+                                    loggingMeta = loggingMeta,
+                                    aivenKafkaProducer = aivenKafkaProducer,
+                                    topic = env.legeerklaringTopic,
+                                    legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
+                                    apprecQueueName = env.apprecQueueName,
+                                    duplicationCheckService = duplicationCheckService,
+                                    duplicateCheck = duplicateCheck,
+                                )
+                            Status.INVALID ->
+                                handleStatusINVALID(
+                                    validationResult = validationResult,
+                                    session = session,
+                                    receiptProducer = receiptProducer,
+                                    fellesformat = fellesformat,
+                                    loggingMeta = loggingMeta,
+                                    aivenKafkaProducer = aivenKafkaProducer,
+                                    topic = env.legeerklaringTopic,
+                                    legeerklaringKafkaMessage = legeerklaeringKafkaMessage,
+                                    apprecQueueName = env.apprecQueueName,
+                                    legeerklaeringId = legeerklaring.id,
+                                    duplicationCheckService = duplicationCheckService,
+                                    duplicateCheck = duplicateCheck,
+                                )
                         }
 
                         val currentRequestLatency = requestLatency.observeDuration()
@@ -345,7 +374,9 @@ class BlockingApplicationRunner(
                             StructuredArguments.keyValue("status", validationResult.status),
                             StructuredArguments.keyValue(
                                 "ruleHits",
-                                validationResult.ruleHits.joinToString(", ", "(", ")") { it.ruleName },
+                                validationResult.ruleHits.joinToString(", ", "(", ")") {
+                                    it.ruleName
+                                },
                             ),
                             StructuredArguments.keyValue("latency", currentRequestLatency),
                             fields(loggingMeta),
@@ -372,16 +403,21 @@ class BlockingApplicationRunner(
         duplicateCheck: DuplicateCheck,
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
-        val forkortedeSykdomsopplysninger = getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
+        val forkortedeSykdomsopplysninger =
+            getForkortedeSykdomsopplysninger(legeerklaering.sykdomsopplysninger)
         val validationResult = getValidationResult(legeerklaering.sykdomsopplysninger)
         val fritekstfelt = getFritekstfelt(legeerklaering.sykdomsopplysninger)
 
         val forkortetReceivedLegeerklaering =
-            receivedLegeerklaering.copy(legeerklaering = legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger))
-        val uploadForkortetLegeerklaering = bucketUploadService.uploadLegeerklaering(
-            forkortetReceivedLegeerklaering,
-            loggingMeta,
-        )
+            receivedLegeerklaering.copy(
+                legeerklaering =
+                    legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger)
+            )
+        val uploadForkortetLegeerklaering =
+            bucketUploadService.uploadLegeerklaering(
+                forkortetReceivedLegeerklaering,
+                loggingMeta,
+            )
         val forkortetLegeerklaeringKafkaMessage =
             LegeerklaeringKafkaMessage(uploadForkortetLegeerklaering, validationResult, emptyList())
 
@@ -402,7 +438,10 @@ class BlockingApplicationRunner(
 }
 
 fun getFritekstfelt(sykdomsopplysninger: Sykdomsopplysninger) =
-    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+    if (
+        sykdomsopplysninger.statusPresens.length > 15000 &&
+            sykdomsopplysninger.sykdomshistorie.length > 15000
+    ) {
         "Punkt 2.6 Status presens og punkt 2.5 Sykehistorie med symptomer og behandling"
     } else if (sykdomsopplysninger.statusPresens.length > 15000) {
         "Punkt 2.6 Status presens"
@@ -411,7 +450,10 @@ fun getFritekstfelt(sykdomsopplysninger: Sykdomsopplysninger) =
     }
 
 fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
-    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+    if (
+        sykdomsopplysninger.statusPresens.length > 15000 &&
+            sykdomsopplysninger.sykdomshistorie.length > 15000
+    ) {
         ValidationResult(
             Status.INVALID,
             listOf(
@@ -450,7 +492,10 @@ fun getValidationResult(sykdomsopplysninger: Sykdomsopplysninger) =
     }
 
 fun getForkortedeSykdomsopplysninger(sykdomsopplysninger: Sykdomsopplysninger) =
-    if (sykdomsopplysninger.statusPresens.length > 15000 && sykdomsopplysninger.sykdomshistorie.length > 15000) {
+    if (
+        sykdomsopplysninger.statusPresens.length > 15000 &&
+            sykdomsopplysninger.sykdomshistorie.length > 15000
+    ) {
         sykdomsopplysninger.copy(
             statusPresens = "FOR STOR",
             sykdomshistorie = "FOR STOR",
@@ -470,9 +515,10 @@ private fun safeUnmarshal(inputMessageText: String): XMLEIFellesformat {
     spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
     spf.isNamespaceAware = true
 
-    val xmlSource: Source = SAXSource(
-        spf.newSAXParser().xmlReader,
-        InputSource(StringReader(inputMessageText)),
-    )
+    val xmlSource: Source =
+        SAXSource(
+            spf.newSAXParser().xmlReader,
+            InputSource(StringReader(inputMessageText)),
+        )
     return fellesformatUnmarshaller.unmarshal(xmlSource) as XMLEIFellesformat
 }

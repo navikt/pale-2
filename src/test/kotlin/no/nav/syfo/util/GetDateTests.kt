@@ -1,8 +1,8 @@
 package no.nav.syfo.util
 
+import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.time.LocalDateTime
 
 internal class GetDateTests {
 

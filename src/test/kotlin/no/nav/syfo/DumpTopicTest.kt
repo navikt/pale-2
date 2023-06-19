@@ -1,5 +1,6 @@
 package no.nav.syfo
 
+import java.io.StringReader
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
@@ -9,17 +10,20 @@ import no.nav.syfo.util.get
 import no.nav.syfo.util.getFileAsString
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.io.StringReader
 
 internal class DumpTopicTest {
 
     @Test
     internal fun `Skal kunne deserialisere melding fra dumptopic`() {
         val fellesformatOriginal =
-            fellesformatUnmarshaller.unmarshal(StringReader(getFileAsString("src/test/resources/fellesformat_le.xml"))) as XMLEIFellesformat
+            fellesformatUnmarshaller.unmarshal(
+                StringReader(getFileAsString("src/test/resources/fellesformat_le.xml"))
+            ) as XMLEIFellesformat
         val fellesformatSomString = fellesformatTilString(fellesformatOriginal)
 
-        val fellesformat = fellesformatUnmarshaller.unmarshal(StringReader(fellesformatSomString)) as XMLEIFellesformat
+        val fellesformat =
+            fellesformatUnmarshaller.unmarshal(StringReader(fellesformatSomString))
+                as XMLEIFellesformat
 
         val receiverBlock = fellesformat.get<XMLMottakenhetBlokk>()
         val msgHead = fellesformat.get<XMLMsgHead>()

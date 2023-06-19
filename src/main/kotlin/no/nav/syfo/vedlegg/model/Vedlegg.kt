@@ -25,7 +25,8 @@ data class BehandlerInfo(val fornavn: String?, val etternavn: String?, val fnr: 
 
 fun XMLEIFellesformat.getBehandlerInfo(fnr: String): BehandlerInfo {
     val fornavn = get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional?.givenName
-    val etternavn = get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional?.familyName
+    val etternavn =
+        get<XMLMsgHead>().msgInfo?.sender?.organisation?.healthcareProfessional?.familyName
     return BehandlerInfo(
         fornavn = fornavn,
         etternavn = etternavn,

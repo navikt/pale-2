@@ -1,5 +1,6 @@
 package no.nav.syfo.services.duplicationcheck
 
+import java.security.MessageDigest
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.objectMapper
@@ -9,7 +10,6 @@ import no.nav.syfo.services.duplicationcheck.db.persistDuplicate
 import no.nav.syfo.services.duplicationcheck.db.persistDuplicateCheck
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import java.security.MessageDigest
 
 class DuplicationCheckService(private val database: DatabaseInterface) {
     fun persistDuplicationCheck(
@@ -30,9 +30,10 @@ class DuplicationCheckService(private val database: DatabaseInterface) {
         if (duplicationCheckSha256Legeerklaering != null) {
             return duplicationCheckSha256Legeerklaering
         } else {
-            val duplicationCheckMottakId = getLatestDuplicationCheck(
-                database.extractDuplicateCheckByMottakId(mottakId),
-            )
+            val duplicationCheckMottakId =
+                getLatestDuplicationCheck(
+                    database.extractDuplicateCheckByMottakId(mottakId),
+                )
             if (duplicationCheckMottakId != null) {
                 return duplicationCheckMottakId
             }
@@ -49,6 +50,8 @@ fun getLatestDuplicationCheck(duplicateChecks: List<DuplicateCheck>): DuplicateC
 }
 
 fun sha256hashstring(legeerklaring: Legeerklaring): String =
-    MessageDigest.getInstance("SHA-256")
-        .digest(objectMapper.writeValueAsBytes(legeerklaring))
-        .fold("") { str, it -> str + "%02x".format(it) }
+    MessageDigest.getInstance("SHA-256").digest(objectMapper.writeValueAsBytes(legeerklaring)).fold(
+        ""
+    ) { str, it ->
+        str + "%02x".format(it)
+    }

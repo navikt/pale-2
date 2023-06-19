@@ -6,6 +6,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import java.io.ByteArrayOutputStream
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
@@ -14,7 +15,6 @@ import no.nav.syfo.helpers.retry
 import no.nav.syfo.log
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.senderMarshaller
-import java.io.ByteArrayOutputStream
 
 class EmottakSubscriptionClient(
     private val endpointUrl: String,
@@ -22,7 +22,8 @@ class EmottakSubscriptionClient(
     private val resourceId: String,
     private val httpClient: HttpClient,
 ) {
-    // This functionality is only necessary due to sending out dialogMelding and oppfølgingsplan to doctor
+    // This functionality is only necessary due to sending out dialogMelding and oppfølgingsplan to
+    // doctor
     suspend fun startSubscription(
         tssIdent: String,
         msgHead: XMLMsgHead,
@@ -53,10 +54,12 @@ class EmottakSubscriptionClient(
     }
 
     private fun convertSenderToBase64(sender: XMLSender): ByteArray =
-        ByteArrayOutputStream().use {
-            senderMarshaller.marshal(sender, it)
-            it
-        }.toByteArray()
+        ByteArrayOutputStream()
+            .use {
+                senderMarshaller.marshal(sender, it)
+                it
+            }
+            .toByteArray()
 }
 
 data class StartSubscriptionRequest(

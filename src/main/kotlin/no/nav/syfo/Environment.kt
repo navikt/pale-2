@@ -14,7 +14,8 @@ data class Environment(
     val inputBackoutQueueName: String = getEnvVar("MQ_INPUT_BOQ_QUEUE_NAME"),
     val arenaQueueName: String = getEnvVar("ARENA_OUTBOUND_QUEUENAME"),
     val cluster: String = getEnvVar("NAIS_CLUSTER_NAME"),
-    val pale2ReglerEndpointURL: String = getEnvVar("PALE_2_REGLER_ENDPOINT_URL", "http://pale-2-regler"),
+    val pale2ReglerEndpointURL: String =
+        getEnvVar("PALE_2_REGLER_ENDPOINT_URL", "http://pale-2-regler"),
     val pale2ReglerApiScope: String = getEnvVar("PALE_2_REGLER_API_SCOPE"),
     val pdlGraphqlPath: String = getEnvVar("PDL_GRAPHQL_PATH"),
     val pdlScope: String = getEnvVar("PDL_SCOPE"),
@@ -26,7 +27,8 @@ data class Environment(
     val legeerklaringTopic: String = "teamsykmelding.legeerklaering",
     val smgcpProxyUrl: String = getEnvVar("SMGCP_PROXY_URL"),
     val smgcpProxyScope: String = getEnvVar("SMGCP_PROXY_SCOPE"),
-    val clamAvEndpointUrl: String = getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.nais-system.svc.cluster.local"),
+    val clamAvEndpointUrl: String =
+        getEnvVar("CLAMAV_ENDPOINT_URL", "http://clamav.nais-system.svc.cluster.local"),
     val databaseUsername: String = getEnvVar("DB_USERNAME"),
     val databasePassword: String = getEnvVar("DB_PASSWORD"),
     val dbHost: String = getEnvVar("DB_HOST"),
@@ -42,4 +44,5 @@ data class VaultServiceUser(
 )
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
-    System.getenv(varName) ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")
+    System.getenv(varName)
+        ?: defaultValue ?: throw RuntimeException("Missing required variable \"$varName\"")

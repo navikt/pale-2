@@ -21,17 +21,23 @@ class PdlClient(
     private val behandlingsnummer = "B229"
 
     suspend fun getPerson(fnr: String, accestoken: String): GetPersonResponse {
-        val getPersonRequest = GetPersonRequest(query = graphQlQuery, variables = GetPersonVariables(ident = fnr))
+        val getPersonRequest =
+            GetPersonRequest(query = graphQlQuery, variables = GetPersonVariables(ident = fnr))
         return getGraphQLRespnse(getPersonRequest, accestoken)
     }
 
-    private suspend inline fun <reified R> getGraphQLRespnse(graphQlBody: Any, accestoken: String): R {
-        return httpClient.post(basePath) {
-            setBody(graphQlBody)
-            header(HttpHeaders.Authorization, "Bearer $accestoken")
-            header(temaHeader, tema)
-            header(HttpHeaders.ContentType, "application/json")
-            header(behandlingsnummerHeader, behandlingsnummer)
-        }.body()
+    private suspend inline fun <reified R> getGraphQLRespnse(
+        graphQlBody: Any,
+        accestoken: String
+    ): R {
+        return httpClient
+            .post(basePath) {
+                setBody(graphQlBody)
+                header(HttpHeaders.Authorization, "Bearer $accestoken")
+                header(temaHeader, tema)
+                header(HttpHeaders.ContentType, "application/json")
+                header(behandlingsnummerHeader, behandlingsnummer)
+            }
+            .body()
     }
 }

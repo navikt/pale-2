@@ -11,16 +11,20 @@ fun removeVedleggFromFellesformat(fellesformat: XMLEIFellesformat) {
 }
 
 fun getVedlegg(fellesformat: XMLEIFellesformat): List<Vedlegg> {
-    return fellesformat.get<XMLMsgHead>().document.filter { it.documentConnection?.v == "V" }.map {
-        val description = it.refDoc.description
-        val type = it.refDoc.mimeType
+    return fellesformat
+        .get<XMLMsgHead>()
+        .document
+        .filter { it.documentConnection?.v == "V" }
+        .map {
+            val description = it.refDoc.description
+            val type = it.refDoc.mimeType
 
-        if (it.refDoc.content.any.size > 1) {
-            throw RuntimeException("Unsupported content")
+            if (it.refDoc.content.any.size > 1) {
+                throw RuntimeException("Unsupported content")
+            }
+            val contentElement = it.refDoc.content.any.first() as Element
+            val contentType = contentElement.localName
+            val content = contentElement.textContent
+            Vedlegg(Content(contentType, content), type, description)
         }
-        val contentElement = it.refDoc.content.any.first() as Element
-        val contentType = contentElement.localName
-        val content = contentElement.textContent
-        Vedlegg(Content(contentType, content), type, description)
-    }
 }
