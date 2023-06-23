@@ -1,9 +1,9 @@
-package no.nav.syfo.services
+package no.nav.syfo.services.virusscanservice
 
 import java.util.Base64
 import net.logstash.logback.argument.StructuredArguments
-import no.nav.syfo.client.ClamAvClient
-import no.nav.syfo.client.Status
+import no.nav.syfo.client.clamav.ClamAvClient
+import no.nav.syfo.client.clamav.Status
 import no.nav.syfo.log
 import no.nav.syfo.metrics.VEDLEGG_OVER_300_MEGABYTE_COUNTER
 import no.nav.syfo.util.LoggingMeta

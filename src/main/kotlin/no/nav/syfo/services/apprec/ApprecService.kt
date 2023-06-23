@@ -1,4 +1,4 @@
-package no.nav.syfo.services
+package no.nav.syfo.services.apprec
 
 import javax.jms.MessageProducer
 import javax.jms.Session

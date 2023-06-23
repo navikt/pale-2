@@ -19,11 +19,3 @@ fun Navn.format(): String =
     } else {
         "$fornavn $etternavn"
     }
-
-fun PdlPerson.getDiskresjonskode(): String? {
-    return when (adressebeskyttelse) {
-        "STRENGT_FORTROLIG" -> "SPSF"
-        "FORTROLIG" -> "SPFO"
-        else -> null
-    }
-}

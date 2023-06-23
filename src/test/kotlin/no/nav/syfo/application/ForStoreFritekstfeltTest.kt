@@ -1,5 +1,8 @@
 package no.nav.syfo.application
 
+import no.nav.syfo.getForkortedeSykdomsopplysninger
+import no.nav.syfo.getFritekstfelt
+import no.nav.syfo.getValidationResult
 import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Status
 import no.nav.syfo.model.Sykdomsopplysninger

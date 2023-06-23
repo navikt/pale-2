@@ -1,4 +1,4 @@
-package no.nav.syfo.client
+package no.nav.syfo.client.arena
 
 import no.nav.helse.arenainfo.ArenaEiaInfo
 import no.nav.syfo.model.Legeerklaering

@@ -7,11 +7,11 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Base64
 import kotlinx.coroutines.runBlocking
-import no.nav.syfo.client.ClamAvClient
-import no.nav.syfo.client.ScanResult
-import no.nav.syfo.client.Status
-import no.nav.syfo.services.VirusScanService
-import no.nav.syfo.services.fileSizeLagerThan300MegaBytes
+import no.nav.syfo.client.clamav.ClamAvClient
+import no.nav.syfo.client.clamav.ScanResult
+import no.nav.syfo.client.clamav.Status
+import no.nav.syfo.services.virusscanservice.VirusScanService
+import no.nav.syfo.services.virusscanservice.fileSizeLagerThan300MegaBytes
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.vedlegg.model.Content
 import no.nav.syfo.vedlegg.model.Vedlegg

@@ -1,7 +1,7 @@
 package no.nav.syfo.pdl.service
 
 import net.logstash.logback.argument.StructuredArguments
-import no.nav.syfo.client.AccessTokenClientV2
+import no.nav.syfo.client.accesstoken.AccessTokenClientV2
 import no.nav.syfo.log
 import no.nav.syfo.pdl.client.PdlClient
 import no.nav.syfo.pdl.model.Navn

@@ -2,7 +2,7 @@ package no.nav.syfo
 
 import no.nav.syfo.mq.MqConfig
 
-data class Environment(
+data class EnvironmentVariables(
     val applicationName: String = getEnvVar("NAIS_APP_NAME", "pale-2"),
     val applicationPort: Int = getEnvVar("APPLICATION_PORT", "8080").toInt(),
     override val mqHostname: String = getEnvVar("MQ_HOST_NAME"),
@@ -38,7 +38,7 @@ data class Environment(
     val smtssApiScope: String = getEnvVar("SMTSS_API_SCOPE"),
 ) : MqConfig
 
-data class VaultServiceUser(
+data class ServiceUser(
     val serviceuserUsername: String = getEnvVar("SERVICEUSER_USERNAME"),
     val serviceuserPassword: String = getEnvVar("SERVICEUSER_PASSWORD"),
 )
