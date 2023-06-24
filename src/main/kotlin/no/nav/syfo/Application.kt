@@ -9,34 +9,30 @@ import com.google.auth.Credentials
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
-import io.ktor.client.HttpClient
-import io.ktor.client.HttpClientConfig
-import io.ktor.client.engine.apache.Apache
-import io.ktor.client.engine.apache.ApacheEngineConfig
-import io.ktor.client.plugins.HttpRequestRetry
-import io.ktor.client.plugins.HttpResponseValidator
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.network.sockets.SocketTimeoutException
-import io.ktor.serialization.jackson.jackson
+import io.ktor.client.*
+import io.ktor.client.engine.apache.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.network.sockets.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.routing.*
 import io.prometheus.client.hotspot.DefaultExports
 import java.io.FileInputStream
+import java.util.concurrent.TimeUnit
 import javax.jms.Session
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import no.nav.syfo.application.ApplicationServer
-import no.nav.syfo.application.ApplicationState
-import no.nav.syfo.application.BlockingApplicationRunner
-import no.nav.syfo.application.createApplicationEngine
-import no.nav.syfo.application.exception.ServiceUnavailableException
-import no.nav.syfo.client.AccessTokenClientV2
-import no.nav.syfo.client.ClamAvClient
-import no.nav.syfo.client.EmottakSubscriptionClient
-import no.nav.syfo.client.Pale2ReglerClient
-import no.nav.syfo.client.SmtssClient
+import no.nav.syfo.client.accesstoken.AccessTokenClientV2
+import no.nav.syfo.client.clamav.ClamAvClient
+import no.nav.syfo.client.emottaksubscription.EmottakSubscriptionClient
+import no.nav.syfo.client.pale2regler.Pale2ReglerClient
+import no.nav.syfo.client.smtss.SmtssClient
 import no.nav.syfo.db.Database
 import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
@@ -45,11 +41,14 @@ import no.nav.syfo.mq.MqTlsUtils
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
+import no.nav.syfo.nais.isalive.naisIsAliveRoute
+import no.nav.syfo.nais.isready.naisIsReadyRoute
+import no.nav.syfo.nais.prometheus.naisPrometheusRoute
 import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
-import no.nav.syfo.services.SamhandlerService
-import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.samhandlerservice.SamhandlerService
+import no.nav.syfo.services.virusscanservice.VirusScanService
 import no.nav.syfo.util.JacksonKafkaSerializer
 import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
@@ -67,25 +66,40 @@ val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
 val secureLog: Logger = LoggerFactory.getLogger("securelog")
 
-@DelicateCoroutinesApi
 fun main() {
-    val env = Environment()
-    val database = Database(env)
 
-    val serviceUser = VaultServiceUser()
+    val embeddedServer =
+        embeddedServer(
+            Netty,
+            port = EnvironmentVariables().applicationPort,
+            module = Application::module,
+        )
+    Runtime.getRuntime()
+        .addShutdownHook(
+            Thread {
+                embeddedServer.stop(TimeUnit.SECONDS.toMillis(10), TimeUnit.SECONDS.toMillis(10))
+            },
+        )
+    embeddedServer.start(true)
+}
+
+fun Application.module() {
+    val environmentVariables = EnvironmentVariables()
+    val database = Database(environmentVariables)
+    val serviceUser = ServiceUser()
+
+    val applicationState = ApplicationState()
 
     MqTlsUtils.getMqTlsConfig().forEach { key, value ->
         System.setProperty(key as String, value as String)
     }
 
-    val applicationState = ApplicationState()
-    val applicationEngine =
-        createApplicationEngine(
-            env,
-            applicationState,
-        )
+    environment.monitor.subscribe(ApplicationStopped) {
+        applicationState.ready = false
+        applicationState.alive = false
+    }
 
-    val applicationServer = ApplicationServer(applicationEngine, applicationState)
+    configureRouting(applicationState = applicationState)
 
     DefaultExports.initialize()
 
@@ -106,87 +120,99 @@ fun main() {
                 }
             }
         }
-        expectSuccess = false
-    }
-    val retryConfig: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
-        config().apply {
-            install(HttpRequestRetry) {
-                constantDelay(50, 0, false)
-                retryOnExceptionIf(3) { request, throwable ->
-                    log.warn("Caught exception ${throwable.message}, for url ${request.url}")
-                    true
-                }
-                retryIf(maxRetries) { request, response ->
-                    if (response.status.value.let { it in 500..599 }) {
-                        log.warn(
-                            "Retrying for statuscode ${response.status.value}, for url ${request.url}"
-                        )
-                        true
-                    } else {
-                        false
-                    }
-                }
+
+        install(HttpRequestRetry) {
+            constantDelay(50, 0, false)
+            retryOnExceptionIf(3) { request, throwable ->
+                no.nav.syfo.log.warn(
+                    "Caught exception ${throwable.message}, for url ${request.url}"
+                )
+                true
             }
-            install(HttpTimeout) {
-                socketTimeoutMillis = 30_000
-                connectTimeoutMillis = 30_000
-                requestTimeoutMillis = 30_000
+            retryIf(maxRetries) { request, response ->
+                if (response.status.value.let { it in 500..599 }) {
+                    no.nav.syfo.log.warn(
+                        "Retrying for statuscode ${response.status.value}, for url ${request.url}"
+                    )
+                    true
+                } else {
+                    false
+                }
             }
         }
+        install(HttpTimeout) {
+            socketTimeoutMillis = 30_000
+            connectTimeoutMillis = 30_000
+            requestTimeoutMillis = 30_000
+        }
+        expectSuccess = false
     }
 
     val httpClient = HttpClient(Apache, config)
-    val httpClientWithRetry = HttpClient(Apache, retryConfig)
 
     val accessTokenClientV2 =
         AccessTokenClientV2(
-            env.aadAccessTokenV2Url,
-            env.clientIdV2,
-            env.clientSecretV2,
-            httpClientWithRetry
+            environmentVariables.aadAccessTokenV2Url,
+            environmentVariables.clientIdV2,
+            environmentVariables.clientSecretV2,
+            httpClient
         )
 
     val pdlPersonService =
-        PdlFactory.getPdlService(env, httpClient, accessTokenClientV2, env.pdlScope)
+        PdlFactory.getPdlService(
+            environmentVariables,
+            httpClient,
+            accessTokenClientV2,
+            environmentVariables.pdlScope
+        )
 
     val emottakSubscriptionClient =
         EmottakSubscriptionClient(
-            env.smgcpProxyUrl,
+            environmentVariables.smgcpProxyUrl,
             accessTokenClientV2,
-            env.smgcpProxyScope,
-            httpClientWithRetry
+            environmentVariables.smgcpProxyScope,
+            httpClient
         )
 
     val smtssClient =
-        SmtssClient(env.smtssApiUrl, accessTokenClientV2, env.smtssApiScope, httpClient)
+        SmtssClient(
+            environmentVariables.smtssApiUrl,
+            accessTokenClientV2,
+            environmentVariables.smtssApiScope,
+            httpClient
+        )
     val samhandlerService = SamhandlerService(smtssClient, emottakSubscriptionClient)
 
     val aivenKakfaProducerConfig =
         KafkaUtils.getAivenKafkaConfig()
-            .toProducerConfig(env.applicationName, valueSerializer = JacksonKafkaSerializer::class)
+            .toProducerConfig(
+                environmentVariables.applicationName,
+                valueSerializer = JacksonKafkaSerializer::class
+            )
     val aivenKafkaProducer =
         KafkaProducer<String, LegeerklaeringKafkaMessage>(aivenKakfaProducerConfig)
 
     val pale2ReglerClient =
         Pale2ReglerClient(
-            env.pale2ReglerEndpointURL,
-            httpClientWithRetry,
+            environmentVariables.pale2ReglerEndpointURL,
+            httpClient,
             accessTokenClientV2,
-            env.pale2ReglerApiScope
+            environmentVariables.pale2ReglerApiScope
         )
 
     val paleVedleggStorageCredentials: Credentials =
         GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/pale2-google-creds.json"))
     val paleVedleggStorage: Storage =
         StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
+
     val paleVedleggBucketUploadService =
         BucketUploadService(
-            env.legeerklaeringBucketName,
-            env.paleVedleggBucketName,
+            environmentVariables.legeerklaeringBucketName,
+            environmentVariables.paleVedleggBucketName,
             paleVedleggStorage
         )
 
-    val clamAvClient = ClamAvClient(httpClientWithRetry, env.clamAvEndpointUrl)
+    val clamAvClient = ClamAvClient(httpClient, environmentVariables.clamAvEndpointUrl)
 
     val virusScanService = VirusScanService(clamAvClient)
 
@@ -194,7 +220,7 @@ fun main() {
 
     launchListeners(
         applicationState,
-        env,
+        environmentVariables,
         samhandlerService,
         pdlPersonService,
         serviceUser,
@@ -204,11 +230,9 @@ fun main() {
         virusScanService,
         duplicationCheckService,
     )
-
-    applicationServer.start()
 }
 
-@DelicateCoroutinesApi
+@OptIn(DelicateCoroutinesApi::class)
 fun createListener(
     applicationState: ApplicationState,
     action: suspend CoroutineScope.() -> Unit
@@ -224,13 +248,12 @@ fun createListener(
         }
     }
 
-@DelicateCoroutinesApi
 fun launchListeners(
     applicationState: ApplicationState,
-    env: Environment,
+    environmentVariables: EnvironmentVariables,
     samhandlerService: SamhandlerService,
     pdlPersonService: PdlPersonService,
-    serviceUser: VaultServiceUser,
+    serviceUser: ServiceUser,
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
     pale2ReglerClient: Pale2ReglerClient,
     bucketUploadService: BucketUploadService,
@@ -238,20 +261,21 @@ fun launchListeners(
     duplicationCheckService: DuplicationCheckService,
 ) {
     createListener(applicationState) {
-        connectionFactory(env)
+        connectionFactory(environmentVariables)
             .createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
             .use { connection ->
                 connection.start()
                 val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
 
-                val inputconsumer = session.consumerForQueue(env.inputQueueName)
-                val receiptProducer = session.producerForQueue(env.apprecQueueName)
-                val backoutProducer = session.producerForQueue(env.inputBackoutQueueName)
-                val arenaProducer = session.producerForQueue(env.arenaQueueName)
+                val inputconsumer = session.consumerForQueue(environmentVariables.inputQueueName)
+                val receiptProducer = session.producerForQueue(environmentVariables.apprecQueueName)
+                val backoutProducer =
+                    session.producerForQueue(environmentVariables.inputBackoutQueueName)
+                val arenaProducer = session.producerForQueue(environmentVariables.arenaQueueName)
 
                 BlockingApplicationRunner(
                         applicationState = applicationState,
-                        env = env,
+                        env = environmentVariables,
                         samhandlerService = samhandlerService,
                         pdlPersonService = pdlPersonService,
                         aivenKafkaProducer = aivenKafkaProducer,
@@ -270,3 +294,18 @@ fun launchListeners(
             }
     }
 }
+
+fun Application.configureRouting(applicationState: ApplicationState) {
+    routing {
+        naisIsAliveRoute(applicationState)
+        naisIsReadyRoute(applicationState)
+        naisPrometheusRoute()
+    }
+}
+
+data class ApplicationState(
+    var alive: Boolean = true,
+    var ready: Boolean = true,
+)
+
+class ServiceUnavailableException(message: String?) : Exception(message)

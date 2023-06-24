@@ -1,4 +1,4 @@
-package no.nav.syfo.client
+package no.nav.syfo.client.pale2regler
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -11,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import java.io.IOException
 import net.logstash.logback.argument.StructuredArguments
+import no.nav.syfo.client.accesstoken.AccessTokenClientV2
 import no.nav.syfo.log
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.ValidationResult

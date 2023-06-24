@@ -1,4 +1,4 @@
-package no.nav.syfo.client
+package no.nav.syfo.client.emottaksubscription
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
@@ -11,7 +11,7 @@ import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.helse.msgHead.XMLSender
-import no.nav.syfo.helpers.retry
+import no.nav.syfo.client.accesstoken.AccessTokenClientV2
 import no.nav.syfo.log
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.senderMarshaller
@@ -32,24 +32,19 @@ class EmottakSubscriptionClient(
         loggingMeta: LoggingMeta,
     ) {
         log.info("Oppdate subscription emottak for {}", StructuredArguments.fields(loggingMeta))
-        retry(
-            callName = "start_subscription_emottak",
-            retryIntervals = arrayOf(500L, 1000L, 3000L, 5000L, 10000L),
-            legalExceptions = arrayOf(Exception::class),
-        ) {
-            val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
-            httpClient.post("$endpointUrl/emottak/startsubscription") {
-                contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer $accessToken")
-                header("Nav-Call-Id", msgId)
-                setBody(
-                    StartSubscriptionRequest(
-                        tssIdent = tssIdent,
-                        sender = convertSenderToBase64(msgHead.msgInfo.sender),
-                        partnerreferanse = receiverBlock.partnerReferanse.toInt(),
-                    ),
-                )
-            }
+
+        val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
+        httpClient.post("$endpointUrl/emottak/startsubscription") {
+            contentType(ContentType.Application.Json)
+            header("Authorization", "Bearer $accessToken")
+            header("Nav-Call-Id", msgId)
+            setBody(
+                StartSubscriptionRequest(
+                    tssIdent = tssIdent,
+                    sender = convertSenderToBase64(msgHead.msgInfo.sender),
+                    partnerreferanse = receiverBlock.partnerReferanse.toInt(),
+                ),
+            )
         }
     }
 

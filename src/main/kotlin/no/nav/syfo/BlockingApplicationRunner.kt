@@ -1,4 +1,4 @@
-package no.nav.syfo.application
+package no.nav.syfo
 
 import java.io.StringReader
 import java.time.ZoneOffset
@@ -16,8 +16,7 @@ import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.Environment
-import no.nav.syfo.client.Pale2ReglerClient
+import no.nav.syfo.client.pale2regler.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateLegeerklaringContent
 import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
@@ -26,7 +25,6 @@ import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.handlestatus.handleVedleggContainsVirus
-import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
@@ -40,13 +38,12 @@ import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.pdl.model.format
 import no.nav.syfo.pdl.service.PdlPersonService
-import no.nav.syfo.secureLog
-import no.nav.syfo.services.SamhandlerService
-import no.nav.syfo.services.VirusScanService
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
+import no.nav.syfo.services.samhandlerservice.SamhandlerService
+import no.nav.syfo.services.virusscanservice.VirusScanService
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
@@ -69,7 +66,7 @@ import org.xml.sax.InputSource
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
-    private val env: Environment,
+    private val env: EnvironmentVariables,
     private val samhandlerService: SamhandlerService,
     private val pdlPersonService: PdlPersonService,
     private val aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,

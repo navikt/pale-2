@@ -7,11 +7,11 @@ import java.net.ConnectException
 import java.net.SocketException
 import java.sql.Connection
 import java.sql.ResultSet
-import no.nav.syfo.Environment
+import no.nav.syfo.EnvironmentVariables
 import no.nav.syfo.log
 import org.flywaydb.core.Flyway
 
-class Database(private val env: Environment, retries: Long = 30, sleepTime: Long = 1_000) :
+class Database(private val env: EnvironmentVariables, retries: Long = 30, sleepTime: Long = 1_000) :
     DatabaseInterface {
     private val dataSource: HikariDataSource
 

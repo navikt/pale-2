@@ -5,13 +5,13 @@ import javax.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.apprec.ApprecStatus
-import no.nav.syfo.client.createArenaInfo
+import no.nav.syfo.client.arena.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.services.apprec.sendReceipt
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.arenaMarshaller
 import no.nav.syfo.util.toString

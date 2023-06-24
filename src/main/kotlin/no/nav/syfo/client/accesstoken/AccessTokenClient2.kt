@@ -1,4 +1,4 @@
-package no.nav.syfo.client
+package no.nav.syfo.client.accesstoken
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import io.ktor.client.HttpClient

@@ -6,7 +6,7 @@ import net.logstash.logback.argument.StructuredArguments.fields
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.apprecV1.XMLCV
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
-import no.nav.syfo.Environment
+import no.nav.syfo.EnvironmentVariables
 import no.nav.syfo.apprec.ApprecStatus
 import no.nav.syfo.apprec.toApprecCV
 import no.nav.syfo.log
@@ -17,10 +17,10 @@ import no.nav.syfo.metrics.TEST_FNR_IN_PROD
 import no.nav.syfo.metrics.VEDLEGG_VIRUS_COUNTER
 import no.nav.syfo.model.ValidationResult
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
+import no.nav.syfo.services.apprec.sendReceipt
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
-import no.nav.syfo.services.sendReceipt
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 
@@ -63,7 +63,7 @@ fun handleDuplicateLegeerklaringContent(
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
     loggingMeta: LoggingMeta,
-    env: Environment,
+    env: EnvironmentVariables,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
     duplicate: Duplicate,
@@ -101,7 +101,7 @@ fun handlePatientNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    env: Environment,
+    env: EnvironmentVariables,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
@@ -131,7 +131,7 @@ fun handleDoctorNotFoundInPDL(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    env: Environment,
+    env: EnvironmentVariables,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
@@ -164,7 +164,7 @@ fun handleFritekstfeltHarForMangeTegn(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    env: Environment,
+    env: EnvironmentVariables,
     loggingMeta: LoggingMeta,
     fritekstfelt: String,
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
@@ -211,7 +211,7 @@ fun handleVedleggContainsVirus(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    env: Environment,
+    env: EnvironmentVariables,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
@@ -246,7 +246,7 @@ fun handleTestFnrInProd(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    env: Environment,
+    env: EnvironmentVariables,
     loggingMeta: LoggingMeta,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,

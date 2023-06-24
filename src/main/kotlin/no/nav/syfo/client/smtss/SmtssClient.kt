@@ -1,4 +1,4 @@
-package no.nav.syfo.client
+package no.nav.syfo.client.smtss
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -9,6 +9,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import net.logstash.logback.argument.StructuredArguments
+import no.nav.syfo.client.accesstoken.AccessTokenClientV2
 import no.nav.syfo.log
 import no.nav.syfo.util.LoggingMeta
 

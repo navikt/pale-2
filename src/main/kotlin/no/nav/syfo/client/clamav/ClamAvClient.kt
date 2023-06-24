@@ -1,4 +1,4 @@
-package no.nav.syfo.client
+package no.nav.syfo.client.clamav
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body

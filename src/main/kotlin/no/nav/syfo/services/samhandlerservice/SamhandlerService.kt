@@ -1,10 +1,10 @@
-package no.nav.syfo.services
+package no.nav.syfo.services.samhandlerservice
 
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
 import no.nav.helse.msgHead.XMLMsgHead
-import no.nav.syfo.client.EmottakSubscriptionClient
-import no.nav.syfo.client.SmtssClient
+import no.nav.syfo.client.emottaksubscription.EmottakSubscriptionClient
+import no.nav.syfo.client.smtss.SmtssClient
 import no.nav.syfo.log
 import no.nav.syfo.metrics.IKKE_OPPDATERT_PARTNERREG
 import no.nav.syfo.util.LoggingMeta
