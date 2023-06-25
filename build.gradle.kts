@@ -104,7 +104,6 @@ dependencies {
     implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
-    implementation("no.nav.syfo:pale-2-common-metrics:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-hodemelding:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-apprec:$syfoxmlcodegen")
