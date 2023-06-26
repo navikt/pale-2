@@ -506,8 +506,6 @@ fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
 
 private fun safeUnmarshal(inputMessageText: String): XMLEIFellesformat {
 
-    secureLog.info("inputMessageText: $inputMessageText")
-
     // Disable XXE
     val spf: SAXParserFactory = SAXParserFactory.newInstance()
     spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
