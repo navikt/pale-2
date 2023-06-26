@@ -139,10 +139,9 @@ class BlockingApplicationRunner(
 
                     log.info("Received message, {}", fields(loggingMeta))
 
+
                     secureLog.info(
-                        "Received message for pasient fnr {}, lege fnr: {}, {}",
-                        fnrPasient,
-                        fnrLege,
+                        "fellesformat: $fellesformatText",
                         fields(loggingMeta),
                     )
 
