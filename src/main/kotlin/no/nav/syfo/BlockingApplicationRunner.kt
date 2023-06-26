@@ -139,7 +139,6 @@ class BlockingApplicationRunner(
 
                     log.info("Received message, {}", fields(loggingMeta))
 
-
                     secureLog.info(
                         "fellesformat: $fellesformatText",
                         fields(loggingMeta),
@@ -506,6 +505,9 @@ fun fellesformatTilString(fellesformat: XMLEIFellesformat): String =
     fellesformatMarshaller.toString(fellesformat)
 
 private fun safeUnmarshal(inputMessageText: String): XMLEIFellesformat {
+
+    secureLog.info("inputMessageText: $inputMessageText")
+
     // Disable XXE
     val spf: SAXParserFactory = SAXParserFactory.newInstance()
     spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
