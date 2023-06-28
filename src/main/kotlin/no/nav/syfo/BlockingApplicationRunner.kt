@@ -15,6 +15,7 @@ import net.logstash.logback.argument.StructuredArguments
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.helse.eiFellesformat.XMLMottakenhetBlokk
+import no.nav.helse.msgHead.XMLConversationRef
 import no.nav.helse.msgHead.XMLMsgHead
 import no.nav.syfo.client.pale2regler.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
@@ -29,6 +30,7 @@ import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.VEDLEGG_COUNTER
+import no.nav.syfo.model.ConversationRef
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.RuleInfo
 import no.nav.syfo.model.Status
@@ -97,7 +99,7 @@ class BlockingApplicationRunner(
                             is TextMessage -> message.text
                             else ->
                                 throw RuntimeException(
-                                    "Incoming message needs to be a byte message or text message"
+                                    "Incoming message needs to be a byte message or text message",
                                 )
                         }
                     val fellesformat = safeUnmarshal(inputMessageText)
@@ -126,6 +128,12 @@ class BlockingApplicationRunner(
                     val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
                     val legekontorReshId = extractOrganisationRashNumberFromSender(fellesformat)?.id
                     val legeerklaringId = UUID.randomUUID().toString()
+                    val conversationRefXml =
+                        if (msgHead.msgInfo?.conversationRef != null) {
+                            msgHead.msgInfo?.conversationRef
+                        } else {
+                            null
+                        }
 
                     val requestLatency = REQUEST_TIME.startTimer()
 
@@ -263,6 +271,7 @@ class BlockingApplicationRunner(
                                 mottattDato = mottatDato,
                                 fellesformat = fellesformatText,
                                 tssid = samhandlerPraksisTssId,
+                                conversationRef = conversationRefXml?.toConversationRef(),
                             )
 
                         if (
@@ -284,7 +293,7 @@ class BlockingApplicationRunner(
                         val validationResult =
                             pale2ReglerClient.executeRuleValidation(
                                 receivedLegeerklaering,
-                                loggingMeta
+                                loggingMeta,
                             )
 
                         if (vedlegg.isNotEmpty()) {
@@ -317,13 +326,13 @@ class BlockingApplicationRunner(
                         val uploadLegeerklaering =
                             bucketUploadService.uploadLegeerklaering(
                                 receivedLegeerklaering,
-                                loggingMeta
+                                loggingMeta,
                             )
                         val legeerklaeringKafkaMessage =
                             LegeerklaeringKafkaMessage(
                                 uploadLegeerklaering,
                                 validationResult,
-                                vedleggListe
+                                vedleggListe,
                             )
 
                         when (validationResult.status) {
@@ -406,7 +415,7 @@ class BlockingApplicationRunner(
         val forkortetReceivedLegeerklaering =
             receivedLegeerklaering.copy(
                 legeerklaering =
-                    legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger)
+                    legeerklaering.copy(sykdomsopplysninger = forkortedeSykdomsopplysninger),
             )
         val uploadForkortetLegeerklaering =
             bucketUploadService.uploadLegeerklaering(
@@ -517,4 +526,9 @@ private fun safeUnmarshal(inputMessageText: String): XMLEIFellesformat {
             InputSource(StringReader(inputMessageText)),
         )
     return fellesformatUnmarshaller.unmarshal(xmlSource) as XMLEIFellesformat
+}
+
+fun XMLConversationRef.toConversationRef(): ConversationRef {
+
+    return ConversationRef(refToConversation = refToConversation, refToParent = refToParent)
 }
