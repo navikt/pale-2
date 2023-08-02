@@ -6,37 +6,37 @@ group = "no.nav.syfo"
 version = "1.0.0"
 
 
-val ktorVersion: String by project
-val coroutinesVersion: String by project
-val prometheusVersion: String by project
-val junitJupiterVersion: String by project
-val kluentVersion: String by project
-val logbackVersion: String by project
-val logstashEncoderVersion: String by project
-val jacksonVersion: String by project
-val jaxwsApiVersion: String by project
-val javaxAnnotationApiVersion: String by project
-val jaxbRuntimeVersion: String by project
-val jaxbApiVersion: String by project
-val javaxActivationVersion: String by project
-val commonsTextVersion: String by project
-val javaTimeAdapterVersion: String by project
-val syfoxmlcodegen: String by project
-val jfairyVersion: String by project
-val pale2CommonVersion: String by project
-val kafkaVersion: String by project
-val mockkVersion: String by project
-val kotlinVersion: String by project
-val googleCloudStorageVersion: String by project
-val jaxbImplVersion: String by project
-val wsApiVersion: String by project
-val annotationApiVersion: String by project
-val flywayVersion: String by project
-val hikariVersion: String by project
-val postgresVersion: String by project
-val embeddedPostgresVersion: String by project
-val ktfmtVersion: String by project
-val jvmVersion: String by project
+val ktorVersion="2.3.3"
+val coroutinesVersion="1.7.1"
+val prometheusVersion="0.16.0"
+val junitJupiterVersion="5.9.3"
+val kluentVersion="1.68"
+val logbackVersion="1.4.8"
+val logstashEncoderVersion="7.4"
+val jacksonVersion="2.15.2"
+val jaxwsApiVersion="2.3.1"
+val javaxAnnotationApiVersion="1.3.2"
+val jaxbRuntimeVersion="2.4.0-b180830.0438"
+val jaxbApiVersion="2.4.0-b180830.0359"
+val javaxActivationVersion="1.1.1"
+val commonsTextVersion="1.10.0"
+val javaTimeAdapterVersion="1.1.3"
+val syfoxmlcodegen="1.0.4"
+val jfairyVersion="0.6.5"
+val pale2CommonVersion="1.0.8"
+val kafkaVersion="3.4.0"
+val mockkVersion="1.13.5"
+val kotlinVersion="1.9.0"
+val googleCloudStorageVersion="2.23.0"
+val jaxbImplVersion="2.3.3"
+val wsApiVersion="2.3.3"
+val annotationApiVersion="1.3.5"
+val flywayVersion="9.20.0"
+val hikariVersion="5.0.1"
+val postgresVersion="42.6.0"
+val embeddedPostgresVersion="2.0.4"
+val ktfmtVersion="0.44"
+val jvmVersion="17"
 
 application {
     mainClass.set("no.nav.syfo.ApplicationKt")
@@ -48,7 +48,7 @@ application {
 
 plugins {
     kotlin("jvm") version "1.9.0"
-    id("io.ktor.plugin") version "2.3.2"
+    id("io.ktor.plugin") version "2.3.3"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.diffplug.spotless") version "6.20.0"
     id("org.cyclonedx.bom") version "1.7.4"
