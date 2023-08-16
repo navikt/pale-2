@@ -27,7 +27,7 @@ class SamhandlerService(
                 fnrLege,
                 legekontorOrgName,
                 loggingMeta,
-                legeerklaringId
+                legeerklaringId,
             )
 
         handleEmottakSubscription(
@@ -45,7 +45,21 @@ class SamhandlerService(
             fnrLege,
             legekontorOrgName,
             loggingMeta,
-            legeerklaringId
+            legeerklaringId,
+        )
+    }
+
+    suspend fun findBestTssIdArena(
+        fnrLege: String,
+        legekontorOrgName: String,
+        loggingMeta: LoggingMeta,
+        legeerklaringId: String
+    ): String? {
+        return smtssClient.findBestTssIdArena(
+            fnrLege,
+            legekontorOrgName,
+            loggingMeta,
+            legeerklaringId,
         )
     }
 

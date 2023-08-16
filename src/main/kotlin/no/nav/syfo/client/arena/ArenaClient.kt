@@ -6,7 +6,7 @@ import no.nav.syfo.model.PaleConstant
 import no.nav.syfo.model.Pasient
 
 fun createArenaInfo(
-    tssId: String?,
+    tssIdArena: String?,
     mottakid: String,
     fnrbehandler: String,
     legeerklaering: Legeerklaering,
@@ -26,7 +26,7 @@ fun createArenaInfo(
             ArenaEiaInfo.LegeData().apply {
                 navn = legeerklaering.pasient.formatName()
                 fnr = fnrbehandler
-                tssid = tssId
+                tssid = tssIdArena
             }
         eiaData =
             ArenaEiaInfo.EiaData().apply {

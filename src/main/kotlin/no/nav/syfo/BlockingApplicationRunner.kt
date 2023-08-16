@@ -335,6 +335,14 @@ class BlockingApplicationRunner(
                                 vedleggListe,
                             )
 
+                        val tssIdArena =
+                            samhandlerService.findBestTssIdArena(
+                                fnrLege,
+                                legekontorOrgName,
+                                loggingMeta,
+                                legeerklaringId
+                            )
+
                         when (validationResult.status) {
                             Status.OK ->
                                 handleStatusOK(
@@ -342,7 +350,7 @@ class BlockingApplicationRunner(
                                     receiptProducer = receiptProducer,
                                     fellesformat = fellesformat,
                                     arenaProducer = arenaProducer,
-                                    tssId = samhandlerPraksisTssId,
+                                    tssId = tssIdArena,
                                     ediLoggId = ediLoggId,
                                     fnrLege = fnrLege,
                                     legeerklaring = legeerklaring,

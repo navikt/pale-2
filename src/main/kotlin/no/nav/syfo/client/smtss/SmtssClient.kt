@@ -74,6 +74,35 @@ class SmtssClient(
             null
         }
     }
+
+    suspend fun findBestTssIdArena(
+        samhandlerFnr: String,
+        samhandlerOrgName: String,
+        loggingMeta: LoggingMeta,
+        legeerklaringId: String,
+    ): String? {
+        val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
+        val httpResponse =
+            httpClient.get("$endpointUrl/api/v1/samhandler/arena") {
+                contentType(ContentType.Application.Json)
+                accept(ContentType.Application.Json)
+                header("samhandlerFnr", samhandlerFnr)
+                header("samhandlerOrgName", samhandlerOrgName)
+                header("Authorization", "Bearer $accessToken")
+                header("requestId", legeerklaringId)
+            }
+        return if (httpResponse.status == HttpStatusCode.OK) {
+            val tssid = httpResponse.body<TSSident>().tssid
+            tssid
+        } else {
+            log.info(
+                "smtss responded with an error code {} for {}",
+                httpResponse.status,
+                StructuredArguments.fields(loggingMeta),
+            )
+            null
+        }
+    }
 }
 
 data class TSSident(
