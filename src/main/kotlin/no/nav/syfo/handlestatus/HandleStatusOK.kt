@@ -34,6 +34,7 @@ fun handleStatusOK(
     apprecQueueName: String,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
+    behandlerName: String,
 ) {
     sendReceipt(
         session,
@@ -47,14 +48,7 @@ fun handleStatusOK(
         apprecQueueName,
     )
 
-    sendArenaInfo(
-        arenaProducer,
-        session,
-        tssId,
-        ediLoggId,
-        fnrLege,
-        legeerklaring,
-    )
+    sendArenaInfo(arenaProducer, session, tssId, ediLoggId, fnrLege, legeerklaring, behandlerName)
     log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
 
     sendTilTopic(
@@ -73,10 +67,11 @@ fun sendArenaInfo(
     mottakid: String,
     fnrbehandler: String,
     legeerklaring: Legeerklaering,
+    behandlerName: String,
 ) =
     producer.send(
         session.createTextMessage().apply {
-            val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring)
+            val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring, behandlerName)
             text = arenaMarshaller.toString(info)
         },
     )

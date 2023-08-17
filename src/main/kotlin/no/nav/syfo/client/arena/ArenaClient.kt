@@ -10,6 +10,7 @@ fun createArenaInfo(
     mottakid: String,
     fnrbehandler: String,
     legeerklaering: Legeerklaering,
+    behandler: String,
 ): ArenaEiaInfo =
     ArenaEiaInfo().apply {
         ediloggId = mottakid
@@ -24,7 +25,7 @@ fun createArenaInfo(
             }
         legeData =
             ArenaEiaInfo.LegeData().apply {
-                navn = legeerklaering.pasient.formatName()
+                navn = behandler
                 fnr = fnrbehandler
                 tssid = tssIdArena
             }

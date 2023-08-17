@@ -361,6 +361,7 @@ class BlockingApplicationRunner(
                                     apprecQueueName = env.apprecQueueName,
                                     duplicationCheckService = duplicationCheckService,
                                     duplicateCheck = duplicateCheck,
+                                    behandlerName = behandler.navn.format(),
                                 )
                             Status.INVALID ->
                                 handleStatusINVALID(
