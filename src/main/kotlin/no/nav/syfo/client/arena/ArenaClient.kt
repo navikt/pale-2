@@ -3,7 +3,6 @@ package no.nav.syfo.client.arena
 import no.nav.helse.arenainfo.ArenaEiaInfo
 import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.PaleConstant
-import no.nav.syfo.model.Pasient
 
 fun createArenaInfo(
     tssIdArena: String?,
@@ -40,13 +39,6 @@ fun createArenaInfo(
                     },
                 )
             }
-    }
-
-fun Pasient.formatName(): String =
-    if (mellomnavn == null) {
-        "$etternavn $fornavn"
-    } else {
-        "$etternavn $fornavn $mellomnavn"
     }
 
 fun findMappeTypeInLegeerklaering(legeerklaering: Legeerklaering): String =
