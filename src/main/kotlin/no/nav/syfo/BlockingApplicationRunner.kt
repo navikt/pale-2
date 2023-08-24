@@ -65,6 +65,7 @@ import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.xml.sax.InputSource
+import java.time.ZoneId
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -161,7 +162,7 @@ class BlockingApplicationRunner(
                         receiverBlock.mottattDatotid
                             .toGregorianCalendar()
                             .toZonedDateTime()
-                            .withZoneSameInstant(ZoneOffset.UTC)
+                            .withZoneSameInstant(ZoneId.of("Europe/Oslo"))
                             .toLocalDateTime()
 
                     val duplicateCheck =
