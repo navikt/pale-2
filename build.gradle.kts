@@ -1,12 +1,8 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 group = "no.nav.syfo"
 version = "1.0.0"
 
 
-val ktorVersion="2.3.3"
+val ktorVersion="2.3.4"
 val coroutinesVersion="1.7.3"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="5.10.0"
@@ -23,10 +19,10 @@ val commonsTextVersion="1.10.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="1.0.4"
 val jfairyVersion="0.6.5"
-val pale2CommonVersion="1.0.8"
+val pale2CommonVersion="1.0.10"
 val kafkaVersion="3.4.0"
 val mockkVersion="1.13.5"
-val kotlinVersion="1.9.0"
+val kotlinVersion="1.9.10"
 val googleCloudStorageVersion="2.23.0"
 val jaxbImplVersion="2.3.3"
 val wsApiVersion="2.3.3"
@@ -36,21 +32,20 @@ val hikariVersion="5.0.1"
 val postgresVersion="42.6.0"
 val embeddedPostgresVersion="2.0.4"
 val ktfmtVersion="0.44"
-val jvmVersion="17"
+
+
+plugins {
+    id("application")
+    kotlin("jvm") version "1.9.10"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.diffplug.spotless") version "6.21.0"
+}
 
 application {
     mainClass.set("no.nav.syfo.ApplicationKt")
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
-}
-
-
-plugins {
-    kotlin("jvm") version "1.9.0"
-    id("io.ktor.plugin") version "2.3.3"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.diffplug.spotless") version "6.20.0"
 }
 
 val githubUser: String by project
@@ -133,29 +128,21 @@ dependencies {
 }
 
 tasks {
-    withType<Jar> {
-        manifest.attributes["Main-Class"] = "no.nav.syfo.ApplicationKt"
-    }
-
-    create("printVersion") {
-        doLast {
-            println(project.version)
+    shadowJar {
+        archiveBaseName.set("app")
+        archiveClassifier.set("")
+        isZip64 = true
+        manifest {
+            attributes(
+                mapOf(
+                    "Main-Class" to "no.nav.syfo.ApplicationKt",
+                ),
+            )
         }
     }
 
-    withType<KotlinCompile> {
-        kotlinOptions.jvmTarget = jvmVersion
-    }
 
-
-    withType<ShadowJar> {
-        transform(ServiceFileTransformer::class.java) {
-            setPath("META-INF/cxf")
-            include("bus-extensions.txt")
-        }
-    }
-
-    withType<Test> {
+    test {
         useJUnitPlatform {}
         testLogging {
             events("skipped", "failed")
@@ -163,6 +150,7 @@ tasks {
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
+
 
     spotless {
         kotlin { ktfmt(ktfmtVersion).kotlinlangStyle() }

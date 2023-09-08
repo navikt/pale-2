@@ -1,7 +1,7 @@
 package no.nav.syfo
 
 import java.io.StringReader
-import java.time.ZoneOffset
+import java.time.ZoneId
 import java.util.UUID
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
@@ -65,7 +65,6 @@ import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.xml.sax.InputSource
-import java.time.ZoneId
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
