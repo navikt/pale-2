@@ -1,4 +1,4 @@
-[![Build status](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)](https://github.com/navikt/pale-2/workflows/Deploy%20to%20dev%20and%20prod/badge.svg)
+[![Deploy app to dev and prod](https://github.com/navikt/pale-2/actions/workflows/deploy.yml/badge.svg)](https://github.com/navikt/pale-2/actions/workflows/deploy.yml)
 
 # Prosessering av legeerklæringer (PALE)
 Application that receives Legeerklæringer from external systems, doing some validation, 
