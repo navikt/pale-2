@@ -120,6 +120,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("com.devskiller:jfairy:$jfairyVersion") {
         exclude(group = "org.apache.commons", module = "commons-text")
     }
