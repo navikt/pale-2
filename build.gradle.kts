@@ -32,7 +32,7 @@ val hikariVersion="5.0.1"
 val postgresVersion="42.6.0"
 val embeddedPostgresVersion="2.0.4"
 val ktfmtVersion="0.44"
-
+val commonsCodecVersion = "1.16.0"
 
 plugins {
     id("application")
@@ -71,8 +71,10 @@ dependencies {
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    {
-        exclude(group = "commons-codec")
+    constraints {
+        implementation("commons-codec:commons-codec:$commonsCodecVersion") {
+            because("override transient from io.ktor:ktor-client-apache")
+        }
     }
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
