@@ -41,7 +41,6 @@ spec:
     path: /internal/prometheus
   resources:
     limits:
-      cpu: 500m
       memory: 1Gi
     requests:
       cpu: 100m
@@ -65,9 +64,6 @@ spec:
             - name: mq
               port: 1413
               protocol: TCP
-  vault:
-    enabled: false
-  webproxy: false
   kafka:
     pool: nav-dev
   envFrom:

@@ -19,7 +19,7 @@ val commonsTextVersion="1.10.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="1.0.4"
 val jfairyVersion="0.6.5"
-val pale2CommonVersion="1.0.10"
+val pale2CommonVersion="2.0.0"
 val kafkaVersion="3.5.1"
 val mockkVersion="1.13.7"
 val kotlinVersion="1.9.10"
@@ -55,11 +55,7 @@ repositories {
     mavenCentral()
     maven(url= "https://packages.confluent.io/maven/")
     maven {
-        url = uri("https://maven.pkg.github.com/navikt/pale-2-common")
-        credentials {
-            username = githubUser
-            password = githubPassword
-        }
+        url = uri("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
     }
 }
 
