@@ -33,7 +33,7 @@ val postgresVersion="42.6.0"
 val embeddedPostgresVersion="2.0.4"
 val ktfmtVersion="0.44"
 val commonsCodecVersion = "1.16.0"
-val snappyJavaVersion = "1.1.10.4"
+val snappyJavaVersion = "1.1.10.5"
 
 plugins {
     id("application")
