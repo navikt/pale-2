@@ -2,7 +2,7 @@ group = "no.nav.syfo"
 version = "1.0.0"
 
 
-val ktorVersion="2.3.4"
+val ktorVersion="2.3.5"
 val coroutinesVersion="1.7.3"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="5.10.0"
