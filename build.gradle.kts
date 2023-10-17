@@ -34,6 +34,7 @@ val embeddedPostgresVersion="2.0.4"
 val ktfmtVersion="0.44"
 val commonsCodecVersion = "1.16.0"
 val snappyJavaVersion = "1.1.10.5"
+val jsonVersion = "20231013"
 
 plugins {
     id("application")
@@ -97,6 +98,11 @@ dependencies {
     implementation("javax.activation:activation:$javaxActivationVersion")
 
     implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
+    constraints {
+        implementation("org.json:json:$jsonVersion") {
+            because("override transient from com.ibm.mq:com.ibm.mq.allclient")
+        }
+    }
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$syfoxmlcodegen")
