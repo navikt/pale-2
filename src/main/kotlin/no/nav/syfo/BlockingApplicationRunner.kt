@@ -2,7 +2,6 @@ package no.nav.syfo
 
 import java.io.StringReader
 import java.time.ZoneId
-import java.util.UUID
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
@@ -26,6 +25,7 @@ import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.handlestatus.handleVedleggContainsVirus
+import no.nav.syfo.handlestatus.handleVedleggOver300MB
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
@@ -46,6 +46,8 @@ import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
 import no.nav.syfo.services.samhandlerservice.SamhandlerService
 import no.nav.syfo.services.virusscanservice.VirusScanService
+import no.nav.syfo.services.virusscanservice.fileSizeLagerThan300MegaBytes
+import no.nav.syfo.services.virusscanservice.logVedleggOver300MegaByteMetric
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
@@ -65,6 +67,7 @@ import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.xml.sax.InputSource
+import java.util.*
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
@@ -297,6 +300,27 @@ class BlockingApplicationRunner(
                             )
 
                         if (vedlegg.isNotEmpty()) {
+                            val vedleggOver300MegaByte =
+                                vedlegg.filter {
+                                    fileSizeLagerThan300MegaBytes(
+                                        Base64.getMimeDecoder().decode(it.content.content),
+                                        loggingMeta
+                                    )
+                                }
+
+                            if (vedleggOver300MegaByte.isNotEmpty()) {
+                                handleVedleggOver300MB(
+                                    session,
+                                    receiptProducer,
+                                    fellesformat,
+                                    env,
+                                    loggingMeta,
+                                    duplicationCheckService,
+                                    duplicateCheck,
+                                )
+                                continue@loop
+                            }
+
                             if (virusScanService.vedleggContainsVirus(vedlegg, loggingMeta)) {
                                 handleVedleggContainsVirus(
                                     session,

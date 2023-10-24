@@ -63,7 +63,6 @@ fun logVedleggOver300MegaByteMetric(vedlegg: List<Vedlegg>, loggingMeta: Logging
             "Vedlegg is over 300 megabyte: ${it.description}, {}",
             StructuredArguments.fields(loggingMeta)
         )
-        VEDLEGG_OVER_300_MEGABYTE_COUNTER.inc()
     }
 }
 
