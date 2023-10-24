@@ -207,6 +207,40 @@ fun handleFritekstfeltHarForMangeTegn(
     FOR_MANGE_TEGN.inc()
 }
 
+fun handleVedleggOver300MB(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    env: EnvironmentVariables,
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicateCheck: DuplicateCheck,
+) {
+    log.warn(
+        "Legeerklæringen er avvist fordi eit eller flere vedlegg er over 300 MB {}, {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName),
+    )
+    sendReceipt(
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
+        listOf(
+            createApprecError(
+                "Legeerklæringen er avvist fordi eit eller flere vedlegg er over 300 MB",
+            ),
+        ),
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
+    )
+
+    INVALID_MESSAGE_NO_NOTICE.inc()
+    VEDLEGG_VIRUS_COUNTER.inc()
+}
+
 fun handleVedleggContainsVirus(
     session: Session,
     receiptProducer: MessageProducer,
