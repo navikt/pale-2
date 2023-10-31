@@ -22,12 +22,12 @@ val jfairyVersion="0.6.5"
 val pale2CommonVersion="2.0.1"
 val kafkaVersion="3.6.0"
 val mockkVersion="1.13.8"
-val kotlinVersion="1.9.10"
+val kotlinVersion="1.9.20"
 val googleCloudStorageVersion="2.29.0"
 val jaxbImplVersion="2.3.3"
 val wsApiVersion="2.3.3"
 val annotationApiVersion="1.3.5"
-val flywayVersion="9.22.3"
+val flywayVersion="10.0.0"
 val hikariVersion="5.0.1"
 val postgresVersion="42.6.0"
 val embeddedPostgresVersion="2.0.4"
@@ -38,7 +38,7 @@ val jsonVersion = "20231013"
 
 plugins {
     id("application")
-    kotlin("jvm") version "1.9.10"
+    kotlin("jvm") version "1.9.20"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.diffplug.spotless") version "6.22.0"
 }
