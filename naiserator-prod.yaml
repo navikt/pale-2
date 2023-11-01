@@ -55,13 +55,6 @@ spec:
         - application: clamav
           namespace: nais-system
         - application: smtss
-    inbound:
-      rules:
-        - application: pale-2-regler
-        - application: clamav
-          namespace: nais-system
-          cluster: prod-gcp
-        - application: smtss
       external:
         - host: smgcp-proxy.prod-fss-pub.nais.io
         - host: pdl-api.prod-fss-pub.nais.io
@@ -70,6 +63,13 @@ spec:
             - name: mq
               port: 1414
               protocol: TCP
+    inbound:
+      rules:
+        - application: pale-2-regler
+        - application: clamav
+          namespace: nais-system
+          cluster: prod-gcp
+        - application: smtss
   kafka:
     pool: nav-prod
   envFrom:
