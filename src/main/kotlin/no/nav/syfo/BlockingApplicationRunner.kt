@@ -2,6 +2,7 @@ package no.nav.syfo
 
 import java.io.StringReader
 import java.time.ZoneId
+import java.util.*
 import javax.jms.MessageConsumer
 import javax.jms.MessageProducer
 import javax.jms.Session
@@ -47,7 +48,6 @@ import no.nav.syfo.services.duplicationcheck.sha256hashstring
 import no.nav.syfo.services.samhandlerservice.SamhandlerService
 import no.nav.syfo.services.virusscanservice.VirusScanService
 import no.nav.syfo.services.virusscanservice.fileSizeLagerThan300MegaBytes
-import no.nav.syfo.services.virusscanservice.logVedleggOver300MegaByteMetric
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.util.erTestFnr
 import no.nav.syfo.util.extractLegeerklaering
@@ -67,7 +67,6 @@ import no.nav.syfo.util.wrapExceptions
 import no.nav.syfo.vedlegg.google.BucketUploadService
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.xml.sax.InputSource
-import java.util.*
 
 class BlockingApplicationRunner(
     private val applicationState: ApplicationState,
