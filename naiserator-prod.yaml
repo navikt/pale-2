@@ -55,6 +55,13 @@ spec:
         - application: clamav
           namespace: nais-system
         - application: smtss
+    inbound:
+      rules:
+        - application: pale-2-regler
+        - application: clamav
+          namespace: nais-system
+          cluster: dev-gcp
+        - application: smtss
       external:
         - host: smgcp-proxy.prod-fss-pub.nais.io
         - host: pdl-api.prod-fss-pub.nais.io
