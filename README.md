@@ -34,10 +34,12 @@ This the high level flow of the application
 * Gradle
 * Junit
 * Postgres
+* Docker
 
 #### Requirements
 
 * JDK 17
+* Docker
 
 
 #### Build and run tests

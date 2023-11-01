@@ -18,6 +18,7 @@ internal class DuplicationCheckServiceTest {
     @BeforeEach
     internal fun setup() {
         clearAllMocks()
+        // TestDB.stop()
     }
 
     @Test
