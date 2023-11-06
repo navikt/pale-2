@@ -63,13 +63,6 @@ spec:
             - name: mq
               port: 1414
               protocol: TCP
-    inbound:
-      rules:
-        - application: pale-2-regler
-        - application: clamav
-          namespace: nais-system
-          cluster: prod-gcp
-        - application: smtss
   kafka:
     pool: nav-prod
   envFrom:
