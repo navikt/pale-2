@@ -27,7 +27,7 @@ class ClamAvClient(
                                     append(HttpHeaders.ContentType, vedlegg.content.contentType)
                                     append(
                                         HttpHeaders.ContentDisposition,
-                                        "filename=${vedlegg.description}"
+                                        "filename=${removeNewLines(vedlegg.description)}"
                                     )
                                 },
                             )
@@ -47,4 +47,8 @@ enum class Status {
     FOUND,
     OK,
     ERROR
+}
+
+fun removeNewLines(description: String): String {
+    return description.replace("\n", "")
 }
