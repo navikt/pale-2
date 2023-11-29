@@ -5,6 +5,8 @@ import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.client.clamav.ClamAvClient
 import no.nav.syfo.client.clamav.Status
 import no.nav.syfo.log
+import no.nav.syfo.objectMapper
+import no.nav.syfo.secureLog
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.vedlegg.model.Vedlegg
 
@@ -41,6 +43,12 @@ class VirusScanService(
                     ", {}",
                 StructuredArguments.fields(loggingMeta),
             )
+            secureLog.info(
+                "Scanning vedlegg for virus: vedlegg: ${objectMapper.writeValueAsString(vedleggUnder300MegaByte)} " +
+                    ", {}",
+                StructuredArguments.fields(loggingMeta),
+            )
+
             val scanResultMayContainVirus =
                 clamAvClient.virusScanVedlegg(vedleggUnder300MegaByte).filter {
                     it.Result != Status.OK
