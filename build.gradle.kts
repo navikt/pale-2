@@ -150,6 +150,9 @@ tasks {
         }
     }
 
+    mergeServiceFiles {
+     setPath("META-INF/services/org.flywaydb.core.extensibility.Plugin")
+    }
 
     test {
         useJUnitPlatform {}
