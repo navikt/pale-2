@@ -19,11 +19,11 @@ val commonsTextVersion="1.12.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
-val pale2CommonVersion="2.0.6"
+val pale2CommonVersion="2.0.7"
 val kafkaVersion="3.7.0"
 val mockkVersion="1.13.11"
-val kotlinVersion="1.9.24"
-val googleCloudStorageVersion="2.38.0"
+val kotlinVersion="2.0.0"
+val googleCloudStorageVersion="2.39.0"
 val jaxbImplVersion="2.3.3"
 val wsApiVersion="2.3.3"
 val annotationApiVersion="1.3.5"
@@ -38,7 +38,7 @@ val jsonVersion = "20240303"
 
 plugins {
     id("application")
-    kotlin("jvm") version "1.9.24"
+    kotlin("jvm") version "2.0.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("com.diffplug.spotless") version "6.25.0"
 }
