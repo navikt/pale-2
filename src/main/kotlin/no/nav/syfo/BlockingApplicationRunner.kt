@@ -255,6 +255,7 @@ class BlockingApplicationRunner(
                                 msgHead = msgHead,
                                 loggingMeta = loggingMeta,
                                 legeerklaringId = legeerklaringId,
+                                legekontorOrgNumber = legekontorOrgNr
                             )
 
                         val receivedLegeerklaering =
