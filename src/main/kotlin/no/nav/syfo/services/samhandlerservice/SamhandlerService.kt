@@ -17,6 +17,7 @@ class SamhandlerService(
     suspend fun findSamhandlerPraksisAndHandleEmottakSubscription(
         fnrLege: String,
         legekontorOrgName: String,
+        legekontorOrgNumber: String?,
         msgHead: XMLMsgHead,
         receiverBlock: XMLMottakenhetBlokk,
         loggingMeta: LoggingMeta,
@@ -28,6 +29,7 @@ class SamhandlerService(
                 legekontorOrgName,
                 loggingMeta,
                 legeerklaringId,
+                legekontorOrgNumber,
             )
 
         handleEmottakSubscription(

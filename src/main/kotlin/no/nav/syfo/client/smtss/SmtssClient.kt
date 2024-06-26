@@ -24,6 +24,7 @@ class SmtssClient(
         samhandlerOrgName: String,
         loggingMeta: LoggingMeta,
         legeerklaringId: String,
+        samhandlerOrgnummer: String?,
     ): String? {
         val accessToken = accessTokenClientV2.getAccessTokenV2(resourceId)
         val httpResponse =
@@ -31,6 +32,7 @@ class SmtssClient(
                 accept(ContentType.Application.Json)
                 header("samhandlerFnr", samhandlerFnr)
                 header("samhandlerOrgName", samhandlerOrgName)
+                samhandlerOrgnummer?.let { header("samhandlerOrgnummer", it) }
                 header("Authorization", "Bearer $accessToken")
                 header("requestId", legeerklaringId)
             }
