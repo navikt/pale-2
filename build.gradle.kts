@@ -35,11 +35,13 @@ val ktfmtVersion="0.44"
 val commonsCodecVersion = "1.17.1"
 val snappyJavaVersion = "1.1.10.6"
 val jsonVersion = "20240303"
+val commonsCompressVersion = "1.27.0"
+val nettyCodecHttp2Version = "4.1.112.Final"
 
 plugins {
     id("application")
     kotlin("jvm") version "2.0.10"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "8.3.0"
     id("com.diffplug.spotless") version "6.25.0"
 }
 
@@ -69,6 +71,11 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    constraints {
+        implementation("io.netty:netty-codec-http2:$nettyCodecHttp2Version") {
+            because("override transient from io.ktor:ktor-server-netty, see CVE-2024-29025")
+        }
+    }
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -134,6 +141,11 @@ dependencies {
     }
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersPostgresVersion")
+    constraints {
+        testImplementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
+            because("overrides vulnerable dependency from org.testcontainers:postgresql")
+        }
+    }
 }
 
 tasks {
