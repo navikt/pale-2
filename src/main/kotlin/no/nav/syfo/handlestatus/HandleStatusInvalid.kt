@@ -1,7 +1,7 @@
 package no.nav.syfo.handlestatus
 
-import javax.jms.MessageProducer
-import javax.jms.Session
+import jakarta.jms.MessageProducer
+import jakarta.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import net.logstash.logback.argument.StructuredArguments.keyValue
 import no.nav.helse.apprecV1.XMLCV

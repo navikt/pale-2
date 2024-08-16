@@ -20,9 +20,9 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.routing.*
 import io.prometheus.client.hotspot.DefaultExports
+import jakarta.jms.Session
 import java.io.FileInputStream
 import java.util.concurrent.TimeUnit
-import javax.jms.Session
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
