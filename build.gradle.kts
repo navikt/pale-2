@@ -108,8 +108,13 @@ dependencies {
 
     implementation("com.ibm.mq:com.ibm.mq.jakarta.client:$ibmMqVersion")
 
-    implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
-    implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
+    implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
+    constraints {
+        implementation("org.xerial.snappy:snappy-java:$snappyJavaVersion") {
+            because("override transient from org.apache.kafka:kafka_2.12")
+        }
+    }
+
     implementation("no.nav.helse.xml:xmlfellesformat:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-hodemelding:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-apprec:$syfoxmlcodegen")
