@@ -37,6 +37,8 @@ val snappyJavaVersion = "1.1.10.6"
 val jsonVersion = "20240303"
 val commonsCompressVersion = "1.27.0"
 val nettyCodecHttp2Version = "4.1.112.Final"
+val ibmMqVersion = "9.4.0.0"
+
 
 plugins {
     id("application")
@@ -104,12 +106,8 @@ dependencies {
     implementation("org.glassfish.jaxb:jaxb-runtime:$jaxbRuntimeVersion")
     implementation("javax.activation:activation:$javaxActivationVersion")
 
-    implementation("no.nav.syfo:pale-2-common-mq:$pale2CommonVersion")
-    constraints {
-        implementation("org.json:json:$jsonVersion") {
-            because("override transient from com.ibm.mq:com.ibm.mq.allclient")
-        }
-    }
+    implementation("com.ibm.mq:com.ibm.mq.jakarta.client:$ibmMqVersion")
+
     implementation("no.nav.syfo:pale-2-common-models:$pale2CommonVersion")
     implementation("no.nav.syfo:pale-2-common-kafka:$pale2CommonVersion")
     implementation("no.nav.helse.xml:xmlfellesformat:$syfoxmlcodegen")

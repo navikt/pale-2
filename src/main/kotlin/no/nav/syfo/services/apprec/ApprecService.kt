@@ -1,7 +1,7 @@
 package no.nav.syfo.services.apprec
 
-import javax.jms.MessageProducer
-import javax.jms.Session
+import jakarta.jms.MessageProducer
+import jakarta.jms.Session
 import net.logstash.logback.argument.StructuredArguments
 import no.nav.helse.apprecV1.XMLAppRec
 import no.nav.helse.apprecV1.XMLCV

@@ -1,12 +1,12 @@
 package no.nav.syfo
 
+import jakarta.jms.MessageConsumer
+import jakarta.jms.MessageProducer
+import jakarta.jms.Session
+import jakarta.jms.TextMessage
 import java.io.StringReader
 import java.time.ZoneId
 import java.util.*
-import javax.jms.MessageConsumer
-import javax.jms.MessageProducer
-import javax.jms.Session
-import javax.jms.TextMessage
 import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.Source
 import javax.xml.transform.sax.SAXSource
