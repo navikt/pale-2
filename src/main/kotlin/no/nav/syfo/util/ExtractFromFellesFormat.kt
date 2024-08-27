@@ -28,14 +28,35 @@ fun extractPersonIdent(legeerklaering: Legeerklaring): String? =
 
 fun extractTlfFromHealthcareProfessional(
     healthcareProfessional: XMLHealthcareProfessional?
-): String? =
-    if (
-        healthcareProfessional != null &&
-            healthcareProfessional.teleCom?.size != 0 &&
-            healthcareProfessional.teleCom?.firstOrNull()!!.teleAddress != null &&
-            healthcareProfessional.teleCom.firstOrNull()!!.teleAddress?.v?.contains("tel:") == true
-    ) {
-        healthcareProfessional.teleCom.firstOrNull()!!.teleAddress?.v?.removePrefix("tel:")
+): String? {
+    val phoneNumber =
+        healthcareProfessional
+            ?.teleCom
+            ?.find {
+                it.teleAddress?.v?.contains("tel:") == true &&
+                    (it?.typeTelecom
+                        ?.v
+                        ?.contains(
+                            "HP",
+                        ) == true || it?.typeTelecom?.dn?.contains("Hovedtelefon") == true)
+            }
+            ?.teleAddress
+            ?.v
+            ?.removePrefix("tel:")
+
+    val email =
+        healthcareProfessional
+            ?.teleCom
+            ?.find { it.teleAddress?.v?.contains("mailto:") == true }
+            ?.teleAddress
+            ?.v
+            ?.removePrefix("mailto:")
+
+    return if (phoneNumber != null) {
+        phoneNumber
+    } else if (email != null) {
+        email
     } else {
         healthcareProfessional?.teleCom?.firstOrNull()?.teleAddress?.v
     }
+}

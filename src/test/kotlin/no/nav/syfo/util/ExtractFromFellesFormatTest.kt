@@ -21,4 +21,18 @@ class ExtractFromFellesFormatTest {
             extractTlfFromHealthcareProfessional(healthcareProfessional)
         assertEquals("98765432", tlfFromFromHealthcareProfessional)
     }
+
+    @Test
+    internal fun `Tester henting av mail fra telecom`() {
+        val felleformatLe =
+            fellesformatUnmarshaller.unmarshal(
+                StringReader(getFileAsString("src/test/resources/fellesformat_le_only_email.xml")),
+            ) as XMLEIFellesformat
+        val healthcareProfessional =
+            felleformatLe.get<XMLMsgHead>().msgInfo.sender.organisation?.healthcareProfessional
+
+        val mailFromFromHealthcareProfessional =
+            extractTlfFromHealthcareProfessional(healthcareProfessional)
+        assertEquals("lege@gmail.com", mailFromFromHealthcareProfessional)
+    }
 }

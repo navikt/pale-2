@@ -51,10 +51,6 @@
                         <TeleCom>
                             <TeleAddress V="mailto:lege@gmail.com"/>
                         </TeleCom>
-                        <TeleCom>
-                            <TeleAddress V="tel:98765432" />
-                            <TypeTelecom DN="Hovedtelefon" V="HP" />
-                        </TeleCom>
                     </HealthcareProfessional>
                 </Organisation>
             </Sender>
