@@ -74,12 +74,9 @@ spec:
     pool: nav-prod
   envFrom:
     - secret: srvpale2-secrets
-    - secret: pale2-keystore-pwd
   filesFrom:
     - mountPath: /var/run/secrets
       secret: pale2-google-creds
-    - mountPath: /var/run/keystore
-      secret: pale2-keystore
   secureLogs:
     enabled: true
   env:
@@ -113,7 +110,5 @@ spec:
       value: https://smgcp-proxy.prod-fss-pub.nais.io
     - name: PALE_2_REGLER_API_SCOPE
       value: api://prod-gcp.teamsykmelding.pale-2-regler/.default
-    - name: MQ_KEYSTORE_PATH
-      value: /var/run/keystore/pale2-keystore.jks
     - name: SMTSS_API_SCOPE
       value: api://prod-gcp.teamsykmelding.smtss/.default
