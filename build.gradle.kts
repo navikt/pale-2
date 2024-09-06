@@ -37,7 +37,7 @@ val snappyJavaVersion = "1.1.10.6"
 val jsonVersion = "20240303"
 val commonsCompressVersion = "1.27.1"
 val nettyCodecHttp2Version = "4.1.113.Final"
-val ibmMqVersion = "9.4.0.0"
+val ibmMqVersion = "9.4.0.5"
 
 
 plugins {
