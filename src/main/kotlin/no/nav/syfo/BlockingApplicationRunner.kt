@@ -255,7 +255,7 @@ class BlockingApplicationRunner(
                                 msgHead = msgHead,
                                 loggingMeta = loggingMeta,
                                 legeerklaringId = legeerklaringId,
-                                legekontorOrgNumber = legekontorOrgNr
+                                legekontorOrgNumber = legekontorOrgNr,
                             )
 
                         val receivedLegeerklaering =
@@ -304,7 +304,7 @@ class BlockingApplicationRunner(
                                 vedlegg.filter {
                                     fileSizeLagerThan300MegaBytes(
                                         Base64.getMimeDecoder().decode(it.content.content),
-                                        loggingMeta
+                                        loggingMeta,
                                     )
                                 }
 
@@ -364,7 +364,7 @@ class BlockingApplicationRunner(
                                 fnrLege,
                                 legekontorOrgName,
                                 loggingMeta,
-                                legeerklaringId
+                                legeerklaringId,
                             )
 
                         when (validationResult.status) {
