@@ -27,23 +27,23 @@ val googleCloudStorageVersion="2.43.1"
 val jaxbImplVersion="2.3.3"
 val wsApiVersion="2.3.3"
 val annotationApiVersion="1.3.5"
-val flywayVersion="10.18.2"
+val flywayVersion="10.19.0"
 val hikariVersion="6.0.0"
 val postgresVersion="42.7.4"
-val testcontainersPostgresVersion="1.20.1"
+val testcontainersPostgresVersion="1.20.2"
 val ktfmtVersion="0.44"
 val commonsCodecVersion = "1.17.1"
 val snappyJavaVersion = "1.1.10.7"
 val jsonVersion = "20240303"
 val commonsCompressVersion = "1.27.1"
-val nettyCodecHttp2Version = "4.1.113.Final"
+val nettyCodecHttp2Version = "4.1.114.Final"
 val ibmMqVersion = "9.4.0.5"
 
 
 plugins {
     id("application")
     kotlin("jvm") version "2.0.20"
-    id("com.gradleup.shadow") version "8.3.2"
+    id("com.gradleup.shadow") version "8.3.3"
     id("com.diffplug.spotless") version "6.25.0"
 }
 
