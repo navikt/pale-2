@@ -18,7 +18,6 @@ import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.routing.*
 import io.prometheus.client.hotspot.DefaultExports
 import jakarta.jms.Session
 import java.io.FileInputStream
@@ -41,11 +40,10 @@ import no.nav.syfo.mq.MqTlsUtils
 import no.nav.syfo.mq.connectionFactory
 import no.nav.syfo.mq.consumerForQueue
 import no.nav.syfo.mq.producerForQueue
-import no.nav.syfo.nais.isalive.naisIsAliveRoute
-import no.nav.syfo.nais.isready.naisIsReadyRoute
-import no.nav.syfo.nais.prometheus.naisPrometheusRoute
 import no.nav.syfo.pdl.PdlFactory
 import no.nav.syfo.pdl.service.PdlPersonService
+import no.nav.syfo.plugins.configureLifecycleHooks
+import no.nav.syfo.plugins.configureRouting
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.samhandlerservice.SamhandlerService
 import no.nav.syfo.services.virusscanservice.VirusScanService
@@ -94,11 +92,7 @@ fun Application.module() {
         System.setProperty(key as String, value as String)
     }
 
-    environment.monitor.subscribe(ApplicationStopped) {
-        applicationState.ready = false
-        applicationState.alive = false
-    }
-
+    configureLifecycleHooks(applicationState = applicationState)
     configureRouting(applicationState = applicationState)
 
     DefaultExports.initialize()
@@ -292,14 +286,6 @@ fun launchListeners(
                         arenaProducer = arenaProducer,
                     )
             }
-    }
-}
-
-fun Application.configureRouting(applicationState: ApplicationState) {
-    routing {
-        naisIsAliveRoute(applicationState)
-        naisIsReadyRoute(applicationState)
-        naisPrometheusRoute()
     }
 }
 
