@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 group = "no.nav.syfo"
 version = "1.0.0"
 
@@ -14,7 +16,6 @@ val javaxAnnotationApiVersion="1.3.2"
 val jaxbRuntimeVersion="2.4.0-b180830.0438"
 val jaxbApiVersion="2.4.0-b180830.0359"
 val javaxActivationVersion="1.1.1"
-val commonsTextVersion="1.12.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
@@ -28,11 +29,14 @@ val hikariVersion="6.0.0"
 val postgresVersion="42.7.4"
 val testcontainersPostgresVersion="1.20.2"
 val ktfmtVersion="0.44"
-val commonsCodecVersion = "1.17.1"
-val snappyJavaVersion = "1.1.10.7"
-val commonsCompressVersion = "1.27.1"
-val nettyCodecHttp2Version = "4.1.114.Final"
 val ibmMqVersion = "9.4.0.5"
+
+//overrides vulnerable dependency
+val commonsCompressVersion = "1.27.1"
+
+
+val javaVersion = JvmTarget.JVM_21
+
 
 
 plugins {
@@ -68,27 +72,13 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    constraints {
-        implementation("io.netty:netty-codec-http2:$nettyCodecHttp2Version") {
-            because("override transient from io.ktor:ktor-server-netty, see CVE-2024-29025")
-        }
-    }
+
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    constraints {
-        implementation("commons-codec:commons-codec:$commonsCodecVersion") {
-            because("override transient from io.ktor:ktor-client-apache")
-        }
-    }
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$snappyJavaVersion") {
-            because("override transient from org.apache.kafka:kafka_2.12")
-        }
-    }
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
@@ -103,13 +93,6 @@ dependencies {
 
     implementation("com.ibm.mq:com.ibm.mq.jakarta.client:$ibmMqVersion")
 
-    implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$snappyJavaVersion") {
-            because("override transient from org.apache.kafka:kafka_2.12")
-        }
-    }
-
     implementation("no.nav.helse.xml:xmlfellesformat:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-hodemelding:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-apprec:$syfoxmlcodegen")
@@ -123,13 +106,10 @@ dependencies {
     compileOnly("org.flywaydb:flyway-core:$flywayVersion")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
 
-    implementation("org.apache.commons:commons-text:$commonsTextVersion")
-
     implementation("com.migesok", "jaxb-java-time-adapters", javaTimeAdapterVersion)
 
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion") {
-        exclude(group = "org.eclipse.jetty")
-    }
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitJupiterVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion")
@@ -143,6 +123,12 @@ dependencies {
         testImplementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
             because("overrides vulnerable dependency from org.testcontainers:postgresql")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(javaVersion)
     }
 }
 
