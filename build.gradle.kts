@@ -2,13 +2,13 @@ group = "no.nav.syfo"
 version = "1.0.0"
 
 
-val ktorVersion="3.0.0"
+val ktorVersion="3.0.1"
 val coroutinesVersion="1.9.0"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="5.11.3"
 val logbackVersion="1.5.12"
 val logstashEncoderVersion="8.0"
-val jacksonVersion="2.18.0"
+val jacksonVersion="2.18.1"
 val jaxwsApiVersion="2.3.1"
 val javaxAnnotationApiVersion="1.3.2"
 val jaxbRuntimeVersion="2.4.0-b180830.0438"
@@ -18,7 +18,7 @@ val commonsTextVersion="1.12.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
-val kafkaVersion="3.8.0"
+val kafkaVersion="3.8.1"
 val mockkVersion="1.13.13"
 val kotlinVersion="2.0.21"
 val googleCloudStorageVersion="2.44.1"
@@ -38,7 +38,7 @@ val ibmMqVersion = "9.4.1.0"
 plugins {
     id("application")
     kotlin("jvm") version "2.0.21"
-    id("com.gradleup.shadow") version "8.3.3"
+    id("com.gradleup.shadow") version "8.3.5"
     id("com.diffplug.spotless") version "6.25.0"
 }
 
