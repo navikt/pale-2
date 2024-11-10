@@ -22,8 +22,8 @@ spec:
   image: {{ image }}
   replicas:
     min: 2
-    max: 2
-    cpuThresholdPercentage: 90
+    max: 4
+    cpuThresholdPercentage:80
   port: 8080
   liveness:
     path: /internal/is_alive
