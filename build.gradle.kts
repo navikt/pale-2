@@ -20,9 +20,8 @@ val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
 val kafkaVersion="3.9.0"
 val mockkVersion="1.13.13"
-val kotlinVersion="2.0.21"
+val kotlinVersion="2.1.0"
 val googleCloudStorageVersion="2.45.0"
-val wsApiVersion="2.3.3"
 val flywayVersion="11.0.0"
 val hikariVersion="6.2.1"
 val postgresVersion="42.7.4"
@@ -37,7 +36,7 @@ val ibmMqVersion = "9.4.1.0"
 
 plugins {
     id("application")
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.1.0"
     id("com.gradleup.shadow") version "8.3.5"
     id("com.diffplug.spotless") version "6.25.0"
 }
@@ -102,13 +101,6 @@ dependencies {
     implementation("javax.activation:activation:$javaxActivationVersion")
 
     implementation("com.ibm.mq:com.ibm.mq.jakarta.client:$ibmMqVersion")
-
-    implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$snappyJavaVersion") {
-            because("override transient from org.apache.kafka:kafka_2.12")
-        }
-    }
 
     implementation("no.nav.helse.xml:xmlfellesformat:$syfoxmlcodegen")
     implementation("no.nav.helse.xml:kith-hodemelding:$syfoxmlcodegen")
