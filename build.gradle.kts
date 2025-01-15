@@ -38,7 +38,7 @@ plugins {
     id("application")
     kotlin("jvm") version "2.1.0"
     id("com.gradleup.shadow") version "8.3.5"
-    id("com.diffplug.spotless") version "7.0.1"
+    id("com.diffplug.spotless") version "7.0.2"
 }
 
 application {
