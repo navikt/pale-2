@@ -22,7 +22,7 @@ val kafkaVersion="3.9.0"
 val mockkVersion="1.13.16"
 val kotlinVersion="2.1.0"
 val googleCloudStorageVersion="2.47.0"
-val flywayVersion="11.1.1"
+val flywayVersion="11.2.0"
 val hikariVersion="6.2.1"
 val postgresVersion="42.7.5"
 val testcontainersPostgresVersion="1.20.4"
@@ -38,7 +38,7 @@ plugins {
     id("application")
     kotlin("jvm") version "2.1.0"
     id("com.gradleup.shadow") version "8.3.5"
-    id("com.diffplug.spotless") version "7.0.1"
+    id("com.diffplug.spotless") version "7.0.2"
 }
 
 application {
