@@ -20,7 +20,7 @@ val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
 val kafkaVersion="3.9.0"
 val mockkVersion="1.13.16"
-val kotlinVersion="2.1.0"
+val kotlinVersion="2.1.10"
 val googleCloudStorageVersion="2.47.0"
 val flywayVersion="11.2.0"
 val hikariVersion="6.2.1"
@@ -36,7 +36,7 @@ val ibmMqVersion = "9.4.1.1"
 
 plugins {
     id("application")
-    kotlin("jvm") version "2.1.0"
+    kotlin("jvm") version "2.1.10"
     id("com.gradleup.shadow") version "8.3.5"
     id("com.diffplug.spotless") version "7.0.2"
 }
