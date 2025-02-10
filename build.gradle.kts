@@ -30,7 +30,7 @@ val ktfmtVersion="0.44"
 val commonsCodecVersion = "1.18.0"
 val snappyJavaVersion = "1.1.10.7"
 val commonsCompressVersion = "1.27.1"
-val nettyCodecHttp2Version = "4.1.117.Final"
+val nettyCodecHttp2Version = "4.1.118.Final"
 val ibmMqVersion = "9.4.1.1"
 
 
