@@ -37,7 +37,6 @@ val ibmMqVersion = "9.4.1.1"
 ///Due to vulnerabilities
 val commonsCodecVersion = "1.18.0"
 val commonsCompressVersion = "1.27.1"
-val nettyCodecHttp2Version = "4.1.118.Final"
 
 
 plugins {
@@ -73,11 +72,6 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    constraints {
-        implementation("io.netty:netty-codec-http2:$nettyCodecHttp2Version") {
-            because("override transient from io.ktor:ktor-server-netty, see CVE-2024-29025")
-        }
-    }
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
