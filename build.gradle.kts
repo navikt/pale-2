@@ -1,6 +1,11 @@
+import com.diffplug.gradle.spotless.SpotlessTask
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 group = "no.nav.syfo"
 version = "1.0.0"
 
+val javaVersion = JvmTarget.JVM_21
 
 val ktorVersion="3.1.0"
 val coroutinesVersion="1.10.1"
@@ -27,11 +32,12 @@ val hikariVersion="6.2.1"
 val postgresVersion="42.7.5"
 val testcontainersPostgresVersion="1.20.4"
 val ktfmtVersion="0.44"
+val ibmMqVersion = "9.4.1.1"
+
+///Due to vulnerabilities
 val commonsCodecVersion = "1.18.0"
-val snappyJavaVersion = "1.1.10.7"
 val commonsCompressVersion = "1.27.1"
 val nettyCodecHttp2Version = "4.1.118.Final"
-val ibmMqVersion = "9.4.1.1"
 
 
 plugins {
@@ -83,11 +89,6 @@ dependencies {
     }
 
     implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
-    constraints {
-        implementation("org.xerial.snappy:snappy-java:$snappyJavaVersion") {
-            because("override transient from org.apache.kafka:kafka_2.12")
-        }
-    }
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
@@ -138,8 +139,15 @@ dependencies {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(javaVersion)
+    }
+}
+
 tasks {
-    shadowJar {
+
+    withType<ShadowJar>{
      mergeServiceFiles {
         setPath("META-INF/services/org.flywaydb.core.extensibility.Plugin")
       }
@@ -155,28 +163,29 @@ tasks {
         }
     }
 
-    test {
+    withType<Test>{
         useJUnitPlatform {}
         testLogging {
-            events("skipped", "failed")
+            events("passed", "skipped", "failed")
+            showStandardStreams = true
             showStackTraces = true
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
 
-    task("addPreCommitGitHookOnBuild") {
+    withType<Exec> {
         println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
-        exec {
-            commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
-        }
+        commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
         println("✅ Added Pre Commit Git Hook Script.")
+
     }
 
-
-    spotless {
-        kotlin { ktfmt(ktfmtVersion).kotlinlangStyle() }
-        check {
-            dependsOn("spotlessApply")
+    withType<SpotlessTask>{
+        spotless{
+            kotlin { ktfmt(ktfmtVersion).kotlinlangStyle() }
+            check {
+                dependsOn("spotlessApply")
+            }
         }
     }
 }
