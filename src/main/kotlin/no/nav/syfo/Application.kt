@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import com.google.auth.Credentials
-import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
 import io.ktor.client.*
@@ -20,7 +18,6 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.prometheus.client.hotspot.DefaultExports
 import jakarta.jms.Session
-import java.io.FileInputStream
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -194,10 +191,7 @@ fun Application.module() {
             environmentVariables.pale2ReglerApiScope
         )
 
-    val paleVedleggStorageCredentials: Credentials =
-        GoogleCredentials.fromStream(FileInputStream("/var/run/secrets/pale2-google-creds.json"))
-    val paleVedleggStorage: Storage =
-        StorageOptions.newBuilder().setCredentials(paleVedleggStorageCredentials).build().service
+    val paleVedleggStorage: Storage = StorageOptions.newBuilder().build().service
 
     val paleVedleggBucketUploadService =
         BucketUploadService(

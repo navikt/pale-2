@@ -74,6 +74,8 @@ spec:
     pool: nav-prod
   envFrom:
     - secret: srvpale2-secrets
+    - secret: pale2-keystore-pwd
+    - secret: pale-2-secret
   filesFrom:
     - mountPath: /var/run/secrets
       secret: pale2-google-creds
@@ -100,10 +102,6 @@ spec:
       value: https://pdl-api.prod-fss-pub.nais.io/graphql
     - name: PDL_SCOPE
       value: api://prod-fss.pdl.pdl-api/.default
-    - name: PALE_VEDLEGG_BUCKET_NAME
-      value: teamsykmelding-pale2-vedlegg-bucket-prod
-    - name: PALE_BUCKET_NAME
-      value: teamsykmelding-pale2-legeerklaring-bucket-prod
     - name: SMGCP_PROXY_SCOPE
       value: api://prod-fss.teamsykmelding.smgcp-proxy/.default
     - name: SMGCP_PROXY_URL
