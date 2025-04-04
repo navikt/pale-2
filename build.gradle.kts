@@ -7,7 +7,7 @@ version = "1.0.0"
 
 val javaVersion = JvmTarget.JVM_21
 
-val ktorVersion="3.1.1"
+val ktorVersion="3.1.2"
 val coroutinesVersion="1.10.1"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="5.12.1"
@@ -27,7 +27,7 @@ val kafkaVersion="3.9.0"
 val mockkVersion="1.13.17"
 val kotlinVersion="2.1.20"
 val googleCloudStorageVersion="2.50.0"
-val flywayVersion="11.4.1"
+val flywayVersion="11.6.0"
 val hikariVersion="6.3.0"
 val postgresVersion="42.7.5"
 val testcontainersPostgresVersion="1.20.6"
