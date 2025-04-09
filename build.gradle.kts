@@ -7,12 +7,12 @@ version = "1.0.0"
 
 val javaVersion = JvmTarget.JVM_21
 
-val ktorVersion="3.1.1"
-val coroutinesVersion="1.10.1"
+val ktorVersion="3.1.2"
+val coroutinesVersion="1.10.2"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="5.12.1"
 val logbackVersion="1.5.18"
-val logstashEncoderVersion="8.0"
+val logstashEncoderVersion="8.1"
 val jacksonVersion="2.18.3"
 val jaxwsApiVersion="2.3.1"
 val javaxAnnotationApiVersion="1.3.2"
@@ -24,10 +24,10 @@ val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
 val kafkaVersion="3.9.0"
-val mockkVersion="1.13.17"
+val mockkVersion="1.14.0"
 val kotlinVersion="2.1.20"
 val googleCloudStorageVersion="2.50.0"
-val flywayVersion="11.4.1"
+val flywayVersion="11.7.0"
 val hikariVersion="6.3.0"
 val postgresVersion="42.7.5"
 val testcontainersPostgresVersion="1.20.6"
@@ -43,7 +43,7 @@ plugins {
     id("application")
     kotlin("jvm") version "2.1.20"
     id("com.gradleup.shadow") version "8.3.6"
-    id("com.diffplug.spotless") version "7.0.2"
+    id("com.diffplug.spotless") version "7.0.3"
 }
 
 application {
