@@ -140,11 +140,9 @@ kotlin {
 }
 
 tasks {
-
     withType<ShadowJar>{
-     mergeServiceFiles {
-        setPath("META-INF/services/org.flywaydb.core.extensibility.Plugin")
-      }
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE 
+        mergeServiceFiles()
         archiveBaseName.set("app")
         archiveClassifier.set("")
         isZip64 = true
