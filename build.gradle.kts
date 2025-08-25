@@ -1,5 +1,4 @@
 import com.diffplug.gradle.spotless.SpotlessTask
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 group = "no.nav.syfo"
@@ -42,7 +41,6 @@ val commonsCompressVersion = "1.28.0"
 plugins {
     id("application")
     kotlin("jvm") version "2.2.10"
-    id("com.gradleup.shadow") version "9.0.2"
     id("com.diffplug.spotless") version "7.2.1"
 }
 
@@ -140,20 +138,6 @@ kotlin {
 }
 
 tasks {
-    withType<ShadowJar>{
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE 
-        mergeServiceFiles()
-        archiveBaseName.set("app")
-        archiveClassifier.set("")
-        isZip64 = true
-        manifest {
-            attributes(
-                mapOf(
-                    "Main-Class" to "no.nav.syfo.ApplicationKt",
-                ),
-            )
-        }
-    }
 
     withType<Test>{
         useJUnitPlatform {}
