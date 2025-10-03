@@ -136,7 +136,9 @@ class BlockingApplicationRunner(
                         } else {
                             null
                         }
-
+                    vedlegg.forEach {
+                        log.info("vedlegg type: ${it.type} id: $legeerklaringId, msgId: $msgId")
+                    }
                     val requestLatency = REQUEST_TIME.startTimer()
 
                     val loggingMeta =
