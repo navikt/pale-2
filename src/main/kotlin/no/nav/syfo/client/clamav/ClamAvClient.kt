@@ -27,7 +27,7 @@ class ClamAvClient(
                                     append(HttpHeaders.ContentType, vedlegg.content.contentType)
                                     append(
                                         HttpHeaders.ContentDisposition,
-                                        "filename=${removeNewLines(vedlegg.description)}"
+                                        "filename=\"${removeNewLines(vedlegg.description)}\""
                                     )
                                 },
                             )
