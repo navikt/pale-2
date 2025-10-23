@@ -39,7 +39,6 @@ This the high level flow of the application
 #### Requirements
 
 * JDK 21
-* Docker
 
 
 #### Build and run tests
