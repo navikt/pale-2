@@ -24,6 +24,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import no.nav.syfo.client.accesstoken.AccessTokenClientV2
 import no.nav.syfo.client.clamav.ClamAvClient
 import no.nav.syfo.client.emottaksubscription.EmottakSubscriptionClient
@@ -81,7 +82,7 @@ fun main() {
 fun Application.module() {
     val environmentVariables = EnvironmentVariables()
     val database = Database(environmentVariables)
-    val serviceUser = ServiceUser()
+    val mqUser = MqUser()
 
     val applicationState = ApplicationState()
 
@@ -205,81 +206,27 @@ fun Application.module() {
     val virusScanService = VirusScanService(clamAvClient)
 
     val duplicationCheckService = DuplicationCheckService(database)
-
-    launchListeners(
+    val legeerklaringConsumerService = LegeerklaringConsumerService(
         applicationState,
         environmentVariables,
         samhandlerService,
         pdlPersonService,
-        serviceUser,
         aivenKafkaProducer,
         pale2ReglerClient,
         paleVedleggBucketUploadService,
         virusScanService,
         duplicationCheckService,
     )
-}
 
-@OptIn(DelicateCoroutinesApi::class)
-fun createListener(
-    applicationState: ApplicationState,
-    action: suspend CoroutineScope.() -> Unit
-): Job =
-    GlobalScope.launch {
-        try {
-            action()
-        } catch (e: TrackableException) {
-            log.error("En uhåndtert feil oppstod, applikasjonen restarter", e.cause)
-        } finally {
-            applicationState.ready = false
-            applicationState.alive = false
-        }
+    monitor.subscribe(ApplicationStarted) {
+        launch { legeerklaringConsumerService.start() }
+
     }
-
-fun launchListeners(
-    applicationState: ApplicationState,
-    environmentVariables: EnvironmentVariables,
-    samhandlerService: SamhandlerService,
-    pdlPersonService: PdlPersonService,
-    serviceUser: ServiceUser,
-    aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,
-    pale2ReglerClient: Pale2ReglerClient,
-    bucketUploadService: BucketUploadService,
-    virusScanService: VirusScanService,
-    duplicationCheckService: DuplicationCheckService,
-) {
-    createListener(applicationState) {
-        connectionFactory(environmentVariables)
-            .createConnection(serviceUser.serviceuserUsername, serviceUser.serviceuserPassword)
-            .use { connection ->
-                connection.start()
-                val session = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE)
-
-                val inputconsumer = session.consumerForQueue(environmentVariables.inputQueueName)
-                val receiptProducer = session.producerForQueue(environmentVariables.apprecQueueName)
-                val backoutProducer =
-                    session.producerForQueue(environmentVariables.inputBackoutQueueName)
-                val arenaProducer = session.producerForQueue(environmentVariables.arenaQueueName)
-
-                BlockingApplicationRunner(
-                        applicationState = applicationState,
-                        env = environmentVariables,
-                        samhandlerService = samhandlerService,
-                        pdlPersonService = pdlPersonService,
-                        aivenKafkaProducer = aivenKafkaProducer,
-                        pale2ReglerClient = pale2ReglerClient,
-                        bucketUploadService = bucketUploadService,
-                        virusScanService = virusScanService,
-                        duplicationCheckService = duplicationCheckService,
-                    )
-                    .run(
-                        inputconsumer = inputconsumer,
-                        session = session,
-                        receiptProducer = receiptProducer,
-                        backoutProducer = backoutProducer,
-                        arenaProducer = arenaProducer,
-                    )
-            }
+    this.monitor.raise(ApplicationStopping, this)
+    monitor.subscribe(ApplicationStopping) {
+        applicationState.ready = false
+        applicationState.alive = false
+        runBlocking { legeerklaringConsumerService.stop() }
     }
 }
 
