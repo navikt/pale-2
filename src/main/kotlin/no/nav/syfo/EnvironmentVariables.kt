@@ -36,11 +36,12 @@ data class EnvironmentVariables(
     val dbName: String = getEnvVar("DB_DATABASE"),
     val smtssApiUrl: String = "http://smtss",
     val smtssApiScope: String = getEnvVar("SMTSS_API_SCOPE"),
+    val mqUser: MqUser = MqUser()
 ) : MqConfig
 
-data class ServiceUser(
-    val serviceuserUsername: String = getEnvVar("SERVICEUSER_USERNAME"),
-    val serviceuserPassword: String = getEnvVar("SERVICEUSER_PASSWORD"),
+data class MqUser(
+    val username: String = getEnvVar("SERVICEUSER_USERNAME"),
+    val password: String = getEnvVar("SERVICEUSER_PASSWORD"),
 )
 
 fun getEnvVar(varName: String, defaultValue: String? = null) =
