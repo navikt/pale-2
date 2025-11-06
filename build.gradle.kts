@@ -6,10 +6,10 @@ version = "1.0.0"
 
 val javaVersion = JvmTarget.JVM_21
 
-val ktorVersion="3.3.1"
+val ktorVersion="3.3.2"
 val coroutinesVersion="1.10.2"
 val prometheusVersion="0.16.0"
-val junitJupiterVersion="6.0.0"
+val junitJupiterVersion="6.0.1"
 val logbackVersion="1.5.20"
 val logstashEncoderVersion="9.0"
 val jacksonVersion="2.20.1"
@@ -34,7 +34,7 @@ val ktfmtVersion="0.44"
 val ibmMqVersion = "9.4.4.0"
 
 ///Due to vulnerabilities
-val commonsCodecVersion = "1.19.0"
+val commonsCodecVersion = "1.20.0"
 val commonsCompressVersion = "1.28.0"
 
 
