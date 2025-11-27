@@ -54,7 +54,7 @@ spec:
       memory: 3Gi
     requests:
       cpu: 60m
-      memory: 1200Mi
+      memory: 1300Mi
   azure:
     application:
       enabled: true
