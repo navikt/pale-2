@@ -65,6 +65,8 @@ spec:
         - application: pale-2-regler
         - application: clamav
           namespace: nais-system
+        - application: logging
+          namespace: nais-system
         - application: smtss
       external:
         - host: smgcp-proxy.prod-fss-pub.nais.io
@@ -81,8 +83,6 @@ spec:
   filesFrom:
     - mountPath: /var/run/secrets
       secret: pale2-google-creds
-  secureLogs:
-    enabled: true
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.P_PALE.INPUT

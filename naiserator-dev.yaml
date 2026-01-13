@@ -63,6 +63,8 @@ spec:
   accessPolicy:
     outbound:
       rules:
+        - application: logging
+          namespace: nais-system
         - application: pale-2-regler
         - application: clamav
           namespace: nais-system
@@ -82,8 +84,6 @@ spec:
   filesFrom:
     - mountPath: /var/run/secrets
       secret: pale2-google-creds
-  secureLogs:
-    enabled: true
   env:
     - name: MQ_INPUT_QUEUE_NAME
       value: QA.Q1_PALE.INPUT
