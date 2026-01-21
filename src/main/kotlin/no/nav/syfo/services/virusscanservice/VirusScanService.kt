@@ -44,7 +44,7 @@ class VirusScanService(
                 StructuredArguments.fields(loggingMeta),
             )
             secureLog.info(
-                "Scanning vedlegg for virus: vedlegg: ${objectMapper.writeValueAsString(vedleggUnder300MegaByte)} " +
+                "Scanning vedlegg for virus: vedlegg: ${objectMapper.writeValueAsString(vedleggUnder300MegaByte.map { it.type to it.description })} " +
                     ", {}",
                 StructuredArguments.fields(loggingMeta),
             )
