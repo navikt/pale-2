@@ -10,7 +10,7 @@ val ktorVersion="3.3.1"
 val coroutinesVersion="1.10.2"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="6.0.0"
-val logbackVersion="1.5.21"
+val logbackVersion = "1.5.26"
 val logstashEncoderVersion="9.0"
 val jacksonVersion="2.20.1"
 val jaxwsApiVersion="2.3.1"
@@ -29,13 +29,9 @@ val googleCloudStorageVersion="2.59.0"
 val flywayVersion="11.15.0"
 val hikariVersion="7.0.2"
 val postgresVersion="42.7.8"
-val testcontainersPostgresVersion="1.21.3"
+val testcontainerVersion = "2.0.1"
 val ktfmtVersion="0.44"
 val ibmMqVersion = "9.4.4.0"
-
-///Due to vulnerabilities
-val commonsCodecVersion = "1.19.0"
-val commonsCompressVersion = "1.28.0"
 
 
 plugins {
@@ -74,13 +70,8 @@ dependencies {
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
-    constraints {
-        implementation("commons-codec:commons-codec:$commonsCodecVersion") {
-            because("override transient from io.ktor:ktor-client-apache")
-        }
-    }
 
-    implementation("org.apache.kafka:kafka_2.12:$kafkaVersion")
+    implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
@@ -123,12 +114,7 @@ dependencies {
         exclude(group = "org.apache.commons", module = "commons-text")
     }
     testImplementation("io.mockk:mockk:$mockkVersion")
-    testImplementation("org.testcontainers:postgresql:$testcontainersPostgresVersion")
-    constraints {
-        testImplementation("org.apache.commons:commons-compress:$commonsCompressVersion") {
-            because("overrides vulnerable dependency from org.testcontainers:postgresql")
-        }
-    }
+    testImplementation("org.testcontainers:testcontainers-postgresql:$testcontainerVersion")
 }
 
 kotlin {
