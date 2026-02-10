@@ -131,7 +131,7 @@ class LegeerklaringConsumerService(
                         )
                     }
             } catch (ex: Exception) {
-                log.error("En uhåndtert feil oppstod, applikasjonen restarter", ex.cause)
+                log.error("En uhåndtert feil oppstod, applikasjonen restarter", ex)
                 applicationState.alive = false
                 applicationState.ready = false
             }
