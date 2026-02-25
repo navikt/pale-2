@@ -29,7 +29,7 @@ val googleCloudStorageVersion = "2.62.1"
 val flywayVersion="11.15.0"
 val hikariVersion="7.0.2"
 val postgresVersion="42.7.8"
-val testcontainerVersion = "2.0.1"
+val testcontainerVersion = "2.0.3"
 val ktfmtVersion="0.44"
 val ibmMqVersion = "9.4.4.0"
 
