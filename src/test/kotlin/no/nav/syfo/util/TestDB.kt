@@ -3,6 +3,7 @@ package no.nav.syfo.util
 import io.mockk.every
 import io.mockk.mockk
 import no.nav.syfo.EnvironmentVariables
+import no.nav.syfo.MqUser
 import no.nav.syfo.db.Database
 import no.nav.syfo.db.DatabaseInterface
 import org.testcontainers.containers.PostgreSQLContainer
