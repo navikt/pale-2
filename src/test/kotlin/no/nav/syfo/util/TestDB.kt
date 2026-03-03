@@ -23,13 +23,17 @@ class TestDB private constructor() {
 
         init {
             psqlContainer.start()
-            val mockEnv = mockk<EnvironmentVariables>(relaxed = true)
-            every { mockEnv.databaseUsername } returns "username"
-            every { mockEnv.databasePassword } returns "password"
-            every { mockEnv.dbName } returns "database"
-            every { mockEnv.dbHost } returns psqlContainer.host.toString()
-            every { mockEnv.dbPort } returns psqlContainer.getMappedPort(5432).toString()
-            database = Database(mockEnv)
+            val env = EnvironmentVariables(
+        databaseUsername = psqlContainer.username,
+        databasePassword = psqlContainer.password,
+        dbHost = psqlContainer.host,
+        dbPort = psqlContainer.firstMappedPort.toString(),
+        dbName = psqlContainer.databaseName,
+        cluster = "test",
+        applicationPort = 0,
+        applicationName = "test",
+    )
+            database = Database(env)
         }
     }
 }
