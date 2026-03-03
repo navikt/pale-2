@@ -32,6 +32,26 @@ class TestDB private constructor() {
         cluster = "test",
         applicationPort = 0,
         applicationName = "test",
+        mqHostname = "localhost"
+        mqPort = 1414
+        mqGatewayName = "test"
+        mqChannelName = "test"
+       inputQueueName = "test",
+       apprecQueueName = "test"
+       inputBackoutQueueName = "test" 
+       arenaQueueName = "test",
+       pale2ReglerApiScope = "test",
+       pdlGraphqlPath = "test",
+       pdlScope = "test",
+       aadAccessTokenV2Url = "test",
+       clientIdV2 = "test",
+       clientSecretV2 = "test",
+       paleVedleggBucketName = "test",
+       legeerklaeringBucketName = "test",
+       smgcpProxyUrl = "test",
+       smgcpProxyScope = "test",
+       smtssApiScope = "test",
+       mqUser = MqUser(username="test", password="test")
     )
             database = Database(env)
         }
