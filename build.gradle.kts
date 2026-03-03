@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 group = "no.nav.syfo"
 version = "1.0.0"
 
-val javaVersion = JvmTarget.JVM_21
+val javaVersion = JvmTarget.JVM_25
 
 val ktorVersion="3.3.1"
 val coroutinesVersion="1.10.2"
@@ -24,7 +24,7 @@ val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
 val kafkaVersion="3.9.1"
 val mockkVersion="1.14.6"
-val kotlinVersion="2.2.21"
+val kotlinVersion="2.3.10"
 val googleCloudStorageVersion = "2.62.1"
 val flywayVersion="11.15.0"
 val hikariVersion="7.0.2"
@@ -36,7 +36,7 @@ val ibmMqVersion = "9.4.4.0"
 
 plugins {
     id("application")
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.3.10"
     id("com.diffplug.spotless") version "8.0.0"
 }
 
