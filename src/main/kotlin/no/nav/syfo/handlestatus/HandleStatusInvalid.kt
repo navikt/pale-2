@@ -21,6 +21,8 @@ import no.nav.syfo.services.apprec.sendReceipt
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
+import no.nav.syfo.services.journalpoststatus.JournalpostStatusService
+import no.nav.syfo.services.journalpoststatus.model.ProcessingStatusType
 import no.nav.syfo.util.LoggingMeta
 import org.apache.kafka.clients.producer.KafkaProducer
 
@@ -37,24 +39,39 @@ fun handleStatusINVALID(
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
+    journalpostStatusService: JournalpostStatusService,
+    processingStatus: ProcessingStatusType,
 ) {
-    sendReceipt(
-        session,
-        receiptProducer,
-        fellesformat,
-        ApprecStatus.AVVIST,
-        validationResult.ruleHits.map { it.toApprecCV() },
-        duplicationCheckService,
-        duplicateCheck,
-        loggingMeta,
-        apprecQueueName,
-    )
+    val referenceId = duplicateCheck.mottakId
+
+    if (processingStatus == ProcessingStatusType.MOTTATT) {
+        sendReceipt(
+            session,
+            receiptProducer,
+            fellesformat,
+            ApprecStatus.AVVIST,
+            validationResult.ruleHits.map { it.toApprecCV() },
+            duplicationCheckService,
+            duplicateCheck,
+            loggingMeta,
+            apprecQueueName,
+        )
+        journalpostStatusService.updateProcessingStatus(
+            referenceId,
+            ProcessingStatusType.APPREC_SENDT,
+        )
+    }
+
     sendTilTopic(
         aivenKafkaProducer,
         topic,
         legeerklaringKafkaMessage,
         legeerklaeringId,
         loggingMeta
+    )
+    journalpostStatusService.updateProcessingStatus(
+        referenceId,
+        ProcessingStatusType.SENDT_TIL_TOPIC,
     )
 }
 
@@ -172,28 +189,38 @@ fun handleFritekstfeltHarForMangeTegn(
     legeerklaeringId: String,
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
+    journalpostStatusService: JournalpostStatusService,
+    processingStatus: ProcessingStatusType,
 ) {
     log.warn(
         "Legeerklæringen er avvist fordi $fritekstfelt inneholder mer enn 15 000 tegn {}, {}",
         fields(loggingMeta),
         keyValue("avvistAv", env.applicationName),
     )
-    sendReceipt(
-        session,
-        receiptProducer,
-        fellesformat,
-        ApprecStatus.AVVIST,
-        listOf(
-            createApprecError(
-                "Legeerklæringen er avvist fordi den inneholder for mange tegn: " +
-                    " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. ",
+    val referenceId = duplicateCheck.mottakId
+
+    if (processingStatus == ProcessingStatusType.MOTTATT) {
+        sendReceipt(
+            session,
+            receiptProducer,
+            fellesformat,
+            ApprecStatus.AVVIST,
+            listOf(
+                createApprecError(
+                    "Legeerklæringen er avvist fordi den inneholder for mange tegn: " +
+                        " $fritekstfelt inneholder mer enn 15 000 tegn. Benytt heller vedlegg for epikriser og lignende. ",
+                ),
             ),
-        ),
-        duplicationCheckService,
-        duplicateCheck,
-        loggingMeta,
-        env.apprecQueueName,
-    )
+            duplicationCheckService,
+            duplicateCheck,
+            loggingMeta,
+            env.apprecQueueName,
+        )
+        journalpostStatusService.updateProcessingStatus(
+            referenceId,
+            ProcessingStatusType.APPREC_SENDT,
+        )
+    }
 
     sendTilTopic(
         aivenKafkaProducer,
@@ -201,6 +228,10 @@ fun handleFritekstfeltHarForMangeTegn(
         legeerklaringKafkaMessage,
         legeerklaeringId,
         loggingMeta
+    )
+    journalpostStatusService.updateProcessingStatus(
+        referenceId,
+        ProcessingStatusType.SENDT_TIL_TOPIC,
     )
     log.info("Sendt avvist legeerklæring til topic {}", fields(loggingMeta))
 

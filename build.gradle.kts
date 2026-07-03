@@ -32,12 +32,15 @@ val postgresVersion="42.7.8"
 val testcontainerVersion = "2.0.3"
 val ktfmtVersion="0.44"
 val ibmMqVersion = "9.4.4.0"
+val confluentVersion = "7.9.0"
+val avroVersion = "1.12.0"
 
 
 plugins {
     id("application")
     kotlin("jvm") version "2.3.10"
     id("com.diffplug.spotless") version "8.0.0"
+    id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
 application {
@@ -72,6 +75,9 @@ dependencies {
     implementation("io.ktor:ktor-client-apache:$ktorVersion")
 
     implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
+
+    implementation("org.apache.avro:avro:$avroVersion")
+    implementation("io.confluent:kafka-avro-serializer:$confluentVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
@@ -121,9 +127,14 @@ kotlin {
     compilerOptions {
         jvmTarget.set(javaVersion)
     }
+    sourceSets["main"].kotlin.srcDir("build/generated-main-avro-java")
 }
 
 tasks {
+
+    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        dependsOn("generateAvroJava")
+    }
 
     withType<Test>{
         useJUnitPlatform {}

@@ -36,6 +36,13 @@ data class EnvironmentVariables(
     val dbName: String = getEnvVar("DB_DATABASE"),
     val smtssApiUrl: String = "http://smtss",
     val smtssApiScope: String = getEnvVar("SMTSS_API_SCOPE"),
+    val journalfoeringHendelseTopic: String =
+        getEnvVar(
+            "JOURNALFOERING_HENDELSE_TOPIC",
+            "teamdokumenthandtering.aapen-dok-journalfoering",
+        ),
+    val journalfoeringHendelseConsumerGroup: String =
+        getEnvVar("JOURNALFOERING_HENDELSE_CONSUMER_GROUP", "pale-2-journalfoering-consumer"),
     val mqUser: MqUser = MqUser()
 ) : MqConfig
 

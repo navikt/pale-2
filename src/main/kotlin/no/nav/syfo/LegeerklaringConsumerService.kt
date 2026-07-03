@@ -54,6 +54,8 @@ import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.Duplicate
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
 import no.nav.syfo.services.duplicationcheck.sha256hashstring
+import no.nav.syfo.services.journalpoststatus.JournalpostStatusService
+import no.nav.syfo.services.journalpoststatus.model.ProcessingStatusType
 import no.nav.syfo.services.samhandlerservice.SamhandlerService
 import no.nav.syfo.services.virusscanservice.VirusScanService
 import no.nav.syfo.services.virusscanservice.fileSizeLagerThan300MegaBytes
@@ -93,6 +95,7 @@ class LegeerklaringConsumerService(
     private val bucketUploadService: BucketUploadService,
     private val virusScanService: VirusScanService,
     private val duplicationCheckService: DuplicationCheckService,
+    private val journalpostStatusService: JournalpostStatusService,
 ) {
 
     private val log = LoggerFactory.getLogger(LegeerklaringConsumerService::class.java)
@@ -121,13 +124,11 @@ class LegeerklaringConsumerService(
                         val receiptProducer = session.producerForQueue(env.apprecQueueName)
                         val backoutProducer =
                             session.producerForQueue(env.inputBackoutQueueName)
-                        val arenaProducer = session.producerForQueue(env.arenaQueueName)
                         runPollLoop(
                             inputconsumer,
                             session,
                             receiptProducer,
                             backoutProducer,
-                            arenaProducer,
                         )
                     }
             } catch (ex: Exception) {
@@ -144,7 +145,6 @@ class LegeerklaringConsumerService(
         session: Session,
         receiptProducer: MessageProducer,
         backoutProducer: MessageProducer,
-        arenaProducer: MessageProducer
     ) = coroutineScope {
         while (applicationState.ready && isActive) {
             val message = inputconsumer.receiveNoWait()
@@ -187,7 +187,26 @@ class LegeerklaringConsumerService(
                 val fnrLege = receiverBlock.avsenderFnrFraDigSignatur
                 val legekontorHerId = extractOrganisationHerNumberFromSender(fellesformat)?.id
                 val legekontorReshId = extractOrganisationRashNumberFromSender(fellesformat)?.id
-                val legeerklaringId = UUID.randomUUID().toString()
+                val mottatDato =
+                    receiverBlock.mottattDatotid
+                        .toGregorianCalendar()
+                        .toZonedDateTime()
+                        .withZoneSameInstant(ZoneId.of("Europe/Oslo"))
+                        .toLocalDateTime()
+
+                // Én rad per melding: opprettes ved første leveranse og gjenbrukes ved
+                // MQ-redelivery, slik at samme melding aldri behandles med ny legeerklaringId
+                val eksisterendeStatus = journalpostStatusService.getByReferenceId(ediLoggId)
+                val erRedelivertFraMq = eksisterendeStatus != null
+                val meldingStatus =
+                    eksisterendeStatus
+                        ?: journalpostStatusService.insertMottatt(
+                            legeerklaringId = UUID.randomUUID().toString(),
+                            referenceId = ediLoggId,
+                            msgId = msgId,
+                            mottattDato = mottatDato,
+                        )
+                val legeerklaringId = meldingStatus.legeerklaringId
                 val conversationRefXml =
                     if (msgHead.msgInfo?.conversationRef != null) {
                         msgHead.msgInfo?.conversationRef
@@ -216,15 +235,21 @@ class LegeerklaringConsumerService(
 
                 INCOMING_MESSAGE_COUNTER.inc()
 
+                if (
+                    meldingStatus.journalpostStatus != null ||
+                    meldingStatus.processingStatus == ProcessingStatusType.SENDT_TIL_TOPIC ||
+                    meldingStatus.processingStatus == ProcessingStatusType.AVVIST
+                ) {
+                    log.info(
+                        "Melding er allerede ferdig behandlet med status " +
+                            "${meldingStatus.processingStatus}, ignorerer redelivery fra MQ, {}",
+                        fields(loggingMeta),
+                    )
+                    continue
+                }
+
                 val duplicationCheckSha256String =
                     duplicationCheckService.getDuplicationCheck(sha256String, ediLoggId)
-
-                val mottatDato =
-                    receiverBlock.mottattDatotid
-                        .toGregorianCalendar()
-                        .toZonedDateTime()
-                        .withZoneSameInstant(ZoneId.of("Europe/Oslo"))
-                        .toLocalDateTime()
 
                 val duplicateCheck =
                     DuplicateCheck(
@@ -236,7 +261,10 @@ class LegeerklaringConsumerService(
                         legekontorOrgNr,
                     )
 
-                if (duplicationCheckSha256String != null) {
+                val erRedelivery =
+                    erRedelivertFraMq && duplicationCheckSha256String?.mottakId == ediLoggId
+
+                if (duplicationCheckSha256String != null && !erRedelivery) {
                     val duplicate =
                         Duplicate(
                             legeerklaringId,
@@ -255,8 +283,19 @@ class LegeerklaringConsumerService(
                         duplicateCheck,
                         duplicate,
                     )
+                    journalpostStatusService.updateProcessingStatus(
+                        ediLoggId,
+                        ProcessingStatusType.AVVIST,
+                    )
                     continue
                 } else {
+                    if (erRedelivery) {
+                        log.info(
+                            "Melding er redelivert fra MQ, gjenopptar behandling fra status " +
+                                "${meldingStatus.processingStatus}, {}",
+                            fields(loggingMeta),
+                        )
+                    }
                     log.info("Slår opp behandler i PDL {}", fields(loggingMeta))
                     val behandler = pdlPersonService.getPdlPerson(fnrLege, loggingMeta)
                     log.info("Slår opp pasient i PDL {}", fields(loggingMeta))
@@ -272,6 +311,10 @@ class LegeerklaringConsumerService(
                             duplicationCheckService,
                             duplicateCheck,
                         )
+                        journalpostStatusService.updateProcessingStatus(
+                            ediLoggId,
+                            ProcessingStatusType.AVVIST,
+                        )
                         continue
                     }
                     if (behandler?.aktorId == null) {
@@ -284,6 +327,10 @@ class LegeerklaringConsumerService(
                             duplicationCheckService,
                             duplicateCheck,
                         )
+                        journalpostStatusService.updateProcessingStatus(
+                            ediLoggId,
+                            ProcessingStatusType.AVVIST,
+                        )
                         continue
                     }
                     if (erTestFnr(fnrPasient) && env.cluster == "prod-gcp") {
@@ -295,6 +342,10 @@ class LegeerklaringConsumerService(
                             loggingMeta,
                             duplicationCheckService,
                             duplicateCheck,
+                        )
+                        journalpostStatusService.updateProcessingStatus(
+                            ediLoggId,
+                            ProcessingStatusType.AVVIST,
                         )
                         continue
                     }
@@ -348,6 +399,7 @@ class LegeerklaringConsumerService(
                             receiptProducer,
                             fellesformat,
                             duplicateCheck,
+                            meldingStatus.processingStatus,
                         )
                         continue
                     }
@@ -377,6 +429,10 @@ class LegeerklaringConsumerService(
                                 duplicationCheckService,
                                 duplicateCheck,
                             )
+                            journalpostStatusService.updateProcessingStatus(
+                                ediLoggId,
+                                ProcessingStatusType.AVVIST,
+                            )
                             continue
                         }
 
@@ -389,6 +445,10 @@ class LegeerklaringConsumerService(
                                 loggingMeta,
                                 duplicationCheckService,
                                 duplicateCheck,
+                            )
+                            journalpostStatusService.updateProcessingStatus(
+                                ediLoggId,
+                                ProcessingStatusType.AVVIST,
                             )
                             continue
                         }
@@ -432,7 +492,6 @@ class LegeerklaringConsumerService(
                                 session = session,
                                 receiptProducer = receiptProducer,
                                 fellesformat = fellesformat,
-                                arenaProducer = arenaProducer,
                                 tssId = tssIdArena,
                                 ediLoggId = ediLoggId,
                                 fnrLege = fnrLege,
@@ -445,6 +504,8 @@ class LegeerklaringConsumerService(
                                 duplicationCheckService = duplicationCheckService,
                                 duplicateCheck = duplicateCheck,
                                 behandlerName = behandler.navn.format(),
+                                journalpostStatusService = journalpostStatusService,
+                                processingStatus = meldingStatus.processingStatus,
                             )
 
                         Status.INVALID ->
@@ -461,6 +522,8 @@ class LegeerklaringConsumerService(
                                 legeerklaeringId = legeerklaring.id,
                                 duplicationCheckService = duplicationCheckService,
                                 duplicateCheck = duplicateCheck,
+                                journalpostStatusService = journalpostStatusService,
+                                processingStatus = meldingStatus.processingStatus,
                             )
                     }
 
@@ -495,7 +558,8 @@ class LegeerklaringConsumerService(
         session: Session,
         receiptProducer: MessageProducer,
         fellesformat: XMLEIFellesformat,
-        duplicateCheck: DuplicateCheck
+        duplicateCheck: DuplicateCheck,
+        processingStatus: ProcessingStatusType,
     ) {
         val legeerklaering = receivedLegeerklaering.legeerklaering
         val forkortedeSykdomsopplysninger =
@@ -528,6 +592,8 @@ class LegeerklaringConsumerService(
             legeerklaeringId = legeerklaering.id,
             duplicationCheckService = duplicationCheckService,
             duplicateCheck = duplicateCheck,
+            journalpostStatusService = journalpostStatusService,
+            processingStatus = processingStatus,
         )
     }
 }
