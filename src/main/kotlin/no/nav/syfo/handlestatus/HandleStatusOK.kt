@@ -5,16 +5,16 @@ import jakarta.jms.Session
 import net.logstash.logback.argument.StructuredArguments.fields
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.apprec.ApprecStatus
-import no.nav.syfo.client.arena.createArenaInfo
 import no.nav.syfo.log
 import no.nav.syfo.model.Legeerklaering
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.services.apprec.sendReceipt
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
 import no.nav.syfo.services.duplicationcheck.model.DuplicateCheck
+import no.nav.syfo.services.journalpoststatus.JournalpostStatusService
+import no.nav.syfo.services.journalpoststatus.model.ArenaPayload
+import no.nav.syfo.services.journalpoststatus.model.ProcessingStatusType
 import no.nav.syfo.util.LoggingMeta
-import no.nav.syfo.util.arenaMarshaller
-import no.nav.syfo.util.toString
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 
@@ -22,7 +22,6 @@ fun handleStatusOK(
     session: Session,
     receiptProducer: MessageProducer,
     fellesformat: XMLEIFellesformat,
-    arenaProducer: MessageProducer,
     tssId: String?,
     ediLoggId: String,
     fnrLege: String,
@@ -35,21 +34,37 @@ fun handleStatusOK(
     duplicationCheckService: DuplicationCheckService,
     duplicateCheck: DuplicateCheck,
     behandlerName: String,
+    journalpostStatusService: JournalpostStatusService,
+    processingStatus: ProcessingStatusType,
 ) {
-    sendReceipt(
-        session,
-        receiptProducer,
-        fellesformat,
-        ApprecStatus.OK,
-        emptyList(),
-        duplicationCheckService,
-        duplicateCheck,
-        loggingMeta,
-        apprecQueueName,
+    journalpostStatusService.updateArenaPayload(
+        ediLoggId,
+        ArenaPayload(
+            tssId = tssId,
+            ediLoggId = ediLoggId,
+            fnrLege = fnrLege,
+            behandlerName = behandlerName,
+            legeerklaering = legeerklaring,
+        ),
     )
 
-    sendArenaInfo(arenaProducer, session, tssId, ediLoggId, fnrLege, legeerklaring, behandlerName)
-    log.info("Legeerklæring sendt til arena, {}", fields(loggingMeta))
+    if (processingStatus == ProcessingStatusType.MOTTATT) {
+        sendReceipt(
+            session,
+            receiptProducer,
+            fellesformat,
+            ApprecStatus.OK,
+            emptyList(),
+            duplicationCheckService,
+            duplicateCheck,
+            loggingMeta,
+            apprecQueueName,
+        )
+        journalpostStatusService.updateProcessingStatus(
+            ediLoggId,
+            ProcessingStatusType.APPREC_SENDT,
+        )
+    }
 
     sendTilTopic(
         aivenKafkaProducer,
@@ -58,23 +73,15 @@ fun handleStatusOK(
         legeerklaring.id,
         loggingMeta
     )
-}
-
-fun sendArenaInfo(
-    producer: MessageProducer,
-    session: Session,
-    tssId: String?,
-    mottakid: String,
-    fnrbehandler: String,
-    legeerklaring: Legeerklaering,
-    behandlerName: String,
-) =
-    producer.send(
-        session.createTextMessage().apply {
-            val info = createArenaInfo(tssId, mottakid, fnrbehandler, legeerklaring, behandlerName)
-            text = arenaMarshaller.toString(info)
-        },
+    journalpostStatusService.updateProcessingStatus(
+        ediLoggId,
+        ProcessingStatusType.SENDT_TIL_TOPIC,
     )
+    log.info(
+        "Legeerklæring avventer journalføring før sending til arena, {}",
+        fields(loggingMeta),
+    )
+}
 
 fun sendTilTopic(
     aivenKafkaProducer: KafkaProducer<String, LegeerklaeringKafkaMessage>,

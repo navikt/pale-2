@@ -69,14 +69,6 @@ val VEDLEGG_VIRUS_COUNTER: Counter =
         .name("legeerkleringer_may_contain_virus_in_vedlegg")
         .help("Number of legeerkleringer that may contain virus in vedlegg")
         .register()
-
-val VEDLEGG_OVER_300_MEGABYTE_COUNTER: Counter =
-    Counter.build()
-        .namespace(METRICS_NS)
-        .name("legeerkleringer_over_300_megabyte_vedlegg")
-        .help("Number of vedlegg that is over 300 megabyte")
-        .register()
-
 val IKKE_OPPDATERT_PARTNERREG: Counter =
     Counter.build()
         .namespace(METRICS_NS)
@@ -89,4 +81,25 @@ val DUPLICATE_LEGEERKLERING: Counter =
         .namespace(METRICS_NS)
         .name("duplicate_legeerkleringe")
         .help("Antall Legærkleringer som er like")
+        .register()
+
+val ARENA_SENDT_VIA_JOURNALFOERING_COUNTER: Counter =
+    Counter.build()
+        .namespace(METRICS_NS)
+        .name("arena_sendt_via_journalfoering")
+        .help("Antall legeerklæringer sendt til arena etter journalføring med tema OPP")
+        .register()
+
+val JOURNALFOERING_IGNORERT_COUNTER: Counter =
+    Counter.build()
+        .namespace(METRICS_NS)
+        .name("journalfoering_ignorert")
+        .help("Antall journalførte legeerklæringer som ikke sendes til arena (tema != OPP)")
+        .register()
+
+val JOURNALFOERING_UMATCHET_COUNTER: Counter =
+    Counter.build()
+        .namespace(METRICS_NS)
+        .name("journalfoering_umatchet")
+        .help("Antall journalføringshendelser uten en ventende legeerklæring")
         .register()

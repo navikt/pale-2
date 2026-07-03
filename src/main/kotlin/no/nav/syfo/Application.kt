@@ -17,14 +17,9 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.prometheus.client.hotspot.DefaultExports
-import jakarta.jms.Session
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import no.nav.joarkjournalfoeringhendelser.JournalfoeringHendelseRecord
 import no.nav.syfo.client.accesstoken.AccessTokenClientV2
 import no.nav.syfo.client.clamav.ClamAvClient
 import no.nav.syfo.client.emottaksubscription.EmottakSubscriptionClient
@@ -35,22 +30,21 @@ import no.nav.syfo.kafka.aiven.KafkaUtils
 import no.nav.syfo.kafka.toProducerConfig
 import no.nav.syfo.model.kafka.LegeerklaeringKafkaMessage
 import no.nav.syfo.mq.MqTlsUtils
-import no.nav.syfo.mq.connectionFactory
-import no.nav.syfo.mq.consumerForQueue
-import no.nav.syfo.mq.producerForQueue
 import no.nav.syfo.pdl.PdlFactory
-import no.nav.syfo.pdl.service.PdlPersonService
 import no.nav.syfo.plugins.configureLifecycleHooks
 import no.nav.syfo.plugins.configureRouting
 import no.nav.syfo.services.duplicationcheck.DuplicationCheckService
+import no.nav.syfo.services.journalpoststatus.JournalfoeringHendelseConsumerService
+import no.nav.syfo.services.journalpoststatus.JournalpostStatusService
 import no.nav.syfo.services.samhandlerservice.SamhandlerService
 import no.nav.syfo.services.virusscanservice.VirusScanService
 import no.nav.syfo.util.JacksonKafkaSerializer
-import no.nav.syfo.util.TrackableException
 import no.nav.syfo.vedlegg.google.BucketUploadService
+import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
 
 val objectMapper: ObjectMapper =
     ObjectMapper()
@@ -176,7 +170,7 @@ fun Application.module() {
     val samhandlerService = SamhandlerService(smtssClient, emottakSubscriptionClient)
 
     val aivenKakfaProducerConfig =
-        KafkaUtils.getAivenKafkaConfig()
+        KafkaUtils.getAivenKafkaProducerConfig()
             .toProducerConfig(
                 environmentVariables.applicationName,
                 valueSerializer = JacksonKafkaSerializer::class
@@ -206,6 +200,7 @@ fun Application.module() {
     val virusScanService = VirusScanService(clamAvClient)
 
     val duplicationCheckService = DuplicationCheckService(database)
+    val journalpostStatusService = JournalpostStatusService(database)
     val legeerklaringConsumerService = LegeerklaringConsumerService(
         applicationState,
         environmentVariables,
@@ -216,17 +211,35 @@ fun Application.module() {
         paleVedleggBucketUploadService,
         virusScanService,
         duplicationCheckService,
+        journalpostStatusService,
     )
+
+    val journalfoeringHendelseConsumer =
+        KafkaConsumer<String, JournalfoeringHendelseRecord>(
+            KafkaUtils.getAivenKafkaAvroConsumerConfig(
+                environmentVariables.journalfoeringHendelseConsumerGroup,
+            ),
+        )
+    val journalfoeringHendelseConsumerService =
+        JournalfoeringHendelseConsumerService(
+            applicationState,
+            environmentVariables,
+            journalfoeringHendelseConsumer,
+            journalpostStatusService,
+        )
 
     monitor.subscribe(ApplicationStarted) {
         launch { legeerklaringConsumerService.start() }
-
+        launch { journalfoeringHendelseConsumerService.start() }
     }
     this.monitor.raise(ApplicationStopping, this)
     monitor.subscribe(ApplicationStopping) {
         applicationState.ready = false
         applicationState.alive = false
-        runBlocking { legeerklaringConsumerService.stop() }
+        runBlocking {
+            legeerklaringConsumerService.stop()
+            journalfoeringHendelseConsumerService.stop()
+        }
     }
 }
 

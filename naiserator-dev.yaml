@@ -112,3 +112,7 @@ spec:
       value: api://dev-gcp.teamsykmelding.pale-2-regler/.default
     - name: SMTSS_API_SCOPE
       value: api://dev-gcp.teamsykmelding.smtss/.default
+    - name: JOURNALFOERING_HENDELSE_TOPIC
+      value: teamdokumenthandtering.aapen-dok-journalfoering
+    - name: JOURNALFOERING_HENDELSE_CONSUMER_GROUP
+      value: pale-2-journalfoering-consumer
