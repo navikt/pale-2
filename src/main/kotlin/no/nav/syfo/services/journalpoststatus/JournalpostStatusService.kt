@@ -75,11 +75,14 @@ class JournalpostStatusService(private val database: DatabaseInterface) {
             }
 
         if (pendingEntries.isEmpty()) {
+            log.info("Fant ikke journalpoststatus for journalpostId $journalpostId og referanse: $referenceId")
             JOURNALFOERING_UMATCHET_COUNTER.inc()
             return
         }
 
         pendingEntries.forEach { entry ->
+
+            log.info("Fant journalpoststatus med status ${entry.journalpostStatus} for journalpostId $journalpostId, referanse: $referenceId, legeerklaringId: ${entry.legeerklaringId}")
             val loggingMeta =
                 LoggingMeta(
                     legeerklaringId = entry.legeerklaringId,
