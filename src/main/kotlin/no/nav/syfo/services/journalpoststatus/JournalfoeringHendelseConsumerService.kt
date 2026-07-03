@@ -2,6 +2,7 @@ package no.nav.syfo.services.journalpoststatus
 
 import jakarta.jms.Session
 import java.time.Duration
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -57,6 +58,9 @@ class JournalfoeringHendelseConsumerService(
                             kafkaConsumer.subscribe(listOf(env.journalfoeringHendelseTopic))
                             runPollLoop(arenaService)
                         }
+                } catch (ex: CancellationException) {
+                    log.info("Journalføring consumer stoppet: ${ex.message}")
+                    throw ex
                 } catch (ex: Exception) {
                     log.error(
                         "En uhåndtert feil oppstod i journalføring consumer, applikasjonen restarter",
@@ -64,6 +68,8 @@ class JournalfoeringHendelseConsumerService(
                     )
                     applicationState.alive = false
                     applicationState.ready = false
+                } finally {
+                    kafkaConsumer.close()
                 }
             }
     }

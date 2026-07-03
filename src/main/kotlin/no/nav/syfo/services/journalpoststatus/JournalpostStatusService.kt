@@ -75,7 +75,6 @@ class JournalpostStatusService(private val database: DatabaseInterface) {
             }
 
         if (pendingEntries.isEmpty()) {
-            log.info("Fant ikke journalpoststatus for journalpostId $journalpostId og referanse: $referenceId")
             JOURNALFOERING_UMATCHET_COUNTER.inc()
             return
         }

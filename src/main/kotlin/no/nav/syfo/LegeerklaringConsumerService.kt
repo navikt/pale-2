@@ -5,6 +5,7 @@ import jakarta.jms.MessageConsumer
 import jakarta.jms.MessageProducer
 import jakarta.jms.Session
 import jakarta.jms.TextMessage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -131,6 +132,9 @@ class LegeerklaringConsumerService(
                             backoutProducer,
                         )
                     }
+            } catch (ex: CancellationException) {
+                log.info("Legeerklæring consumer stoppet: ${ex.message}")
+                throw ex
             } catch (ex: Exception) {
                 log.error("En uhåndtert feil oppstod, applikasjonen restarter", ex)
                 applicationState.alive = false
