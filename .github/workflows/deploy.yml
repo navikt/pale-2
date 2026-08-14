@@ -25,7 +25,7 @@ jobs:
       - uses: navikt/tsm-workflows/actions/gradle/build@main
         id: build
         with:
-          app: "pale-2"
+          app: pale-2
           team: teamsykmelding
           salsa: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
