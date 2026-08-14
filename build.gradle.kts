@@ -37,8 +37,8 @@ val avroVersion = "1.12.0"
 
 
 plugins {
-    id("application")
-    kotlin("jvm") version "2.3.10"
+    kotlin("jvm") version "2.4.10"
+    id("io.ktor.plugin") version "3.5.2"
     id("com.diffplug.spotless") version "8.0.0"
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
@@ -131,6 +131,15 @@ kotlin {
 }
 
 tasks {
+
+    shadowJar {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        mergeServiceFiles {}
+        from("src/main/resources/logback.xml") {
+            into("/")
+        }
+    }
+
 
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         dependsOn("generateAvroJava")
