@@ -49,9 +49,10 @@ spec:
         - id: loki
   resources:
     limits:
+      cpu: 1500m
       memory: 3Gi
     requests:
-      cpu: 60m
+      cpu: 90m
       memory: 1300Mi
   azure:
     application:
