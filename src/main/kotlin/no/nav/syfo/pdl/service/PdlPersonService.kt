@@ -29,11 +29,11 @@ class PdlPersonService(
         }
 
         if (pdlResponse.data.hentPerson == null) {
-            log.error("Fant ikke person i PDL {}", StructuredArguments.fields(loggingMeta))
+            log.warn("Fant ikke person i PDL {}", StructuredArguments.fields(loggingMeta))
             return null
         }
         if (pdlResponse.data.hentPerson.navn.isNullOrEmpty()) {
-            log.error("Fant ikke navn på person i PDL {}", StructuredArguments.fields(loggingMeta))
+            log.warn("Fant ikke navn på person i PDL {}", StructuredArguments.fields(loggingMeta))
             return null
         }
 
