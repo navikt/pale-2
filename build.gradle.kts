@@ -6,7 +6,7 @@ version = "1.0.0"
 
 val javaVersion = JvmTarget.JVM_25
 
-val ktorVersion="3.3.1"
+val ktorVersion="3.5.2"
 val coroutinesVersion="1.10.2"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="6.0.0"
@@ -24,7 +24,7 @@ val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
 val kafkaVersion="3.9.1"
 val mockkVersion="1.14.9"
-val kotlinVersion="2.3.10"
+val kotlinVersion="2.4.20"
 val googleCloudStorageVersion = "2.62.1"
 val flywayVersion="11.15.0"
 val hikariVersion="7.0.2"
@@ -37,7 +37,7 @@ val avroVersion = "1.12.0"
 
 
 plugins {
-    kotlin("jvm") version "2.4.10"
+    kotlin("jvm") version "2.4.20"
     id("io.ktor.plugin") version "3.5.2"
     id("com.diffplug.spotless") version "8.0.0"
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
