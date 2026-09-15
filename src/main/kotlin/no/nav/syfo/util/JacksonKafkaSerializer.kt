@@ -8,7 +8,7 @@ class JacksonKafkaSerializer : Serializer<Any> {
     private val jsonMapper: JsonMapper = jacksonMapperBuilder().build()
 
     override fun configure(configs: MutableMap<String, *>, isKey: Boolean) {
-        jsonMapper
+        jsonMapper.apply {}
     }
 
     override fun serialize(topic: String?, data: Any?): ByteArray =
@@ -16,7 +16,4 @@ class JacksonKafkaSerializer : Serializer<Any> {
 
     override fun close() {}
 
-    companion object {
-        const val SERIALIZE_AS_TIMESTAMP = "no.nav.serialize.as.timestamp"
-    }
 }
