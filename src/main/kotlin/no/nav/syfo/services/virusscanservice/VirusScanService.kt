@@ -51,11 +51,11 @@ class VirusScanService(
 
             val scanResultMayContainVirus =
                 clamAvClient.virusScanVedlegg(vedleggUnder300MegaByte).filter {
-                    it.Result != Status.OK
+                    it.result != Status.OK || it.virus != "" || it.error != ""
                 }
             scanResultMayContainVirus.map {
                 log.warn(
-                    "Vedlegg may contain virus, filename: ${it.Filename}, {}",
+                    "Vedlegg may contain virus, filename: ${it.filename}, and virus type: ${it.virus} and error: ${it.error}, {}",
                     StructuredArguments.fields(loggingMeta)
                 )
             }
@@ -75,6 +75,6 @@ fun logVedleggOver300MegaByteMetric(vedlegg: List<Vedlegg>, loggingMeta: Logging
 
 fun fileSizeLagerThan300MegaBytes(file: ByteArray, loggingMeta: LoggingMeta): Boolean {
     val filesizeMegaBytes = (file.size / 1024) / 1024
-    log.info("File size MB is: $filesizeMegaBytes, {}", StructuredArguments.fields(loggingMeta))
+    log.debug("File size MB is: $filesizeMegaBytes, {}", StructuredArguments.fields(loggingMeta))
     return (file.size / 1024) / 1024 > 300
 }
