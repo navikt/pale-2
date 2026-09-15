@@ -36,6 +36,9 @@ val confluentVersion="7.9.0"
 val avroVersion="1.12.2"
 
 
+// Included due vulnerabilities in this transitive dependency
+val nettyVersion = "4.2.17.Final"
+
 plugins {
     kotlin("jvm") version "2.4.20"
     id("io.ktor.plugin") version "3.5.2"
@@ -67,6 +70,11 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    constraints {
+        implementation("io.netty:netty-handler:$nettyVersion") {
+            because("Due to vulnerabilitie CVE-2026-75595")
+        }
+    }
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson3:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
