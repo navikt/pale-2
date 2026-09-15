@@ -33,8 +33,8 @@ internal class VirusScanServiceTest {
     fun `Should return true if result contains FOUND`() {
         coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
             listOf(
-                ScanResult("normalFile", Status.OK),
-                ScanResult("eicar.com.txt", Status.FOUND),
+                ScanResult("normalFile", Status.OK, "", ""),
+                ScanResult("eicar.com.txt", Status.FOUND, "EICAR-TEST-STRING", ""),
             )
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
         val contentText = base64Encode(getFileContent("src/test/resources/random.txt"))
@@ -56,8 +56,8 @@ internal class VirusScanServiceTest {
     fun `Should return false if result only contains OK`() {
         coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
             listOf(
-                ScanResult("normalFile", Status.OK),
-                ScanResult("anotherNormalFile", Status.OK),
+                ScanResult("normalFile", Status.OK, "", ""),
+                ScanResult("anotherNormalFile", Status.OK, "", ""),
             )
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
 
@@ -78,8 +78,8 @@ internal class VirusScanServiceTest {
     fun `Should return true if result contains ERROR`() {
         coEvery { clamAvClientMock.virusScanVedlegg(any()) } returns
             listOf(
-                ScanResult("normalFile", Status.OK),
-                ScanResult("strangeFile", Status.ERROR),
+                ScanResult("normalFile", Status.OK, "", ""),
+                ScanResult("corrupted.file", Status.ERROR, "","Scan failure"),
             )
 
         val contentImage = base64Encode(getFileContent("src/test/resources/doctor.jpeg"))
