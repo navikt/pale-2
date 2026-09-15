@@ -3,7 +3,7 @@ package no.nav.syfo.services.duplicationcheck
 import java.security.MessageDigest
 import no.nav.helse.legeerklaering.Legeerklaring
 import no.nav.syfo.db.DatabaseInterface
-import no.nav.syfo.objectMapper
+import no.nav.syfo.jsonMapper
 import no.nav.syfo.services.duplicationcheck.db.extractDuplicateCheckByMottakId
 import no.nav.syfo.services.duplicationcheck.db.extractDuplicationCheckBySha256Legeerklaering
 import no.nav.syfo.services.duplicationcheck.db.persistDuplicate
@@ -50,7 +50,7 @@ fun getLatestDuplicationCheck(duplicateChecks: List<DuplicateCheck>): DuplicateC
 }
 
 fun sha256hashstring(legeerklaring: Legeerklaring): String =
-    MessageDigest.getInstance("SHA-256").digest(objectMapper.writeValueAsBytes(legeerklaring)).fold(
+    MessageDigest.getInstance("SHA-256").digest(jsonMapper.writeValueAsBytes(legeerklaring)).fold(
         ""
     ) { str, it ->
         str + "%02x".format(it)

@@ -63,7 +63,7 @@ class JournalfoeringHendelseConsumerService(
                     throw ex
                 } catch (ex: Exception) {
                     log.error(
-                        "En uhåndtert feil oppstod i journalføring consumer, applikasjonen restarter",
+                        "En uhåndtert feil oppstod i journalføring hendelse consumer, applikasjonen restarter",
                         ex,
                     )
                     applicationState.alive = false

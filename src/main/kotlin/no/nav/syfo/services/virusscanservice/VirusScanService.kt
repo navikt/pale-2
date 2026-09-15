@@ -5,7 +5,7 @@ import net.logstash.logback.argument.StructuredArguments
 import no.nav.syfo.client.clamav.ClamAvClient
 import no.nav.syfo.client.clamav.Status
 import no.nav.syfo.log
-import no.nav.syfo.objectMapper
+import no.nav.syfo.jsonMapper
 import no.nav.syfo.secureLog
 import no.nav.syfo.util.LoggingMeta
 import no.nav.syfo.vedlegg.model.Vedlegg
@@ -44,7 +44,7 @@ class VirusScanService(
                 StructuredArguments.fields(loggingMeta),
             )
             secureLog.info(
-                "Scanning vedlegg for virus: vedlegg: ${objectMapper.writeValueAsString(vedleggUnder300MegaByte.map { it.type to it.description })} " +
+                "Scanning vedlegg for virus: vedlegg: ${jsonMapper.writeValueAsString(vedleggUnder300MegaByte.map { it.type to it.description })} " +
                     ", {}",
                 StructuredArguments.fields(loggingMeta),
             )
