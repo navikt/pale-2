@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import java.time.LocalDateTime
 import no.nav.syfo.db.DatabaseInterface
 import no.nav.syfo.db.toList
-import no.nav.syfo.objectMapper
+import no.nav.syfo.jsonMapper
 import no.nav.syfo.services.journalpoststatus.model.ArenaPayload
 import no.nav.syfo.services.journalpoststatus.model.JournalpostStatus
 import no.nav.syfo.services.journalpoststatus.model.JournalpostStatusType
@@ -39,7 +39,7 @@ fun DatabaseInterface.persistJournalpostStatus(journalpostStatus: JournalpostSta
                 preparedStatement.setString(6, journalpostStatus.journalpostStatus?.name)
                 preparedStatement.setString(
                     7,
-                    journalpostStatus.arenaPayload?.let { objectMapper.writeValueAsString(it) },
+                    journalpostStatus.arenaPayload?.let { jsonMapper.writeValueAsString(it) },
                 )
                 preparedStatement.setTimestamp(
                     8,
@@ -89,7 +89,7 @@ fun DatabaseInterface.updateArenaPayload(referenceId: String, arenaPayload: Aren
                 """,
             )
             .use { preparedStatement ->
-                preparedStatement.setString(1, objectMapper.writeValueAsString(arenaPayload))
+                preparedStatement.setString(1, jsonMapper.writeValueAsString(arenaPayload))
                 preparedStatement.setString(2, referenceId)
                 preparedStatement.executeUpdate()
             }
@@ -150,7 +150,7 @@ fun ResultSet.toJournalpostStatus(): JournalpostStatus =
         processingStatus = ProcessingStatusType.valueOf(getString("processing_status")),
         journalpostStatus = getString("journalpost_status")?.let { JournalpostStatusType.valueOf(it) },
         arenaPayload =
-            getString("arena_payload")?.let { objectMapper.readValue(it, ArenaPayload::class.java) },
+            getString("arena_payload")?.let { jsonMapper.readValue(it, ArenaPayload::class.java) },
         mottattDato = getTimestamp("mottatt_dato").toLocalDateTime(),
         oppdatertDato = getTimestamp("oppdatert_dato")?.toLocalDateTime(),
     )

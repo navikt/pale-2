@@ -101,7 +101,7 @@ fun Legeerklaring.toLegeerklaring(
                     vurderingFunksjonsevne.arbeidssituasjon
                         ?.find {
                             it.arbeidssituasjon?.let {
-                                it.toInt() == ArbeidssituasjonType.Annet?.type
+                                it.toInt() == ArbeidssituasjonType.Annet.type
                             }
                                 ?: false
                         }

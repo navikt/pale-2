@@ -7,12 +7,12 @@ version = "1.0.0"
 val javaVersion = JvmTarget.JVM_25
 
 val ktorVersion="3.5.2"
-val coroutinesVersion="1.10.2"
+val coroutinesVersion="1.11.0"
 val prometheusVersion="0.16.0"
-val junitJupiterVersion="6.0.0"
-val logbackVersion = "1.5.26"
+val junitJupiterVersion="6.1.3"
+val logbackVersion="1.6.3"
 val logstashEncoderVersion="9.0"
-val jacksonVersion="2.20.1"
+val jacksonVersion="3.2.2"
 val jaxwsApiVersion="2.3.1"
 val javaxAnnotationApiVersion="1.3.2"
 val jaxbRuntimeVersion="2.4.0-b180830.0438"
@@ -22,24 +22,24 @@ val commonsTextVersion="1.14.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
-val kafkaVersion="3.9.1"
-val mockkVersion="1.14.9"
+val kafkaVersion="4.3.1"
+val mockkVersion="1.14.11"
 val kotlinVersion="2.4.20"
-val googleCloudStorageVersion = "2.62.1"
-val flywayVersion="11.15.0"
-val hikariVersion="7.0.2"
+val googleCloudStorageVersion="2.73.0"
+val flywayVersion="13.5.0"
+val hikariVersion="7.1.0"
 val postgresVersion="42.7.8"
-val testcontainerVersion = "2.0.3"
-val ktfmtVersion="0.44"
-val ibmMqVersion = "9.4.4.0"
-val confluentVersion = "7.9.0"
-val avroVersion = "1.12.0"
+val testcontainerVersion="2.0.5"
+val ktfmtVersion="0.56"
+val ibmMqVersion="10.0.0.0"
+val confluentVersion="7.9.0"
+val avroVersion="1.12.0"
 
 
 plugins {
     kotlin("jvm") version "2.4.20"
     id("io.ktor.plugin") version "3.5.2"
-    id("com.diffplug.spotless") version "8.0.0"
+    id("com.diffplug.spotless") version "8.10.2"
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
@@ -60,8 +60,6 @@ repositories {
 
 dependencies {
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
-
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:$coroutinesVersion")
 
     implementation("io.prometheus:simpleclient_hotspot:$prometheusVersion")
@@ -70,9 +68,9 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-jackson3:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-apache:$ktorVersion")
+    implementation("io.ktor:ktor-client-apache5:$ktorVersion")
 
     implementation("org.apache.kafka:kafka-clients:$kafkaVersion")
 
@@ -82,7 +80,8 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
 
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+    implementation("tools.jackson.module:jackson-module-jaxb-annotations:$jacksonVersion")
+
 
     implementation("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
     implementation("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")

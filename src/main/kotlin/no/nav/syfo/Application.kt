@@ -1,18 +1,15 @@
 package no.nav.syfo
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
 import io.ktor.client.*
-import io.ktor.client.engine.apache.*
+import io.ktor.client.engine.apache5.Apache5
+import io.ktor.client.engine.apache5.Apache5EngineConfig
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.network.sockets.*
-import io.ktor.serialization.jackson.*
+import io.ktor.serialization.jackson3.jackson
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -44,13 +41,11 @@ import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.jacksonMapperBuilder
 import java.util.concurrent.TimeUnit
 
-val objectMapper: ObjectMapper =
-    ObjectMapper()
-        .registerModule(JavaTimeModule())
-        .registerKotlinModule()
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+val jsonMapper: JsonMapper = jacksonMapperBuilder().build()
 
 val log: Logger = LoggerFactory.getLogger("no.nav.syfo.pale-2")
 
@@ -89,13 +84,9 @@ fun Application.module() {
 
     DefaultExports.initialize()
 
-    val config: HttpClientConfig<ApacheEngineConfig>.() -> Unit = {
+    val config: HttpClientConfig<Apache5EngineConfig>.() -> Unit = {
         install(ContentNegotiation) {
             jackson {
-                registerKotlinModule()
-                registerModule(JavaTimeModule())
-                configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             }
         }
         HttpResponseValidator {
@@ -134,7 +125,7 @@ fun Application.module() {
         expectSuccess = false
     }
 
-    val httpClient = HttpClient(Apache, config)
+    val httpClient = HttpClient(Apache5, config)
 
     val accessTokenClientV2 =
         AccessTokenClientV2(
