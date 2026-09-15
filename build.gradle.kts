@@ -33,7 +33,7 @@ val testcontainerVersion="2.0.5"
 val ktfmtVersion="0.56"
 val ibmMqVersion="10.0.0.0"
 val confluentVersion="7.9.0"
-val avroVersion="1.12.0"
+val avroVersion="1.12.2"
 
 
 plugins {
@@ -106,7 +106,7 @@ dependencies {
 
     implementation("org.apache.commons:commons-text:$commonsTextVersion")
 
-    implementation("com.migesok", "jaxb-java-time-adapters", javaTimeAdapterVersion)
+    implementation("com.migesok:jaxb-java-time-adapters:$javaTimeAdapterVersion")
 
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion") {
         exclude(group = "org.eclipse.jetty")
