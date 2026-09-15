@@ -51,11 +51,11 @@ class VirusScanService(
 
             val scanResultMayContainVirus =
                 clamAvClient.virusScanVedlegg(vedleggUnder300MegaByte).filter {
-                    it.Result != Status.OK || it.Virus != "" || it.Error != ""
+                    it.result != Status.OK || it.virus != "" || it.error != ""
                 }
             scanResultMayContainVirus.map {
                 log.warn(
-                    "Vedlegg may contain virus, filename: ${it.Filename}, {}",
+                    "Vedlegg may contain virus, filename: ${it.filename}, and virus type: ${it.virus} and error: ${it.error}, {}",
                     StructuredArguments.fields(loggingMeta)
                 )
             }

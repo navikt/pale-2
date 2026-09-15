@@ -39,10 +39,10 @@ class ClamAvClient(
 }
 
 data class ScanResult(
-    val Filename: String,
-    val Result: Status,
-    val Virus: String?,
-    val Error: String?
+    val filename: String,
+    val result: Status,
+    val virus: String?,
+    val error: String?
 )
 
 enum class Status {
