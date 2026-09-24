@@ -491,6 +491,10 @@ class LegeerklaringConsumerService(
                         )
 
                     if (legeerklaring.funksjonsOgArbeidsevne.vurderingFunksjonsevne == null) {
+                        log.info(
+                            "legeerklaring.funksjonsOgArbeidsevne.vurderingFunksjonsevne == null for legeerklæringer id {}",
+                            fields(loggingMeta),
+                        )
                         VURDERING_FUNKSJONSEVNE_COUNTER.inc()
                     }
 
@@ -538,7 +542,7 @@ class LegeerklaringConsumerService(
                     val currentRequestLatency = requestLatency.observeDuration()
 
                     log.info(
-                        "Finished message got outcome {}, {}, {},processing took {}s",
+                        "Finished message got outcome {}, {},processing took {}s {}",
                         StructuredArguments.keyValue("status", validationResult.status),
                         StructuredArguments.keyValue(
                             "ruleHits",
