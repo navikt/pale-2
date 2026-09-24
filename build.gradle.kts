@@ -6,7 +6,7 @@ version = "1.0.0"
 
 val javaVersion = JvmTarget.JVM_25
 
-val ktorVersion="3.5.2"
+val ktorVersion="3.6.0"
 val coroutinesVersion="1.11.0"
 val prometheusVersion="0.16.0"
 val junitJupiterVersion="6.1.3"
@@ -18,7 +18,6 @@ val javaxAnnotationApiVersion="1.3.2"
 val jaxbRuntimeVersion="2.4.0-b180830.0438"
 val jaxbApiVersion="2.4.0-b180830.0359"
 val javaxActivationVersion="1.1.1"
-val commonsTextVersion="1.14.0"
 val javaTimeAdapterVersion="1.1.3"
 val syfoxmlcodegen="2.0.1"
 val jfairyVersion="0.6.5"
@@ -36,12 +35,10 @@ val confluentVersion="7.9.0"
 val avroVersion="1.12.0"
 
 
-// Included due vulnerabilities in this transitive dependency
-val nettyVersion = "4.2.17.Final"
 
 plugins {
     kotlin("jvm") version "2.4.20"
-    id("io.ktor.plugin") version "3.5.2"
+    id("io.ktor.plugin") version "3.6.0"
     id("com.diffplug.spotless") version "8.10.2"
     id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
@@ -70,11 +67,6 @@ dependencies {
 
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    constraints {
-        implementation("io.netty:netty-handler:$nettyVersion") {
-            because("Due to vulnerabilitie CVE-2026-75595")
-        }
-    }
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson3:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -89,7 +81,6 @@ dependencies {
     implementation("net.logstash.logback:logstash-logback-encoder:$logstashEncoderVersion")
 
     implementation("tools.jackson.module:jackson-module-jaxb-annotations:$jacksonVersion")
-
 
     implementation("javax.xml.ws:jaxws-api:$jaxwsApiVersion")
     implementation("javax.annotation:javax.annotation-api:$javaxAnnotationApiVersion")
@@ -111,8 +102,6 @@ dependencies {
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     compileOnly("org.flywaydb:flyway-core:$flywayVersion")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
-
-    implementation("org.apache.commons:commons-text:$commonsTextVersion")
 
     implementation("com.migesok:jaxb-java-time-adapters:$javaTimeAdapterVersion")
 
