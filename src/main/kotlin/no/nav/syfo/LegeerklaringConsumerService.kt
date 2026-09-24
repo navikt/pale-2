@@ -33,11 +33,11 @@ import no.nav.syfo.handlestatus.handleStatusOK
 import no.nav.syfo.handlestatus.handleTestFnrInProd
 import no.nav.syfo.handlestatus.handleVedleggContainsVirus
 import no.nav.syfo.handlestatus.handleVedleggOver300MB
-import no.nav.syfo.log
 import no.nav.syfo.metrics.INCOMING_MESSAGE_COUNTER
 import no.nav.syfo.metrics.MELDING_FEILET
 import no.nav.syfo.metrics.REQUEST_TIME
 import no.nav.syfo.metrics.VEDLEGG_COUNTER
+import no.nav.syfo.metrics.VURDERING_FUNKSJONSEVNE_COUNTER
 import no.nav.syfo.model.ConversationRef
 import no.nav.syfo.model.ReceivedLegeerklaering
 import no.nav.syfo.model.RuleInfo
@@ -489,6 +489,10 @@ class LegeerklaringConsumerService(
                             loggingMeta,
                             legeerklaringId,
                         )
+
+                    if (legeerklaring.funksjonsOgArbeidsevne.vurderingFunksjonsevne == null) {
+                        VURDERING_FUNKSJONSEVNE_COUNTER.inc()
+                    }
 
                     when (validationResult.status) {
                         Status.OK ->

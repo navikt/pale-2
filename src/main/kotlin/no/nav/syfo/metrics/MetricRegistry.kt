@@ -103,3 +103,10 @@ val JOURNALFOERING_UMATCHET_COUNTER: Counter =
         .name("journalfoering_umatchet")
         .help("Antall journalføringshendelser uten en ventende legeerklæring")
         .register()
+
+val VURDERING_FUNKSJONSEVNE_COUNTER: Counter =
+    Counter.build()
+        .namespace(METRICS_NS)
+        .name("vurdering_funksjonsevne")
+        .help("Antall vurderingFunksjonsevne der feltet er null")
+        .register()
