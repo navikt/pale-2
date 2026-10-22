@@ -44,10 +44,10 @@ This the high level flow of the application
 #### Build and run tests
 To build locally and run the integration tests you can simply run
 ``` bash
-./gradlew installDist
+./gradlew clean build
 ```
 or on windows 
-`gradlew.bat installDist`
+`gradlew.bat clean build`
 
 #### Creating a docker image
 Creating a docker image should be as simple as
@@ -60,11 +60,11 @@ docker build -t pale-2 .
 docker run --rm -it -p 8080:8080 pale-2
 ```
 
-### Upgrading the gradle wrapper
-Find the newest version of gradle here: https://gradle.org/releases/ Then run this command:
+### Upgrading the Gradle wrapper
+Find the newest version of Gradle here: https://gradle.org/releases/ Then run this command:
 
 ``` bash 
-./gradlew wrapper --gradle-version $gradleVersjon
+./gradlew wrapper --gradle-version latest
 ```
 
 ### Guide to EPJ
