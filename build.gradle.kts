@@ -30,7 +30,7 @@ val hikariVersion="7.1.0"
 val postgresVersion="42.7.11"
 val testcontainerVersion="2.0.5"
 val ktfmtVersion="0.56"
-val ibmMqVersion="10.0.1.0"
+val ibmMqVersion="10.0.0.0"
 val confluentVersion="7.9.0"
 val avroVersion="1.12.0"
 
