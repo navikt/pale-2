@@ -25,6 +25,7 @@ fun connectionFactory(config: MqConfig) =
         ccsid = 1208
         sslSocketFactory = SSLSocketFactory.getDefault()
         sslCipherSuite = "TLS_AES_128_GCM_SHA256"
+        sslFipsRequired = false
         setIntProperty(WMQConstants.JMS_IBM_ENCODING, MQC.MQENC_NATIVE)
         setIntProperty(WMQConstants.JMS_IBM_CHARACTER_SET, 1208)
     }
