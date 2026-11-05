@@ -71,7 +71,6 @@ fun main() {
 fun Application.module() {
     val environmentVariables = EnvironmentVariables()
     val database = Database(environmentVariables)
-    val mqUser = MqUser()
 
     val applicationState = ApplicationState()
 
