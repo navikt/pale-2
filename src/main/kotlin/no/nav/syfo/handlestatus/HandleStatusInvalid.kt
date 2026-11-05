@@ -307,6 +307,39 @@ fun handleVedleggContainsVirus(
     VEDLEGG_VIRUS_COUNTER.inc()
 }
 
+fun handleNullForslagTilTilak(
+    session: Session,
+    receiptProducer: MessageProducer,
+    fellesformat: XMLEIFellesformat,
+    env: EnvironmentVariables,
+    loggingMeta: LoggingMeta,
+    duplicationCheckService: DuplicationCheckService,
+    duplicateCheck: DuplicateCheck,
+) {
+    log.warn(
+        "Legeerklæring avvist: mangler krevde forslagTiltak verdier i xml {}, {}",
+        fields(loggingMeta),
+        keyValue("avvistAv", env.applicationName),
+    )
+
+    sendReceipt(
+        session,
+        receiptProducer,
+        fellesformat,
+        ApprecStatus.AVVIST,
+        listOf(
+            createApprecError(
+                "en av feltene forslagTiltak.begrensningerTiltak eller forslagTiltak.begrunnelseIkkeTiltak må være satt",
+            ),
+        ),
+        duplicationCheckService,
+        duplicateCheck,
+        loggingMeta,
+        env.apprecQueueName,
+    )
+    INVALID_MESSAGE_NO_NOTICE.inc()
+}
+
 fun handleTestFnrInProd(
     session: Session,
     receiptProducer: MessageProducer,

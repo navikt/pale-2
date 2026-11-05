@@ -1,6 +1,5 @@
 package no.nav.syfo
 
-import io.ktor.server.application.Application
 import jakarta.jms.MessageConsumer
 import jakarta.jms.MessageProducer
 import jakarta.jms.Session
@@ -27,6 +26,7 @@ import no.nav.syfo.client.pale2regler.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateLegeerklaringContent
 import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
+import no.nav.syfo.handlestatus.handleNullForslagTilTilak
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
@@ -353,6 +353,24 @@ class LegeerklaringConsumerService(
                         )
                         continue
                     }
+
+                    if (manglerForslagTilTiltak(legeerklaringxml.forslagTiltak.begrensningerTiltak, legeerklaringxml.forslagTiltak.begrunnelseIkkeTiltak)) {
+                        handleNullForslagTilTilak(
+                            session,
+                            receiptProducer,
+                            fellesformat,
+                            env,
+                            loggingMeta,
+                            duplicationCheckService,
+                            duplicateCheck,
+                        )
+                        journalpostStatusService.updateProcessingStatus(
+                            ediLoggId,
+                            ProcessingStatusType.AVVIST,
+                        )
+                        continue
+                    }
+
 
                     val legeerklaring =
                         legeerklaringxml.toLegeerklaring(
@@ -701,3 +719,8 @@ fun XMLConversationRef.toConversationRef(): ConversationRef {
 
     return ConversationRef(refToConversation = refToConversation, refToParent = refToParent)
 }
+
+fun manglerForslagTilTiltak(
+    begrensningerTiltak: String?,
+    begrunnelseIkkeTiltak: String?,
+): Boolean = begrensningerTiltak == null && begrunnelseIkkeTiltak == null
