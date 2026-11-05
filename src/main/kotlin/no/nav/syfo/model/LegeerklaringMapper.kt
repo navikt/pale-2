@@ -85,7 +85,7 @@ fun Legeerklaring.toLegeerklaring(
                         .find { it.typeTiltak == TypeTiltak.AndreTiltak.typeTiltak.toBigInteger() }
                         ?.hvilkeAndreTiltak,
                 naermereOpplysninger = forslagTiltak.opplysninger,
-                tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak,
+                tekst = forslagTiltak.begrensningerTiltak ?: forslagTiltak.begrunnelseIkkeTiltak ?: "",
             ),
         funksjonsOgArbeidsevne =
             FunksjonsOgArbeidsevne(
