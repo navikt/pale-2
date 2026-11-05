@@ -1,8 +1,5 @@
 package no.nav.syfo
 
-import java.io.StringReader
-import java.time.LocalDateTime
-import java.util.UUID
 import no.nav.helse.eiFellesformat.XMLEIFellesformat
 import no.nav.syfo.model.toLegeerklaring
 import no.nav.syfo.util.extractLegeerklaering
@@ -10,6 +7,9 @@ import no.nav.syfo.util.fellesformatUnmarshaller
 import no.nav.syfo.util.getFileAsString
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.StringReader
+import java.time.LocalDateTime
+import java.util.*
 
 internal class LegeerklaringMapperTest {
 
@@ -162,4 +162,14 @@ internal class LegeerklaringMapperTest {
             )
         assertEquals("Navn Navnesen", legeerklaering.signatur.navn)
     }
+
+     @Test
+     fun `manglerForslagTilTiltak begge mangler `() {
+         assertEquals(true, manglerForslagTilTiltak(null, null))
+     }
+
+    @Test
+     fun `manglerForslagTilTiltak en av de er satt `() {
+        assertEquals(false, manglerForslagTilTiltak("begrensningerTiltak", null))
+     }
 }

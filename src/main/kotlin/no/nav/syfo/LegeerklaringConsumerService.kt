@@ -1,6 +1,5 @@
 package no.nav.syfo
 
-import io.ktor.server.application.Application
 import jakarta.jms.MessageConsumer
 import jakarta.jms.MessageProducer
 import jakarta.jms.Session
@@ -355,7 +354,7 @@ class LegeerklaringConsumerService(
                         continue
                     }
 
-                    if (legeerklaringxml.forslagTiltak.begrensningerTiltak == null && legeerklaringxml.forslagTiltak.begrunnelseIkkeTiltak == null) {
+                    if (manglerForslagTilTiltak(legeerklaringxml.forslagTiltak.begrensningerTiltak, legeerklaringxml.forslagTiltak.begrunnelseIkkeTiltak)) {
                         handleNullForslagTilTilak(
                             session,
                             receiptProducer,
@@ -720,3 +719,8 @@ fun XMLConversationRef.toConversationRef(): ConversationRef {
 
     return ConversationRef(refToConversation = refToConversation, refToParent = refToParent)
 }
+
+fun manglerForslagTilTiltak(
+    begrensningerTiltak: String?,
+    begrunnelseIkkeTiltak: String?,
+): Boolean = begrensningerTiltak == null && begrunnelseIkkeTiltak == null
