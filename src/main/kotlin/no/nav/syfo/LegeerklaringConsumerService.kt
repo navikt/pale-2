@@ -27,6 +27,7 @@ import no.nav.syfo.client.pale2regler.Pale2ReglerClient
 import no.nav.syfo.handlestatus.handleDoctorNotFoundInPDL
 import no.nav.syfo.handlestatus.handleDuplicateLegeerklaringContent
 import no.nav.syfo.handlestatus.handleFritekstfeltHarForMangeTegn
+import no.nav.syfo.handlestatus.handleNullForslagTilTilak
 import no.nav.syfo.handlestatus.handlePatientNotFoundInPDL
 import no.nav.syfo.handlestatus.handleStatusINVALID
 import no.nav.syfo.handlestatus.handleStatusOK
@@ -353,6 +354,24 @@ class LegeerklaringConsumerService(
                         )
                         continue
                     }
+
+                    if (legeerklaringxml.forslagTiltak.begrensningerTiltak == null && legeerklaringxml.forslagTiltak.begrunnelseIkkeTiltak == null) {
+                        handleNullForslagTilTilak(
+                            session,
+                            receiptProducer,
+                            fellesformat,
+                            env,
+                            loggingMeta,
+                            duplicationCheckService,
+                            duplicateCheck,
+                        )
+                        journalpostStatusService.updateProcessingStatus(
+                            ediLoggId,
+                            ProcessingStatusType.AVVIST,
+                        )
+                        continue
+                    }
+
 
                     val legeerklaring =
                         legeerklaringxml.toLegeerklaring(
