@@ -26,8 +26,7 @@ fun connectionFactory(config: MqConfig) =
         sslSocketFactory = SSLSocketFactory.getDefault()
         setIntProperty(WMQConstants.JMS_IBM_ENCODING, MQC.MQENC_NATIVE)
         setIntProperty(WMQConstants.JMS_IBM_CHARACTER_SET, 1208)
-        sslCipherSuite = "TLS_AES_128_GCM_SHA256"
-        sslFipsRequired = false
+        sslCipherSuite = "*TLS13ORHIGHER"
     }
 
 fun Session.consumerForQueue(queueName: String): MessageConsumer =
